@@ -2,6 +2,7 @@
 #![allow(dead_code)]
 use camera::Camera;
 use std::iter;
+use texture::Texture;
 use wgpu::util::DeviceExt;
 use winit::{
     event::*,
@@ -64,34 +65,14 @@ const fn ivertex(pos: [i32; 2], tc: [i32; 2]) -> Vertex {
 const VERTICES: &[Vertex] = &[
     // left rectangle
     ivertex([-1, -1], [0, 1]), // 0
-    ivertex([1, -1], [1, 1]), // 1
+    ivertex([1, -1], [1, 1]),  // 1
     ivertex([1, 1], [1, 0]),   // 2
     ivertex([-1, 1], [0, 0]),  // 3
 ];
 const INDICES: &[u16] = &[
     0, 1, 2, //
-    2, 3, 0
+    2, 3, 0,
 ];
-
-// const VERTICES: &[Vertex] = &[
-//     Vertex {
-//         position: [-0.5, 0.5],
-//         tex_coords: [0.0, 0.0],
-//     },
-//     Vertex {
-//         position: [-0.5, -0.5],
-//         tex_coords: [0.0, 1.0],
-//     },
-//     Vertex {
-//         position: [0.5, 0.5],
-//         tex_coords: [1.0, 0.0],
-//     },
-//     Vertex {
-//         position: [0.5, -0.5],
-//         tex_coords: [1.0, 1.0],
-//     },
-// ];
-// const INDICES: &[u16] = &[0, 1, 2, 1, 3, 2, 1, /* padding */ 0];
 
 struct State {
     surface: wgpu::Surface,
@@ -103,13 +84,10 @@ struct State {
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
 
-    diffuse_texture: texture::Texture,
-    diffuse_bind_group: wgpu::BindGroup,
-
-    sprite: Sprite,
-    sprite_uniform: SpriteUniform,
-    sprite_buffer: wgpu::Buffer,
-    sprite_bind_group: wgpu::BindGroup,
+    diffuse_texture_1: Texture,
+    diffuse_texture_2: Texture,
+    sprite_1: Sprite,
+    sprite_2: Sprite,
 
     camera: Camera,
     camera_uniform: CameraUniform,
@@ -155,86 +133,15 @@ impl State {
         surface.configure(&device, &config);
 
         let diffuse_bytes = include_bytes!("awesomeface.png");
-        let diffuse_texture =
-            texture::Texture::from_bytes(&device, &queue, diffuse_bytes, "awesomeface.png")
-                .unwrap();
+        let diffuse_texture_1 =
+            Texture::from_bytes(&device, &queue, diffuse_bytes, "awesomeface.png").unwrap();
 
-        let texture_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler {
-                            comparison: false,
-                            filtering: true,
-                        },
-                        count: None,
-                    },
-                ],
-                label: Some("texture_bind_group_layout"),
-            });
+        let diffuse_bytes = include_bytes!("happy-tree.png");
+        let diffuse_texture_2 =
+            Texture::from_bytes(&device, &queue, diffuse_bytes, "happy-tree.png").unwrap();
 
-        let diffuse_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &texture_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::TextureView(&diffuse_texture.view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::Sampler(&diffuse_texture.sampler),
-                },
-            ],
-            label: Some("diffuse_bind_group"),
-        });
-
-        let sprite = Sprite::new(100.0, 100.0);
-
-        let mut sprite_uniform = SpriteUniform::new();
-        sprite_uniform.update_model(&sprite);
-
-        let sprite_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Sprite Buffer"),
-            contents: bytemuck::cast_slice(&[sprite_uniform]),
-            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-        });
-
-        let sprite_bind_group_layout =
-            device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[wgpu::BindGroupLayoutEntry {
-                    binding: 0,
-                    visibility: wgpu::ShaderStages::VERTEX,
-                    ty: wgpu::BindingType::Buffer {
-                        ty: wgpu::BufferBindingType::Uniform,
-                        has_dynamic_offset: false,
-                        min_binding_size: None,
-                    },
-                    count: None,
-                }],
-                label: Some("sprite_bind_group_layout"),
-            });
-
-        let sprite_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &sprite_bind_group_layout,
-            entries: &[wgpu::BindGroupEntry {
-                binding: 0,
-                resource: sprite_buffer.as_entire_binding(),
-            }],
-            label: Some("sprite_bind_group"),
-        });
-
+        let sprite_1 = Sprite::new(-1.0, 0.0, &device);
+        let sprite_2 = Sprite::new(1.0, 0.0, &device);
         let camera = Camera::new(800.0, 600.0);
 
         let mut camera_uniform = CameraUniform::new();
@@ -279,9 +186,9 @@ impl State {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
                 bind_group_layouts: &[
-                    &texture_bind_group_layout,
+                    &diffuse_texture_1.texture_bind_group_layout,
                     &camera_bind_group_layout,
-                    &sprite_bind_group_layout,
+                    &sprite_1.sprite_bind_group_layout,
                 ],
                 push_constant_ranges: &[],
             });
@@ -346,12 +253,10 @@ impl State {
             render_pipeline,
             vertex_buffer,
             index_buffer,
-            diffuse_texture,
-            diffuse_bind_group,
-            sprite,
-            sprite_uniform,
-            sprite_buffer,
-            sprite_bind_group,
+            diffuse_texture_1,
+            diffuse_texture_2,
+            sprite_1,
+            sprite_2,
             camera,
             camera_uniform,
             camera_buffer,
@@ -374,11 +279,17 @@ impl State {
     }
 
     fn update(&mut self) {
-        self.sprite_uniform.update_model(&self.sprite);
+        let uniform = { self.sprite_1.get_uniform() };
         self.queue.write_buffer(
-            &self.sprite_buffer,
+            &self.sprite_1.sprite_buffer,
             0,
-            bytemuck::cast_slice(&[self.sprite_uniform]),
+            bytemuck::cast_slice(&[uniform]),
+        );
+        let uniform = { self.sprite_2.get_uniform() };
+        self.queue.write_buffer(
+            &self.sprite_2.sprite_buffer,
+            0,
+            bytemuck::cast_slice(&[uniform]),
         );
         self.camera_uniform.update_view_proj(&self.camera);
         self.queue.write_buffer(
@@ -420,13 +331,20 @@ impl State {
             });
 
             render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
+            render_pass.set_bind_group(0, &self.diffuse_texture_1.diffuse_bind_group, &[]);
             render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
-            render_pass.set_bind_group(2, &self.sprite_bind_group, &[]);
+            render_pass.set_bind_group(2, &self.sprite_1.sprite_bind_group, &[]);
             render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
             render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
             render_pass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
-            // render_pass.draw(0..VERTICES.len() as u32, 0..1);
+            /////
+            render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_bind_group(0, &self.diffuse_texture_2.diffuse_bind_group, &[]);
+            render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
+            render_pass.set_bind_group(2, &self.sprite_2.sprite_bind_group, &[]);
+            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+            render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+            render_pass.draw_indexed(0..INDICES.len() as u32, 0, 0..1);
         }
 
         self.queue.submit(iter::once(encoder.finish()));
