@@ -7,6 +7,7 @@ use winit::{
 
 mod pipeline;
 mod state;
+mod vertex;
 
 fn main() {
     env_logger::init();

@@ -1,6 +1,34 @@
 use winit::{event::WindowEvent, window::Window};
 
-use crate::pipeline::Pipeline;
+use crate::{
+    pipeline::Pipeline,
+    vertex::{Primitive, Vertex},
+};
+
+const VERTICES: &[Vertex] = &[
+    Vertex {
+        position: [-0.0868241, 0.49240386, 0.0],
+        color: [0.5, 0.0, 0.5],
+    }, // A
+    Vertex {
+        position: [-0.49513406, 0.06958647, 0.0],
+        color: [0.5, 0.0, 0.5],
+    }, // B
+    Vertex {
+        position: [-0.21918549, -0.44939706, 0.0],
+        color: [0.5, 0.0, 0.5],
+    }, // C
+    Vertex {
+        position: [0.35966998, -0.3473291, 0.0],
+        color: [0.5, 0.0, 0.5],
+    }, // D
+    Vertex {
+        position: [0.44147372, 0.2347359, 0.0],
+        color: [0.5, 0.0, 0.5],
+    }, // E
+];
+
+const INDICES: &[u16] = &[0, 1, 4, 1, 2, 4, 2, 3, 4, /* padding */ 0];
 
 pub struct State {
     surface: wgpu::Surface,
@@ -10,6 +38,8 @@ pub struct State {
     pub size: winit::dpi::PhysicalSize<u32>,
 
     pipeline: Pipeline,
+    triangle: Primitive,
+    pentagon: Primitive,
 }
 
 impl State {
@@ -52,7 +82,8 @@ impl State {
         surface.configure(&device, &config);
 
         let pipeline = Pipeline::new(&device, config.format).await;
-
+        let triangle = Primitive::new_triangle(&device);
+        let pentagon = Primitive::from_vertices_with_indices(&device, VERTICES, INDICES);
         Self {
             surface,
             device,
@@ -60,6 +91,8 @@ impl State {
             config,
             size,
             pipeline,
+            triangle,
+            pentagon,
         }
     }
 
@@ -110,7 +143,8 @@ impl State {
                 depth_stencil_attachment: None,
             });
 
-            self.pipeline.render(&mut render_pass);
+            self.pipeline
+                .render(&mut render_pass, &[&self.pentagon, &self.triangle]);
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));
