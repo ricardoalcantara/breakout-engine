@@ -10,12 +10,15 @@ pub struct Pipeline {
 impl Pipeline {
     pub async fn new(device: &wgpu::Device, format: wgpu::TextureFormat) -> Self {
         let (vs_module, fs_module) = {
-            let vs_src = include_str!("shader.vert");
-            let fs_src = include_str!("shader.frag");
+            let vs_src = std::fs::read_to_string("shaders/shader.vert")
+                .expect("Something went wrong reading src/shader.vert");
+            let fs_src = std::fs::read_to_string("shaders/shader.frag")
+                .expect("Something went wrong reading src/shader.frag");
+
             let mut compiler = shaderc::Compiler::new().unwrap();
             let vs_spirv = compiler
                 .compile_into_spirv(
-                    vs_src,
+                    &vs_src,
                     shaderc::ShaderKind::Vertex,
                     "shader.vert",
                     "main",
@@ -24,7 +27,7 @@ impl Pipeline {
                 .unwrap();
             let fs_spirv = compiler
                 .compile_into_spirv(
-                    fs_src,
+                    &fs_src,
                     shaderc::ShaderKind::Fragment,
                     "shader.frag",
                     "main",
