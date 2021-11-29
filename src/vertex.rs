@@ -4,7 +4,7 @@ use wgpu::util::DeviceExt;
 #[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
 pub struct Vertex {
     pub position: [f32; 3],
-    pub color: [f32; 3],
+    pub tex_coords: [f32; 2],
 }
 
 impl Vertex {
@@ -21,7 +21,7 @@ impl Vertex {
                 wgpu::VertexAttribute {
                     offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
                     shader_location: 1,
-                    format: wgpu::VertexFormat::Float32x3,
+                    format: wgpu::VertexFormat::Float32x2,
                 },
             ],
         }
@@ -35,22 +35,38 @@ impl Vertex {
 
 const TRIANGLE: &[Vertex; 3] = &[
     Vertex {
-        position: [0.0, 0.5, 0.0],
-        color: [1.0, 0.0, 0.0],
+        position: [0.0, 1.0, 0.0],
+        tex_coords: [1.0, 0.0],
     },
     Vertex {
-        position: [-0.5, -0.5, 0.0],
-        color: [0.0, 1.0, 0.0],
+        position: [-1.0, -1.0, 0.0],
+        tex_coords: [0.0, 1.0],
     },
     Vertex {
-        position: [0.5, -0.5, 0.0],
-        color: [0.0, 0.0, 1.0],
+        position: [1.0, -1.0, 0.0],
+        tex_coords: [0.0, 0.0],
     },
 ];
 
-enum Shape {
-    Triagle,
-}
+const RECTANGLE: &[Vertex; 4] = &[
+    Vertex {
+        position: [1.0, 1.0, 0.0],
+        tex_coords: [1.0, 0.0],
+    },
+    Vertex {
+        position: [-1.0, 1.0, 0.0],
+        tex_coords: [0.0, 0.0],
+    },
+    Vertex {
+        position: [-1.0, -1.0, 0.0],
+        tex_coords: [0.0, 1.0],
+    },
+    Vertex {
+        position: [1.0, -1.0, 0.0],
+        tex_coords: [1.0, 1.0],
+    },
+];
+const RECTANGLE_INDICES: &[u16] = &[0, 1, 2, 2, 3, 0, /* padding */ 0];
 
 pub struct Primitive {
     pub vertex_buffer: wgpu::Buffer,
@@ -62,6 +78,10 @@ pub struct Primitive {
 impl Primitive {
     pub fn new_triangle(device: &wgpu::Device) -> Self {
         Primitive::from_vertices(device, TRIANGLE)
+    }
+
+    pub fn new_rectangle(device: &wgpu::Device) -> Self {
+        Primitive::from_vertices_with_indices(device, RECTANGLE, RECTANGLE_INDICES)
     }
 
     pub fn from_vertices(device: &wgpu::Device, vertices: &[Vertex]) -> Self {

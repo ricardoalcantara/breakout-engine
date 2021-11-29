@@ -1,4 +1,7 @@
-use crate::vertex::{Primitive, Vertex};
+use crate::{
+    texture::Texture,
+    vertex::{Primitive, Vertex},
+};
 
 pub struct Pipeline {
     render_pipeline: wgpu::RenderPipeline,
@@ -44,7 +47,7 @@ impl Pipeline {
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[],
+                bind_group_layouts: &[&Texture::create_bind_group_layout(device)],
                 push_constant_ranges: &[],
             });
 
@@ -96,9 +99,11 @@ impl Pipeline {
         &'a mut self,
         render_pass: &mut wgpu::RenderPass<'a>,
         primitives: &[&'a Primitive],
+        textures: &[&'a Texture],
     ) {
         render_pass.set_pipeline(&self.render_pipeline);
-        for primitive in primitives {
+        for (index, primitive) in primitives.iter().enumerate() {
+            render_pass.set_bind_group(0, &textures[index].diffuse_bind_group, &[]);
             render_pass.set_vertex_buffer(0, primitive.get_buffer());
             if let Some(index_buffer) = primitive.get_index_buffer() {
                 render_pass.set_index_buffer(index_buffer, wgpu::IndexFormat::Uint16);

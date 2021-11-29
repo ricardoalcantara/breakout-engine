@@ -7,6 +7,7 @@ use winit::{
 
 mod pipeline;
 mod state;
+mod texture;
 mod vertex;
 
 fn main() {
