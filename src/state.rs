@@ -1,6 +1,7 @@
 use winit::{event::WindowEvent, window::Window};
 
 use crate::{
+    camera::Camera,
     pipeline::Pipeline,
     texture::Texture,
     vertex::{Primitive, Vertex},
@@ -45,6 +46,8 @@ pub struct State {
     pentagon: Primitive,
     awesomeface: Texture,
     happy_tree: Texture,
+
+    camera: Camera,
 }
 
 impl State {
@@ -86,7 +89,7 @@ impl State {
         };
         surface.configure(&device, &config);
 
-        let pipeline = Pipeline::new(&device, config.format).await;
+        let mut pipeline = Pipeline::new(&device, config.format).await;
         let triangle = Primitive::new_triangle(&device);
         let rectangle = Primitive::new_rectangle(&device);
         let pentagon = Primitive::from_vertices_with_indices(&device, VERTICES, INDICES);
@@ -96,6 +99,9 @@ impl State {
 
         let happy_tree = Texture::new("assets/happy-tree.png", &device);
         happy_tree.write_texture(&queue);
+
+        let camera = Camera::new(10.0, 10.0);
+        pipeline.update_camera(&camera, &queue);
 
         Self {
             surface,
@@ -109,6 +115,7 @@ impl State {
             pentagon,
             awesomeface,
             happy_tree,
+            camera,
         }
     }
 

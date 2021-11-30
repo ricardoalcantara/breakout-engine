@@ -5,6 +5,7 @@ use winit::{
     window::WindowBuilder,
 };
 
+mod camera;
 mod pipeline;
 mod state;
 mod texture;

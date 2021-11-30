@@ -1,10 +1,97 @@
+use wgpu::util::DeviceExt;
+
 use crate::{
+    camera::Camera,
     texture::Texture,
     vertex::{Primitive, Vertex},
 };
 
+struct Uniform {
+    uniform_data: UniformData,
+    uniform_buffer: wgpu::Buffer,
+    uniform_bind_group: wgpu::BindGroup,
+}
+
+impl Uniform {
+    fn create_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
+        device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            entries: &[wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::VERTEX,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            }],
+            label: Some("uniform_bind_group_layout"),
+        })
+    }
+
+    fn new(device: &wgpu::Device) -> Self {
+        let uniform_bind_group_layout = Uniform::create_bind_group_layout(device);
+        let uniform = UniformData::new();
+
+        let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+            label: Some("Uniform Buffer"),
+            contents: bytemuck::cast_slice(&[uniform]),
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        });
+
+        let uniform_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &uniform_bind_group_layout,
+            entries: &[wgpu::BindGroupEntry {
+                binding: 0,
+                resource: uniform_buffer.as_entire_binding(),
+            }],
+            label: Some("uniform_bind_group"),
+        });
+
+        Self {
+            uniform_data: uniform,
+            uniform_buffer,
+            uniform_bind_group,
+        }
+    }
+}
+
+// #[rustfmt::skip]
+// pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
+//     1.0, 0.0, 0.0, 0.0,
+//     0.0, 1.0, 0.0, 0.0,
+//     0.0, 0.0, 0.5, 0.0,
+//     0.0, 0.0, 0.5, 1.0,
+// );
+#[rustfmt::skip]
+const OPENGL_TO_WGPU_MATRIX: glam::Mat4 = glam::const_mat4!(
+    [1.0, 0.0, 0.0, 0.0],
+    [0.0, 1.0, 0.0, 0.0],
+    [0.0, 0.0, 0.5, 0.0],
+    [0.0, 0.0, 0.5, 1.0]
+);
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+struct UniformData {
+    matrix: [[f32; 4]; 4],
+}
+
+impl UniformData {
+    fn new() -> Self {
+        Self {
+            matrix: glam::Mat4::IDENTITY.to_cols_array_2d(),
+        }
+    }
+
+    fn set_matrix(&mut self, matrix: glam::Mat4) {
+        self.matrix = matrix.to_cols_array_2d();
+    }
+}
+
 pub struct Pipeline {
     render_pipeline: wgpu::RenderPipeline,
+    uniform: Uniform,
 }
 
 impl Pipeline {
@@ -50,7 +137,11 @@ impl Pipeline {
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[&Texture::create_bind_group_layout(device)],
+                bind_group_layouts: &[
+                    // Todo: cache or make it static
+                    &Texture::create_bind_group_layout(device),
+                    &Uniform::create_bind_group_layout(device),
+                ],
                 push_constant_ranges: &[],
             });
 
@@ -59,24 +150,22 @@ impl Pipeline {
             layout: Some(&render_pipeline_layout),
             vertex: wgpu::VertexState {
                 module: &vs_module,
-                entry_point: "main",        // 1.
-                buffers: &[Vertex::desc()], // 2.
+                entry_point: "main",
+                buffers: &[Vertex::desc()],
             },
             fragment: Some(wgpu::FragmentState {
-                // 3.
                 module: &fs_module,
                 entry_point: "main",
                 targets: &[wgpu::ColorTargetState {
-                    // 4.
                     format,
                     blend: Some(wgpu::BlendState::REPLACE),
                     write_mask: wgpu::ColorWrites::ALL,
                 }],
             }),
             primitive: wgpu::PrimitiveState {
-                topology: wgpu::PrimitiveTopology::TriangleList, // 1.
+                topology: wgpu::PrimitiveTopology::TriangleList,
                 strip_index_format: None,
-                front_face: wgpu::FrontFace::Ccw, // 2.
+                front_face: wgpu::FrontFace::Ccw,
                 cull_mode: Some(wgpu::Face::Back),
                 // Setting this to anything other than Fill requires Features::NON_FILL_POLYGON_MODE
                 polygon_mode: wgpu::PolygonMode::Fill,
@@ -87,7 +176,7 @@ impl Pipeline {
             },
 
             // continued ...
-            depth_stencil: None, // 1.
+            depth_stencil: None,
             multisample: wgpu::MultisampleState {
                 count: 1,
                 mask: !0,
@@ -95,7 +184,21 @@ impl Pipeline {
             },
         });
 
-        Self { render_pipeline }
+        let uniform = Uniform::new(device);
+
+        Self {
+            render_pipeline,
+            uniform,
+        }
+    }
+
+    pub fn update_camera(&mut self, camera: &Camera, queue: &wgpu::Queue) {
+        self.uniform.uniform_data.set_matrix(camera.get_matrix());
+        queue.write_buffer(
+            &self.uniform.uniform_buffer,
+            0,
+            bytemuck::cast_slice(&[self.uniform.uniform_data]),
+        );
     }
 
     pub fn render<'a>(
@@ -105,9 +208,12 @@ impl Pipeline {
         textures: &[&'a Texture],
     ) {
         render_pass.set_pipeline(&self.render_pipeline);
+
+        render_pass.set_bind_group(1, &self.uniform.uniform_bind_group, &[]);
         for (index, primitive) in primitives.iter().enumerate() {
             render_pass.set_bind_group(0, &textures[index].diffuse_bind_group, &[]);
             render_pass.set_vertex_buffer(0, primitive.get_buffer());
+            // Todo: Aqui mesmo:
             if let Some(index_buffer) = primitive.get_index_buffer() {
                 render_pass.set_index_buffer(index_buffer, wgpu::IndexFormat::Uint16);
                 render_pass.draw_indexed(0..primitive.num_indices, 0, 0..1);
