@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+#![allow(unused)]
 use state::State;
 use winit::{
     event::*,

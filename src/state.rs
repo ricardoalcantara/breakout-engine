@@ -2,7 +2,7 @@ use winit::{event::WindowEvent, window::Window};
 
 use crate::{
     camera::Camera,
-    pipeline::Pipeline,
+    pipeline::{FrameData, Pipeline},
     texture::Texture,
     vertex::{Primitive, Vertex},
 };
@@ -89,7 +89,7 @@ impl State {
         };
         surface.configure(&device, &config);
 
-        let mut pipeline = Pipeline::new(&device, config.format).await;
+        let pipeline = Pipeline::new(&device, config.format).await;
         let triangle = Primitive::new_triangle(&device);
         let rectangle = Primitive::new_rectangle(&device);
         let pentagon = Primitive::from_vertices_with_indices(&device, VERTICES, INDICES);
@@ -100,8 +100,7 @@ impl State {
         let happy_tree = Texture::new("assets/happy-tree.png", &device);
         happy_tree.write_texture(&queue);
 
-        let camera = Camera::new(10.0, 10.0);
-        pipeline.update_camera(&camera, &queue);
+        let camera = Camera::new(10.0, 10.0, &device);
 
         Self {
             surface,
@@ -133,7 +132,9 @@ impl State {
         false
     }
 
-    pub fn update(&mut self) {}
+    pub fn update(&mut self) {
+        self.camera.update_camera(&self.queue);
+    }
 
     pub fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
@@ -166,11 +167,25 @@ impl State {
                 depth_stencil_attachment: None,
             });
 
-            self.pipeline.render(
-                &mut render_pass,
-                &[&self.rectangle, &self.triangle],
-                &[&self.awesomeface, &self.happy_tree],
-            );
+            let frame_date = [
+                FrameData {
+                    primitive: &self.rectangle,
+                    texture: &self.happy_tree,
+                    camera: None,
+                },
+                FrameData {
+                    primitive: &self.rectangle,
+                    texture: &self.awesomeface,
+                    camera: Some(&self.camera),
+                },
+                FrameData {
+                    primitive: &self.pentagon,
+                    texture: &self.happy_tree,
+                    camera: Some(&self.camera),
+                },
+            ];
+
+            self.pipeline.render(&mut render_pass, &frame_date);
         }
 
         self.queue.submit(std::iter::once(encoder.finish()));

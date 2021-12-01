@@ -6,13 +6,13 @@ use crate::{
     vertex::{Primitive, Vertex},
 };
 
-struct Uniform {
-    uniform_data: UniformData,
-    uniform_buffer: wgpu::Buffer,
+pub struct CameraUniform {
+    pub uniform_data: CameraData,
+    pub uniform_buffer: wgpu::Buffer,
     uniform_bind_group: wgpu::BindGroup,
 }
 
-impl Uniform {
+impl CameraUniform {
     fn create_bind_group_layout(device: &wgpu::Device) -> wgpu::BindGroupLayout {
         device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
             entries: &[wgpu::BindGroupLayoutEntry {
@@ -29,9 +29,9 @@ impl Uniform {
         })
     }
 
-    fn new(device: &wgpu::Device) -> Self {
-        let uniform_bind_group_layout = Uniform::create_bind_group_layout(device);
-        let uniform = UniformData::new();
+    pub fn new(device: &wgpu::Device) -> Self {
+        let uniform_bind_group_layout = CameraUniform::create_bind_group_layout(device);
+        let uniform = CameraData::new();
 
         let uniform_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Uniform Buffer"),
@@ -54,44 +54,35 @@ impl Uniform {
             uniform_bind_group,
         }
     }
-}
 
-// #[rustfmt::skip]
-// pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
-//     1.0, 0.0, 0.0, 0.0,
-//     0.0, 1.0, 0.0, 0.0,
-//     0.0, 0.0, 0.5, 0.0,
-//     0.0, 0.0, 0.5, 1.0,
-// );
-#[rustfmt::skip]
-const OPENGL_TO_WGPU_MATRIX: glam::Mat4 = glam::const_mat4!(
-    [1.0, 0.0, 0.0, 0.0],
-    [0.0, 1.0, 0.0, 0.0],
-    [0.0, 0.0, 0.5, 0.0],
-    [0.0, 0.0, 0.5, 1.0]
-);
+    pub fn from_matrix(matrix: glam::Mat4, device: &wgpu::Device) -> Self {
+        let mut camera_uniform = Self::new(device);
+        camera_uniform.uniform_data.set_matrix(matrix);
+        camera_uniform
+    }
+}
 
 #[repr(C)]
 #[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
-struct UniformData {
+pub struct CameraData {
     matrix: [[f32; 4]; 4],
 }
 
-impl UniformData {
+impl CameraData {
     fn new() -> Self {
         Self {
             matrix: glam::Mat4::IDENTITY.to_cols_array_2d(),
         }
     }
 
-    fn set_matrix(&mut self, matrix: glam::Mat4) {
+    pub fn set_matrix(&mut self, matrix: glam::Mat4) {
         self.matrix = matrix.to_cols_array_2d();
     }
 }
 
 pub struct Pipeline {
     render_pipeline: wgpu::RenderPipeline,
-    uniform: Uniform,
+    camera_uniform: CameraUniform,
 }
 
 impl Pipeline {
@@ -140,7 +131,7 @@ impl Pipeline {
                 bind_group_layouts: &[
                     // Todo: cache or make it static
                     &Texture::create_bind_group_layout(device),
-                    &Uniform::create_bind_group_layout(device),
+                    &CameraUniform::create_bind_group_layout(device),
                 ],
                 push_constant_ranges: &[],
             });
@@ -184,42 +175,59 @@ impl Pipeline {
             },
         });
 
-        let uniform = Uniform::new(device);
+        let camera_uniform = CameraUniform::new(device);
 
         Self {
             render_pipeline,
-            uniform,
+            camera_uniform,
         }
-    }
-
-    pub fn update_camera(&mut self, camera: &Camera, queue: &wgpu::Queue) {
-        self.uniform.uniform_data.set_matrix(camera.get_matrix());
-        queue.write_buffer(
-            &self.uniform.uniform_buffer,
-            0,
-            bytemuck::cast_slice(&[self.uniform.uniform_data]),
-        );
     }
 
     pub fn render<'a>(
         &'a mut self,
         render_pass: &mut wgpu::RenderPass<'a>,
-        primitives: &[&'a Primitive],
-        textures: &[&'a Texture],
+        data: &[FrameData<'a>],
     ) {
         render_pass.set_pipeline(&self.render_pipeline);
 
-        render_pass.set_bind_group(1, &self.uniform.uniform_bind_group, &[]);
-        for (index, primitive) in primitives.iter().enumerate() {
-            render_pass.set_bind_group(0, &textures[index].diffuse_bind_group, &[]);
-            render_pass.set_vertex_buffer(0, primitive.get_buffer());
-            // Todo: Aqui mesmo:
-            if let Some(index_buffer) = primitive.get_index_buffer() {
-                render_pass.set_index_buffer(index_buffer, wgpu::IndexFormat::Uint16);
-                render_pass.draw_indexed(0..primitive.num_indices, 0, 0..1);
+        for item in data {
+            let uniform = if let Some(camera) = item.camera {
+                // Todo: Move to Camera Uniform
+                &camera.camera_uniform.uniform_bind_group
             } else {
-                render_pass.draw(0..primitive.num_vertices, 0..1);
+                // Todo: Default Camera
+                &self.camera_uniform.uniform_bind_group
+            };
+
+            render_pass.set_bind_group(1, uniform, &[]);
+            render_pass.set_bind_group(0, &item.texture.diffuse_bind_group, &[]);
+            render_pass.set_vertex_buffer(0, item.primitive.get_buffer());
+            // Todo: Aqui mesmo:
+            if let Some(index_buffer) = item.primitive.get_index_buffer() {
+                render_pass.set_index_buffer(index_buffer, wgpu::IndexFormat::Uint16);
+                render_pass.draw_indexed(0..item.primitive.num_indices, 0, 0..1);
+            } else {
+                render_pass.draw(0..item.primitive.num_vertices, 0..1);
             }
         }
+
+        // render_pass.set_bind_group(1, &self.uniform.uniform_bind_group, &[]);
+        // for (index, primitive) in primitives.iter().enumerate() {
+        //     render_pass.set_bind_group(0, &textures[index].diffuse_bind_group, &[]);
+        //     render_pass.set_vertex_buffer(0, primitive.get_buffer());
+        //     // Todo: Aqui mesmo:
+        //     if let Some(index_buffer) = primitive.get_index_buffer() {
+        //         render_pass.set_index_buffer(index_buffer, wgpu::IndexFormat::Uint16);
+        //         render_pass.draw_indexed(0..primitive.num_indices, 0, 0..1);
+        //     } else {
+        //         render_pass.draw(0..primitive.num_vertices, 0..1);
+        //     }
+        // }
     }
+}
+
+pub struct FrameData<'a> {
+    pub primitive: &'a Primitive,
+    pub texture: &'a Texture,
+    pub camera: Option<&'a Camera>,
 }
