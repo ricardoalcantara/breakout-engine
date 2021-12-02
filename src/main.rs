@@ -18,7 +18,6 @@ fn main() {
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new().build(&event_loop).unwrap();
 
-    // State::new uses async code, so we're going to wait for it to finish
     let mut state: State = pollster::block_on(State::new(&window));
 
     event_loop.run(move |event, _, control_flow| {
@@ -28,7 +27,6 @@ fn main() {
                 window_id,
             } if window_id == window.id() => {
                 if !state.input(event) {
-                    // UPDATED!
                     match event {
                         WindowEvent::CloseRequested
                         | WindowEvent::KeyboardInput {
