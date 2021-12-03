@@ -5,7 +5,10 @@ use state::State;
 use winit::{event::*, event_loop::ControlFlow};
 
 mod helper;
+mod shader;
+mod sprite_renderer;
 mod state;
+mod texture;
 
 fn main() {
     let event_loop = glutin::event_loop::EventLoop::new();

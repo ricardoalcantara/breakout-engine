@@ -1,4 +1,5 @@
 use crate::helper::{compile_shader, link_program, VERTEX_DATA};
+use crate::shader::Shader;
 use gl::types::*;
 use glutin::{ContextWrapper, PossiblyCurrent};
 use std::ffi::CStr;
@@ -27,9 +28,7 @@ impl State {
         let fs_src = std::fs::read_to_string("shaders/gl_shader.frag")
             .expect("Something went wrong reading fs_src");
 
-        let vs = compile_shader(&vs_src, gl::VERTEX_SHADER);
-        let fs = compile_shader(&fs_src, gl::FRAGMENT_SHADER);
-        let program = link_program(vs, fs);
+        let shader = Shader::compile(&vs_src, &fs_src, None);
 
         let mut vao = 0;
         let mut vbo = 0;
@@ -50,11 +49,11 @@ impl State {
             );
 
             // Use shader program
-            gl::UseProgram(program);
-            gl::BindFragDataLocation(program, 0, b"out_color\0".as_ptr() as *const _);
+            shader.use_program();
+            gl::BindFragDataLocation(shader.id, 0, b"out_color\0".as_ptr() as *const _);
 
             // Specify the layout of the vertex data
-            let pos_attr = gl::GetAttribLocation(program, b"position\0".as_ptr() as *const _);
+            let pos_attr = gl::GetAttribLocation(shader.id, b"position\0".as_ptr() as *const _);
             gl::EnableVertexAttribArray(pos_attr as GLuint);
             gl::VertexAttribPointer(
                 pos_attr as GLuint,
@@ -82,7 +81,7 @@ impl State {
             gl::ClearColor(0.5, 0.5, 0.5, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT);
             // Draw a triangle from the 3 vertices
-            // gl::DrawArrays(gl::TRIANGLES, 0, 3);
+            gl::DrawArrays(gl::TRIANGLES, 0, 3);
         }
         Ok(())
     }
