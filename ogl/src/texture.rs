@@ -8,8 +8,8 @@ pub struct Texture {
     width: u32,
     height: u32, // width and height of loaded image in pixels
     // texture Format
-    internal_format: u32, // format of texture object
-    image_format: u32,    // format of loaded image
+    pub internal_format: u32, // format of texture object
+    pub image_format: u32,    // format of loaded image
     // texture configuration
     wrap_s: u32,     // wrapping mode on S axis
     wrap_t: u32,     // wrapping mode on T axis
@@ -37,6 +37,7 @@ impl Texture {
             filter_max: gl::LINEAR,
         }
     }
+
     pub fn generate(&mut self, file: &str) {
         let diffuse_image = image::open(file).unwrap();
         let dimensions = diffuse_image.dimensions();
