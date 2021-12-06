@@ -1,5 +1,5 @@
-use crate::shader::Shader;
-use crate::texture::Texture;
+use crate::opengl::shader::Shader;
+use crate::opengl::texture::Texture;
 use gl::types::*;
 use std::mem;
 use std::ptr;

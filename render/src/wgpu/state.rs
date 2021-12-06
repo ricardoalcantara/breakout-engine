@@ -1,6 +1,6 @@
 use winit::{event::WindowEvent, window::Window};
 
-use crate::{
+use crate::wgpu::{
     camera::Camera,
     pipeline::{FrameData, Pipeline},
     texture::Texture,

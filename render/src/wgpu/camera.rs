@@ -1,4 +1,4 @@
-use crate::pipeline::CameraUniform;
+use crate::wgpu::pipeline::CameraUniform;
 
 #[rustfmt::skip]
 const OPENGL_TO_WGPU_MATRIX: glam::Mat4 = glam::const_mat4!(

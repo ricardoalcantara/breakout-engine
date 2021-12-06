@@ -243,6 +243,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2df960f5d869b2dd8532793fde43eb5427cceb126c929747a26823ab0eeb536"
 
 [[package]]
+name = "core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "pollster",
+ "render",
+ "winit",
+]
+
+[[package]]
 name = "core-foundation"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -827,9 +837,9 @@ checksum = "e2abad23fbc42b3700f2f279844dc832adb2b2eb069b2df918f455c4e18cc646"
 
 [[package]]
 name = "libc"
-version = "0.2.108"
+version = "0.2.109"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8521a1b57e76b1ec69af7599e75e38e7b7fad6610f037db8c79b127201b5d119"
+checksum = "f98a04dce437184842841303488f70d0188c5f51437d2a834dc097eafa909a01"
 
 [[package]]
 name = "libloading"
@@ -885,9 +895,9 @@ dependencies = [
 
 [[package]]
 name = "memoffset"
-version = "0.6.4"
+version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59accc507f1338036a0477ef61afdae33cde60840f4dfe481319ce3ad116ddf9"
+checksum = "5aa361d4faea93603064a027415f07bd8e1d5c88c9fbf68bf56a285428fd79ce"
 dependencies = [
  "autocfg",
 ]
@@ -1144,17 +1154,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ogl"
-version = "0.1.0"
-dependencies = [
- "gl",
- "glam",
- "glutin",
- "image",
- "winit",
-]
-
-[[package]]
 name = "once_cell"
 version = "1.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1246,9 +1245,9 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.32"
+version = "1.0.33"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba508cc11742c0dc5c1659771673afbab7a0efab23aa17e854cbab0837ed0b43"
+checksum = "fb37d2df5df740e582f28f8560cf425f52bb267d872fe58358eadb554909f07a"
 dependencies = [
  "unicode-xid",
 ]
@@ -1345,6 +1344,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f497285884f3fcff424ffc933e56d7cbca511def0c9831a7f9b5f6153e3cc89b"
 
 [[package]]
+name = "render"
+version = "0.1.0"
+dependencies = [
+ "bytemuck",
+ "gl",
+ "glam",
+ "glutin",
+ "image",
+ "shaderc",
+ "wgpu",
+ "winit",
+]
+
+[[package]]
 name = "renderdoc-sys"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1354,16 +1367,9 @@ checksum = "f1382d1f0a252c4bf97dc20d979a2fdd05b024acd7c2ed0f7595d7817666a157"
 name = "rust-wgpu-breakout"
 version = "0.1.0"
 dependencies = [
- "anyhow",
- "bytemuck",
+ "core",
  "env_logger",
- "glam",
- "image",
  "log",
- "pollster",
- "shaderc",
- "wgpu",
- "winit",
 ]
 
 [[package]]

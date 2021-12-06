@@ -1,6 +1,6 @@
 use wgpu::util::DeviceExt;
 
-use crate::{
+use crate::wgpu::{
     camera::Camera,
     texture::Texture,
     vertex::{Primitive, Vertex},

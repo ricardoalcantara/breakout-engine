@@ -1,7 +1,7 @@
-use crate::helper::{compile_shader, link_program, VERTEX_DATA};
-use crate::shader::Shader;
-use crate::sprite_renderer::SpriteRenderer;
-use crate::texture::Texture;
+use crate::opengl::shader::Shader;
+use crate::opengl::sprite_renderer::SpriteRenderer;
+use crate::opengl::texture::Texture;
+use crate::opengl::Win;
 use gl::types::*;
 use glutin::{ContextWrapper, PossiblyCurrent};
 use std::ffi::CStr;
@@ -17,8 +17,8 @@ pub struct State {
 
 impl State {
     // Creating some of the wgpu types requires async code
-    pub fn new(window: &ContextWrapper<PossiblyCurrent, glutin::window::Window>) -> Self {
-        gl::load_with(|symbol| window.get_proc_address(symbol));
+    pub fn new(win: &Win) -> Self {
+        gl::load_with(|symbol| win.window.get_proc_address(symbol));
 
         let version = unsafe {
             let data = CStr::from_ptr(gl::GetString(gl::VERSION) as *const _)
@@ -76,7 +76,7 @@ impl State {
                 Some(45.0),
                 Some(glam::vec3(0.0, 1.0, 0.0)),
                 &self.shader,
-            )
+            );
         }
         Ok(())
     }
