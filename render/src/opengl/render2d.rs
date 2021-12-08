@@ -1,24 +1,26 @@
 use crate::opengl::shader::Shader;
 use crate::opengl::sprite_renderer::SpriteRenderer;
-use crate::opengl::texture::Texture;
-use crate::opengl::Win;
+use crate::InternalWindow;
+
+use crate::Render2D;
+use crate::Texture;
 use gl::types::*;
+use glutin::window::Window;
 use glutin::{ContextWrapper, PossiblyCurrent};
 use std::ffi::CStr;
 use std::mem;
 use std::ptr;
 use winit::event::*;
 
-pub struct State {
-    shader: Shader,
-    texture: Texture,
+pub struct OpenGLRender2D {
+    sprite_shader: Shader,
     sprite_renderer: SpriteRenderer,
 }
 
-impl State {
-    // Creating some of the wgpu types requires async code
-    pub fn new(win: &Win) -> Self {
-        gl::load_with(|symbol| win.window.get_proc_address(symbol));
+impl OpenGLRender2D {
+    pub fn new(win: &InternalWindow) -> Self {
+        let window = &win.window;
+        gl::load_with(|symbol| window.get_proc_address(symbol));
 
         let version = unsafe {
             let data = CStr::from_ptr(gl::GetString(gl::VERSION) as *const _)
@@ -41,43 +43,50 @@ impl State {
         shader.set_integer(&"image", 0, false);
         shader.set_matrix4(&"projection", &projection, false);
 
-        let mut texture = Texture::new();
-        texture.internal_format = gl::RGBA;
-        texture.image_format = gl::RGBA;
-        texture.generate("assets/awesomeface.png");
         let sprite_renderer = SpriteRenderer::new();
 
         Self {
-            shader,
-            texture,
+            sprite_shader: shader,
             sprite_renderer,
         }
     }
+}
 
-    pub fn resize(&mut self, _new_size: winit::dpi::PhysicalSize<u32>) {}
+impl Render2D for OpenGLRender2D {
+    fn resize(&self, _new_size: winit::dpi::PhysicalSize<u32>) {
+        unsafe {
+            gl::Viewport(0, 0, _new_size.width as _, _new_size.height as _);
+        }
+    }
 
-    pub fn input(&mut self, _event: &WindowEvent) -> bool {
+    fn input(&mut self, _event: &WindowEvent) -> bool {
         false
     }
 
-    pub fn update(&mut self) {}
+    fn update(&mut self) {}
 
-    pub fn render(&mut self) -> Result<(), ()> {
+    fn clean_color(&self) {
         unsafe {
-            // Clear the screen to black
             gl::ClearColor(0.0, 0.0, 0.0, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT);
-            // Draw a triangle from the 3 vertices
-
-            self.sprite_renderer.draw_sprite(
-                &self.texture,
-                glam::vec2(200.0, 200.0),
-                Some(glam::vec2(300.0, 400.0)),
-                Some(45.0),
-                Some(glam::vec3(0.0, 1.0, 0.0)),
-                &self.shader,
-            );
         }
-        Ok(())
+    }
+
+    fn draw_texture(
+        &mut self,
+        texture: &dyn Texture,
+        position: glam::Vec2,
+        size: glam::Vec2,
+        rotate: f32,
+        color: glam::Vec3,
+    ) {
+        self.sprite_renderer.draw_sprite(
+            texture,
+            position,
+            size,
+            rotate,
+            color,
+            &self.sprite_shader,
+        );
     }
 }

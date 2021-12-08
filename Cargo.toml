@@ -15,4 +15,5 @@ members = [
 env_logger = "0.9"
 log = "0.4"
 core = { path = "./core" }
+render = { path = "./render" }
 

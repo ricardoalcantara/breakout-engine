@@ -9,4 +9,6 @@ edition = "2021"
 anyhow = "1.0"
 pollster = "0.2"
 winit = "0.26.0"
+hecs = "0.7.1"
+glam = "0.20.1"
 render = { path = "../render", default-features = false, features = ["opengl"] }

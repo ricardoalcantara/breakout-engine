@@ -1,10 +1,10 @@
-use render::Win;
+use render::InternalWindow;
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
 
-use crate::state::State;
+use crate::state::{GameState, Scene};
 
 pub struct EngineBuilder {}
 
@@ -22,23 +22,26 @@ impl EngineBuilder {
 }
 
 pub struct Engine {
-    window: Win,
+    window: InternalWindow,
     event_loop: EventLoop<()>,
 }
 
 impl Engine {
     pub fn run<S>(self, state: S)
     where
-        S: State,
+        S: Scene + 'static,
     {
-        let mut state = render::opengl::state::State::new(&self.window);
+        let window = &self.window;
+        let render = render::opengl::render2d::OpenGLRender2D::new(window);
+        let mut game_state = GameState::new(state, render);
+
         self.event_loop.run(move |event, _, control_flow| {
             match event {
                 Event::WindowEvent {
                     ref event,
                     window_id,
                 } if window_id == self.window.window().id() => {
-                    if !state.input(event) {
+                    if !game_state.input(event) {
                         match event {
                             WindowEvent::CloseRequested
                             | WindowEvent::KeyboardInput {
@@ -51,22 +54,20 @@ impl Engine {
                                 ..
                             } => *control_flow = ControlFlow::Exit,
                             WindowEvent::Resized(physical_size) => {
-                                state.resize(*physical_size);
+                                game_state.resize(*physical_size);
                             }
                             WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
                                 // new_inner_size is &&mut so w have to dereference it twice
-                                state.resize(**new_inner_size);
+                                game_state.resize(**new_inner_size);
                             }
                             _ => {}
                         }
                     }
                 }
                 Event::RedrawRequested(_) => {
-                    state.update();
-                    match state.render() {
-                        Ok(_) => {
-                            self.window.swap_buffers();
-                        }
+                    game_state.update().unwrap();
+                    match game_state.render(&self.window) {
+                        Ok(_) => {}
                         // Todo: Review WGPU error
                         // // Reconfigure the surface if lost
                         // Err(wgpu::SurfaceError::Lost) => state.resize(state.size),

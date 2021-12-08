@@ -1,4 +1,5 @@
-use core::{engine::EngineBuilder, state::State};
+use core::{engine::EngineBuilder, state::Scene};
+
 struct MainState {}
 
 impl MainState {
@@ -6,7 +7,15 @@ impl MainState {
         Self {}
     }
 }
-impl State for MainState {}
+impl Scene for MainState {
+    fn init(&mut self, _context: &mut core::state::Context) -> Result<(), ()> {
+        let texture = _context.load_sprite("assets/awesomeface.png");
+        let world = &mut _context.get_world();
+        world.spawn(("sprite", 1));
+
+        Ok(())
+    }
+}
 
 fn main() {
     env_logger::init();

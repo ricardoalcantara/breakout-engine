@@ -1,5 +1,5 @@
 use crate::opengl::shader::Shader;
-use crate::opengl::texture::Texture;
+use crate::Texture;
 use gl::types::*;
 use std::mem;
 use std::ptr;
@@ -55,18 +55,14 @@ impl SpriteRenderer {
 
     pub fn draw_sprite(
         &self,
-        texture: &Texture,
+        texture: &dyn Texture,
         position: glam::Vec2,
-        size: Option<glam::Vec2>,
-        rotate: Option<f32>,
-        color: Option<glam::Vec3>,
+        size: glam::Vec2,
+        rotate: f32,
+        color: glam::Vec3,
         shader: &Shader,
     ) {
         shader.use_program();
-
-        let size = size.unwrap_or(glam::vec2(10.0, 10.0));
-        let rotate = rotate.unwrap_or(0.0);
-        let color = color.unwrap_or(glam::vec3(1.0, 1.0, 1.0));
 
         let mut model = glam::Mat4::IDENTITY;
         model *= glam::Mat4::from_translation(glam::vec3(position.x, position.y, 0.0));

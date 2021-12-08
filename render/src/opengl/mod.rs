@@ -1,13 +1,13 @@
 use glutin::{ContextWrapper, PossiblyCurrent};
 
-use crate::Win;
+use crate::InternalWindow;
 
-pub mod shader;
-pub mod sprite_renderer;
-pub mod state;
+pub mod render2d;
+mod shader;
+mod sprite_renderer;
 pub mod texture;
 
-pub fn build_window() -> (Win, winit::event_loop::EventLoop<()>) {
+pub fn build_window() -> (InternalWindow, winit::event_loop::EventLoop<()>) {
     let event_loop = glutin::event_loop::EventLoop::new();
     let window_builder = glutin::window::WindowBuilder::new();
     let window = glutin::ContextBuilder::new()
@@ -17,5 +17,5 @@ pub fn build_window() -> (Win, winit::event_loop::EventLoop<()>) {
     let window: ContextWrapper<PossiblyCurrent, glutin::window::Window> =
         unsafe { window.make_current() }.unwrap();
 
-    (Win { window }, event_loop)
+    (InternalWindow { window }, event_loop)
 }

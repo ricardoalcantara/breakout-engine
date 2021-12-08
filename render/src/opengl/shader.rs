@@ -86,7 +86,7 @@ impl Shader {
 
     // pub fn set_float    (const char *name, float value, bool useShader = false);
     pub fn set_integer(&self, name: &str, value: i32, use_shader: bool) {
-        if (use_shader) {
+        if use_shader {
             self.use_program();
         }
 
@@ -100,7 +100,7 @@ impl Shader {
     // pub fn set_vector2f (const char *name, const glm::vec2 &value, bool useShader = false);
     // pub fn set_vector3f (const char *name, float x, float y, float z, bool useShader = false);
     pub fn set_vector3f(&self, name: &str, value: &glam::Vec3, use_shader: bool) {
-        if (use_shader) {
+        if use_shader {
             self.use_program();
         }
 
@@ -115,7 +115,7 @@ impl Shader {
 
     // pub fn set_matrix4  (&self, const char *name, const glm::mat4 &matrix, use_shader: bool) {
     pub fn set_matrix4(&self, name: &str, matrix: &glam::Mat4, use_shader: bool) {
-        if (use_shader) {
+        if use_shader {
             self.use_program();
         }
 
