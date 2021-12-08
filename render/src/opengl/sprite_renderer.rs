@@ -67,9 +67,9 @@ impl SpriteRenderer {
         let mut model = glam::Mat4::IDENTITY;
         model *= glam::Mat4::from_translation(glam::vec3(position.x, position.y, 0.0));
 
-        model *= glam::Mat4::from_translation(glam::vec3(0.5 * size.x, 0.5 * size.y, 0.0));
+        // model *= glam::Mat4::from_translation(glam::vec3(0.5 * size.x, 0.5 * size.y, 0.0));
         model *= glam::Mat4::from_rotation_z(rotate.to_radians());
-        model *= glam::Mat4::from_translation(glam::vec3(-0.5 * size.x, -0.5 * size.y, 0.0));
+        // model *= glam::Mat4::from_translation(glam::vec3(-0.5 * size.x, -0.5 * size.y, 0.0));
 
         model *= glam::Mat4::from_scale(glam::vec3(size.x, size.y, 1.0));
 

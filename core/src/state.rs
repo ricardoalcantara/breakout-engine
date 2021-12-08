@@ -1,43 +1,13 @@
-use std::{
-    cell::{RefCell, RefMut},
-    path::Path,
-    rc::Rc,
+use crate::{
+    asset_manager::AssetManager, components::Transform2D, game_context::GameContext, Events,
 };
-
-use hecs::World;
-use render::{texture::Texture, InternalWindow, Render2D};
-
-use crate::Events;
-
-pub struct Context {
-    world: World,
-    texture: Option<Box<dyn Texture>>,
-}
-
-impl Context {
-    fn new() -> Self {
-        Self {
-            world: World::new(),
-            texture: None,
-        }
-    }
-
-    pub fn get_world(&mut self) -> &mut World {
-        &mut self.world
-    }
-
-    pub fn load_sprite(&mut self, path: &str) {
-        let mut texture = render::opengl::texture::OpenGLTexture::new();
-        texture.generate(path);
-
-        self.texture = Some(Box::new(texture));
-    }
-}
+use render::{InternalWindow, Render2D};
 
 pub struct GameState {
     scenes: Vec<Box<dyn Scene>>,
     renderer: Box<dyn Render2D>,
-    context: Context,
+    context: GameContext,
+    asset_manager: AssetManager,
 }
 
 impl GameState {
@@ -46,14 +16,17 @@ impl GameState {
         S: Scene + 'static,
         R: Render2D + 'static,
     {
-        let mut context = Context::new();
+        let mut context = GameContext::new();
+        let mut asset_manager = AssetManager::new();
+
         let mut state = state;
-        state.init(&mut context).unwrap();
+        state.init(&mut context, &mut asset_manager).unwrap();
 
         Self {
             scenes: vec![Box::new(state)],
             renderer: Box::new(renderer),
             context,
+            asset_manager,
         }
     }
 
@@ -87,17 +60,27 @@ impl GameState {
     }
 
     pub fn render(&mut self, window: &InternalWindow) -> Result<(), ()> {
-        let texture = { self.context.texture.as_ref().unwrap().as_ref().clone() };
+        let texture = self.asset_manager.texture.as_ref().unwrap().as_ref();
 
-        // let world = self.context.get_world();
+        let world = self.context.get_world();
 
-        self.renderer.draw_texture(
-            texture,
-            glam::vec2(200.0, 200.0),
-            glam::vec2(300.0, 400.0),
-            45.0,
-            glam::vec3(0.0, 1.0, 0.0),
-        );
+        for (_id, transform) in world.query_mut::<&Transform2D>() {
+            self.renderer.draw_texture(
+                texture,
+                transform.position,
+                transform.scale,
+                transform.rotate,
+                glam::vec3(0.0, 1.0, 0.0),
+            );
+        }
+
+        // self.renderer.draw_texture(
+        //     texture,
+        //     glam::vec2(200.0, 200.0),
+        //     glam::vec2(300.0, 400.0),
+        //     45.0,
+        //     glam::vec3(0.0, 1.0, 0.0),
+        // );
 
         // Todo: Encapsulate ir
         window.swap_buffers();
@@ -116,15 +99,19 @@ pub enum Transition {
 pub trait Scene {
     fn resize(&mut self) {}
 
-    fn init(&mut self, _context: &mut Context) -> Result<(), ()> {
+    fn init(
+        &mut self,
+        _context: &mut GameContext,
+        _asset_manager: &mut AssetManager,
+    ) -> Result<(), ()> {
         Ok(())
     }
 
-    fn input(&mut self, _context: &Context, _events: Events) -> Result<Transition, ()> {
+    fn input(&mut self, _context: &GameContext, _events: Events) -> Result<Transition, ()> {
         Ok(Transition::None)
     }
 
-    fn update(&mut self, _context: &Context, _dt: f32) -> Result<Transition, ()> {
+    fn update(&mut self, _context: &GameContext, _dt: f32) -> Result<Transition, ()> {
         Ok(Transition::None)
     }
 }

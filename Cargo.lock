@@ -1381,6 +1381,7 @@ version = "0.1.0"
 dependencies = [
  "core",
  "env_logger",
+ "glam",
  "log",
  "render",
 ]
