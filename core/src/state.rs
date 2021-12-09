@@ -60,7 +60,7 @@ impl GameState {
     }
 
     pub fn render(&mut self, window: &InternalWindow) -> Result<(), ()> {
-        let texture = self.asset_manager.texture.as_ref().unwrap().as_ref();
+        let texture = self.asset_manager.texture.as_ref().unwrap();
 
         let world = self.context.get_world();
 

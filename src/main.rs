@@ -1,3 +1,6 @@
+extern crate log;
+extern crate pretty_env_logger;
+
 use core::{components::Transform2D, AssetManager, EngineBuilder, GameContext, Scene};
 
 struct MainState {}
@@ -46,7 +49,7 @@ impl Scene for MainState {
 }
 
 fn main() {
-    env_logger::init();
+    pretty_env_logger::init();
 
     EngineBuilder::new(String::from("Hello Engine"), 800, 600)
         .build()

@@ -35,7 +35,7 @@ pub trait Render2D {
     fn clean_color(&self) {}
     fn draw_texture(
         &mut self,
-        _texture: &dyn Texture,
+        _texture: &Texture,
         _position: glam::Vec2,
         _size: glam::Vec2,
         _rotate: f32,

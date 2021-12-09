@@ -4,14 +4,9 @@ use crate::InternalWindow;
 
 use crate::Render2D;
 use crate::Texture;
-use gl::types::*;
-use glutin::window::Window;
-use glutin::{ContextWrapper, PossiblyCurrent};
+use log::info;
 use std::ffi::CStr;
-use std::mem;
-use std::ptr;
 use winit::event::*;
-
 pub struct OpenGLRender2D {
     sprite_shader: Shader,
     sprite_renderer: SpriteRenderer,
@@ -29,7 +24,7 @@ impl OpenGLRender2D {
             String::from_utf8(data).unwrap()
         };
 
-        println!("OpenGL version {}", version);
+        info!("OpenGL version {}", version);
 
         let vs_src = std::fs::read_to_string("shaders/gl_shader.vert")
             .expect("Something went wrong reading vs_src");
@@ -74,7 +69,7 @@ impl Render2D for OpenGLRender2D {
 
     fn draw_texture(
         &mut self,
-        texture: &dyn Texture,
+        texture: &Texture,
         position: glam::Vec2,
         size: glam::Vec2,
         rotate: f32,

@@ -1,10 +1,10 @@
+use crate::state::{GameState, Scene};
+use log::error;
 use render::InternalWindow;
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
-
-use crate::state::{GameState, Scene};
 
 pub struct EngineBuilder {}
 
@@ -74,7 +74,7 @@ impl Engine {
                         // // The system is out of memory, we should probably quit
                         // Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
                         // All other errors (Outdated, Timeout) should be resolved by the next frame
-                        Err(e) => eprintln!("{:?}", e),
+                        Err(e) => error!("{:?}", e),
                     }
                 }
                 Event::RedrawEventsCleared => {

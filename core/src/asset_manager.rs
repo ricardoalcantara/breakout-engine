@@ -1,7 +1,7 @@
-use render::texture::Texture;
+use render::texture::{Texture, TextureType};
 
 pub struct AssetManager {
-    pub(crate) texture: Option<Box<dyn Texture>>,
+    pub(crate) texture: Option<Texture>,
 }
 
 impl AssetManager {
@@ -10,9 +10,12 @@ impl AssetManager {
     }
 
     pub fn load_sprite(&mut self, path: &str) {
-        let mut texture = render::opengl::texture::OpenGLTexture::new();
-        texture.generate(path);
+        let mut opengl_texture = render::opengl::texture::OpenGLTexture::new();
+        opengl_texture.generate(path);
+        let texture = Texture {
+            texture_type: TextureType::OpenGL(opengl_texture),
+        };
 
-        self.texture = Some(Box::new(texture));
+        self.texture = Some(texture);
     }
 }

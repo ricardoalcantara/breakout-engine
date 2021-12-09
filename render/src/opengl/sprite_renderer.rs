@@ -1,6 +1,8 @@
 use crate::opengl::shader::Shader;
+use crate::texture::TextureType;
 use crate::Texture;
 use gl::types::*;
+use log::warn;
 use std::mem;
 use std::ptr;
 
@@ -55,7 +57,7 @@ impl SpriteRenderer {
 
     pub fn draw_sprite(
         &self,
-        texture: &dyn Texture,
+        texture: &Texture,
         position: glam::Vec2,
         size: glam::Vec2,
         rotate: f32,
@@ -76,8 +78,12 @@ impl SpriteRenderer {
         shader.set_matrix4(&"model", &model, false);
         shader.set_vector3f(&"spriteColor", &color, false);
 
-        unsafe { gl::ActiveTexture(gl::TEXTURE0) };
-        texture.bind();
+        if let TextureType::OpenGL(texture) = &texture.texture_type {
+            unsafe { gl::ActiveTexture(gl::TEXTURE0) };
+            texture.bind();
+        } else {
+            warn!("Where is my desired OpenGL Texture");
+        }
 
         unsafe {
             gl::BindVertexArray(self.quad_vao);

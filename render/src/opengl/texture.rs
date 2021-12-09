@@ -1,8 +1,6 @@
 use image::GenericImageView;
 use std::ffi::c_void;
 
-use crate::Texture;
-
 pub struct OpenGLTexture {
     // holds the ID of the texture object, used for all texture operations to reference to this particlar texture
     id: u32,
@@ -17,14 +15,6 @@ pub struct OpenGLTexture {
     wrap_t: u32,     // wrapping mode on T axis
     filter_min: u32, // filtering mode if texture pixels < screen pixels
     filter_max: u32, // filtering mode if texture pixels > screen pixels
-}
-
-impl Texture for OpenGLTexture {
-    fn bind(&self) {
-        unsafe {
-            gl::BindTexture(gl::TEXTURE_2D, self.id);
-        };
-    }
 }
 
 impl OpenGLTexture {
@@ -86,6 +76,12 @@ impl OpenGLTexture {
             );
             // unbind texture
             gl::BindTexture(gl::TEXTURE_2D, 0);
+        };
+    }
+
+    pub(crate) fn bind(&self) {
+        unsafe {
+            gl::BindTexture(gl::TEXTURE_2D, self.id);
         };
     }
 }
