@@ -1,9 +1,12 @@
 use crate::opengl::sprite_renderer::SpriteRenderer;
+use crate::texture::TextureType;
 use crate::Texture;
 use crate::{opengl::shader::Shader, renderer::Renderer2D};
 use glutin::{ContextWrapper, PossiblyCurrent};
 use log::info;
 use std::ffi::CStr;
+
+use super::texture::OpenGLTexture;
 
 pub struct OpenGLRender2D {
     sprite_shader: Shader,
@@ -48,6 +51,15 @@ impl Renderer2D for OpenGLRender2D {
     fn resize(&self, _new_size: winit::dpi::PhysicalSize<u32>) {
         unsafe {
             gl::Viewport(0, 0, _new_size.width as _, _new_size.height as _);
+        }
+    }
+
+    fn generate_texture(&self, img: image::DynamicImage) -> Texture {
+        let mut opengl_texture = OpenGLTexture::new();
+        opengl_texture.generate(img);
+
+        Texture {
+            texture_type: TextureType::OpenGL(opengl_texture),
         }
     }
 

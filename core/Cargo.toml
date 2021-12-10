@@ -12,4 +12,5 @@ pollster = "0.2"
 winit = "0.26.0"
 hecs = "0.7.1"
 glam = "0.20.1"
+image = "0.23"
 render = { path = "../render", default-features = false, features = ["opengl"] }

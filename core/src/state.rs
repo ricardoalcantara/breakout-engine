@@ -1,7 +1,10 @@
 use render::{renderer::Renderer2D, window::MyWindow};
 
 use crate::{
-    asset_manager::AssetManager, components::Transform2D, game_context::GameContext, Events,
+    asset_manager::AssetManager,
+    components::{Sprite, Transform2D},
+    game_context::GameContext,
+    Events, TextureId,
 };
 
 pub struct GameState {
@@ -22,6 +25,11 @@ impl GameState {
 
         let mut state = state;
         state.init(&mut context, &mut asset_manager).unwrap();
+
+        for (id, preloaded_texture) in asset_manager.get_preload_textures() {
+            let texture = renderer.generate_texture(preloaded_texture);
+            asset_manager.add_texture(id, texture);
+        }
 
         Self {
             scenes: vec![Box::new(state)],
@@ -61,17 +69,16 @@ impl GameState {
     }
 
     pub fn render(&mut self, window: &MyWindow) -> Result<(), ()> {
-        let texture = self.asset_manager.texture.as_ref().unwrap();
-
         let world = self.context.get_world();
 
-        for (_id, transform) in world.query_mut::<&Transform2D>() {
+        for (_id, (sprite, transform)) in world.query_mut::<(&Sprite, &Transform2D)>() {
+            let texture = self.asset_manager.get_texture(&sprite.texture_id);
             self.renderer.draw_texture(
                 texture,
                 transform.position,
                 transform.scale,
                 transform.rotate,
-                glam::vec3(0.0, 1.0, 0.0),
+                glam::vec3(1.0, 1.0, 1.0),
             );
         }
 

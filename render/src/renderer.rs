@@ -1,3 +1,5 @@
+use image::DynamicImage;
+
 use crate::texture::Texture;
 
 pub enum RenderAPI {
@@ -7,7 +9,7 @@ pub enum RenderAPI {
 
 pub trait Renderer2D {
     fn resize(&self, _new_size: winit::dpi::PhysicalSize<u32>) {}
-
+    fn generate_texture(&self, img: DynamicImage) -> Texture;
     fn clean_color(&self) {}
     fn draw_texture(
         &mut self,

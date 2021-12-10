@@ -38,8 +38,7 @@ impl OpenGLTexture {
         }
     }
 
-    pub fn generate(&mut self, file: &str) {
-        let diffuse_image = image::open(file).unwrap();
+    pub fn generate(&mut self, diffuse_image: image::DynamicImage) {
         let dimensions = diffuse_image.dimensions();
 
         self.width = dimensions.0;
