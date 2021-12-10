@@ -1,5 +1,7 @@
 use render::texture::{Texture, TextureType};
 
+pub struct TextureId(i32);
+
 pub struct AssetManager {
     pub(crate) texture: Option<Texture>,
 }

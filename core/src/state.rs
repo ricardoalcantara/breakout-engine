@@ -1,11 +1,12 @@
+use render::{renderer::Renderer2D, window::MyWindow};
+
 use crate::{
     asset_manager::AssetManager, components::Transform2D, game_context::GameContext, Events,
 };
-use render::{InternalWindow, Render2D};
 
 pub struct GameState {
     scenes: Vec<Box<dyn Scene>>,
-    renderer: Box<dyn Render2D>,
+    renderer: Box<dyn Renderer2D>,
     context: GameContext,
     asset_manager: AssetManager,
 }
@@ -14,7 +15,7 @@ impl GameState {
     pub fn new<S, R>(state: S, renderer: R) -> Self
     where
         S: Scene + 'static,
-        R: Render2D + 'static,
+        R: Renderer2D + 'static,
     {
         let mut context = GameContext::new();
         let mut asset_manager = AssetManager::new();
@@ -59,7 +60,7 @@ impl GameState {
         Ok(())
     }
 
-    pub fn render(&mut self, window: &InternalWindow) -> Result<(), ()> {
+    pub fn render(&mut self, window: &MyWindow) -> Result<(), ()> {
         let texture = self.asset_manager.texture.as_ref().unwrap();
 
         let world = self.context.get_world();
@@ -73,14 +74,6 @@ impl GameState {
                 glam::vec3(0.0, 1.0, 0.0),
             );
         }
-
-        // self.renderer.draw_texture(
-        //     texture,
-        //     glam::vec2(200.0, 200.0),
-        //     glam::vec2(300.0, 400.0),
-        //     45.0,
-        //     glam::vec3(0.0, 1.0, 0.0),
-        // );
 
         // Todo: Encapsulate ir
         window.swap_buffers();

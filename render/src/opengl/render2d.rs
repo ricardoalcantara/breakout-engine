@@ -1,20 +1,17 @@
-use crate::opengl::shader::Shader;
 use crate::opengl::sprite_renderer::SpriteRenderer;
-use crate::InternalWindow;
-
-use crate::Render2D;
 use crate::Texture;
+use crate::{opengl::shader::Shader, renderer::Renderer2D};
+use glutin::{ContextWrapper, PossiblyCurrent};
 use log::info;
 use std::ffi::CStr;
-use winit::event::*;
+
 pub struct OpenGLRender2D {
     sprite_shader: Shader,
     sprite_renderer: SpriteRenderer,
 }
 
 impl OpenGLRender2D {
-    pub fn new(win: &InternalWindow) -> Self {
-        let window = &win.window;
+    pub fn new(window: &ContextWrapper<PossiblyCurrent, glutin::window::Window>) -> Self {
         gl::load_with(|symbol| window.get_proc_address(symbol));
 
         let version = unsafe {
@@ -47,7 +44,7 @@ impl OpenGLRender2D {
     }
 }
 
-impl Render2D for OpenGLRender2D {
+impl Renderer2D for OpenGLRender2D {
     fn resize(&self, _new_size: winit::dpi::PhysicalSize<u32>) {
         unsafe {
             gl::Viewport(0, 0, _new_size.width as _, _new_size.height as _);

@@ -1,41 +1,68 @@
 use crate::state::{GameState, Scene};
 use log::error;
-use render::InternalWindow;
+use render::window::MyWindow;
 use winit::{
+    dpi::{LogicalSize, PhysicalSize, Size},
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
 
-pub struct EngineBuilder {}
+pub struct EngineBuilder {
+    title: String,
+    width: i32,
+    height: i32,
+}
+
+impl Default for EngineBuilder {
+    fn default() -> Self {
+        Self {
+            title: String::from("My Engine"),
+            width: 800,
+            height: 600,
+        }
+    }
+}
 
 impl EngineBuilder {
-    pub fn new(title: String, width: i32, height: i32) -> EngineBuilder {
-        EngineBuilder {}
+    pub fn new() -> EngineBuilder {
+        EngineBuilder::default()
     }
 
-    pub fn build(&self) -> Result<Engine, ()> {
-        let (window, event_loop) = render::build_window(render::RenderAPI::OpenGL);
+    pub fn with_title(mut self, title: String) -> Self {
+        self.title = title;
+        self
+    }
 
-        // let mut state: State = State::new(&window);
-        Ok(Engine { window, event_loop })
+    pub fn with_size(mut self, width: i32, height: i32) -> Self {
+        self.width = width;
+        self.height = height;
+        self
+    }
+
+    pub fn build(self) -> Result<Engine, ()> {
+        let window_builder = winit::window::WindowBuilder::new()
+            .with_title(self.title)
+            .with_inner_size(LogicalSize::new(self.width, self.height));
+        let my_window = render::build_window(window_builder, render::renderer::RenderAPI::OpenGL);
+        Ok(Engine { window: my_window })
     }
 }
 
 pub struct Engine {
-    window: InternalWindow,
-    event_loop: EventLoop<()>,
+    window: MyWindow,
 }
 
 impl Engine {
-    pub fn run<S>(self, state: S)
+    pub fn run<S>(mut self, state: S)
     where
         S: Scene + 'static,
     {
-        let window = &self.window;
-        let render = render::opengl::render2d::OpenGLRender2D::new(window);
+        let render = self.window.create_renderer_2d();
+        let event_loop = self.window.event_loop.take().unwrap();
+
         let mut game_state = GameState::new(state, render);
 
-        self.event_loop.run(move |event, _, control_flow| {
+        event_loop.run(move |event, _, control_flow| {
             match event {
                 Event::WindowEvent {
                     ref event,

@@ -51,7 +51,9 @@ impl Scene for MainState {
 fn main() {
     pretty_env_logger::init();
 
-    EngineBuilder::new(String::from("Hello Engine"), 800, 600)
+    EngineBuilder::new()
+        .with_title(String::from("Hello Engine"))
+        .with_size(800, 600)
         .build()
         .unwrap()
         .run(MainState::new());
