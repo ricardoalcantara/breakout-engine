@@ -54,12 +54,6 @@ impl Render2D for OpenGLRender2D {
         }
     }
 
-    fn input(&mut self, _event: &WindowEvent) -> bool {
-        false
-    }
-
-    fn update(&mut self) {}
-
     fn clean_color(&self) {
         unsafe {
             gl::ClearColor(0.0, 0.0, 0.0, 1.0);

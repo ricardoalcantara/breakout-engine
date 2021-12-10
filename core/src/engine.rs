@@ -14,7 +14,7 @@ impl EngineBuilder {
     }
 
     pub fn build(&self) -> Result<Engine, ()> {
-        let (window, event_loop) = render::build_window();
+        let (window, event_loop) = render::build_window(render::RenderAPI::OpenGL);
 
         // let mut state: State = State::new(&window);
         Ok(Engine { window, event_loop })

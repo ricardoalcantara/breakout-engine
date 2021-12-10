@@ -97,8 +97,6 @@ pub enum Transition {
 }
 
 pub trait Scene {
-    fn resize(&mut self) {}
-
     fn init(
         &mut self,
         _context: &mut GameContext,
