@@ -9,8 +9,8 @@ use winit::{
 
 pub struct EngineBuilder {
     title: String,
-    width: i32,
-    height: i32,
+    width: u32,
+    height: u32,
 }
 
 impl Default for EngineBuilder {
@@ -33,7 +33,7 @@ impl EngineBuilder {
         self
     }
 
-    pub fn with_size(mut self, width: i32, height: i32) -> Self {
+    pub fn with_size(mut self, width: u32, height: u32) -> Self {
         self.width = width;
         self.height = height;
         self
