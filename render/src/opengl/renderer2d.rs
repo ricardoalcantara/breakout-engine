@@ -8,12 +8,12 @@ use std::ffi::CStr;
 
 use super::texture::OpenGLTexture;
 
-pub struct OpenGLRender2D {
+pub struct OpenGLRenderer2D {
     sprite_shader: Shader,
     sprite_renderer: SpriteRenderer,
 }
 
-impl OpenGLRender2D {
+impl OpenGLRenderer2D {
     pub fn new(window: &ContextWrapper<PossiblyCurrent, glutin::window::Window>) -> Self {
         gl::load_with(|symbol| window.get_proc_address(symbol));
 
@@ -47,7 +47,7 @@ impl OpenGLRender2D {
     }
 }
 
-impl Renderer2D for OpenGLRender2D {
+impl Renderer2D for OpenGLRenderer2D {
     fn resize(&self, _new_size: winit::dpi::PhysicalSize<u32>) {
         unsafe {
             gl::Viewport(0, 0, _new_size.width as _, _new_size.height as _);

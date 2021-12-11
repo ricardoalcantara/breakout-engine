@@ -3,8 +3,9 @@ extern crate pretty_env_logger;
 
 use core::{
     components::{Sprite, Transform2D},
-    AssetManager, EngineBuilder, GameContext, Scene,
+    AssetManager, EngineBuilder, GameContext, Input, KeyCode, Scene,
 };
+use log::info;
 
 struct MainState {}
 
@@ -55,6 +56,30 @@ impl Scene for MainState {
         ));
 
         Ok(())
+    }
+
+    fn input(
+        &mut self,
+        _event: core::Event,
+        _context: &mut GameContext,
+    ) -> Result<core::InputHandled, ()> {
+        Ok(core::InputHandled::None)
+    }
+
+    fn update(
+        &mut self,
+        _input: &mut Input,
+        _context: &mut GameContext,
+        _dt: f32,
+    ) -> Result<core::Transition, ()> {
+        if _input.is_key_pressed(KeyCode::Space) {
+            info!("Space Pressed")
+        }
+
+        if _input.is_key_released(KeyCode::Space) {
+            info!("Space Released")
+        }
+        Ok(core::Transition::None)
     }
 }
 

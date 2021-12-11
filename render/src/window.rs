@@ -1,6 +1,6 @@
 #[cfg(feature = "opengl")]
 use crate::{
-    opengl::{self, render2d::OpenGLRender2D},
+    opengl::{self, renderer2d::OpenGLRenderer2D},
     renderer::Renderer2D,
     RenderAPI,
 };
@@ -43,7 +43,7 @@ impl MyWindow {
         match self.render_api {
             RenderAPI::OpenGL => {
                 let WindowProvider::Glutin(window) = &self.window_provider;
-                OpenGLRender2D::new(window)
+                OpenGLRenderer2D::new(window)
             }
             #[cfg(feature = "default")]
             RenderAPI::WGPU => todo!(),

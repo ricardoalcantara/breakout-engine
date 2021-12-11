@@ -1,10 +1,10 @@
-use crate::state::{GameState, Scene};
-use log::error;
+use crate::{game_state::GameState, Scene};
+use log::{error, info};
 use render::window::MyWindow;
 use winit::{
-    dpi::{LogicalSize, PhysicalSize, Size},
+    dpi::{LogicalSize, PhysicalSize},
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
+    event_loop::ControlFlow,
 };
 
 pub struct EngineBuilder {
@@ -42,7 +42,7 @@ impl EngineBuilder {
     pub fn build(self) -> Result<Engine, ()> {
         let window_builder = winit::window::WindowBuilder::new()
             .with_title(self.title)
-            .with_inner_size(LogicalSize::new(self.width, self.height));
+            .with_inner_size(PhysicalSize::new(self.width, self.height));
         let my_window = render::build_window(window_builder, render::renderer::RenderAPI::OpenGL);
         Ok(Engine { window: my_window })
     }
@@ -59,8 +59,7 @@ impl Engine {
     {
         let render = self.window.create_renderer_2d();
         let event_loop = self.window.event_loop.take().unwrap();
-
-        let mut game_state = GameState::new(state, render);
+        let mut game_state = GameState::new(state, render, &self.window);
 
         event_loop.run(move |event, _, control_flow| {
             match event {
@@ -68,31 +67,42 @@ impl Engine {
                     ref event,
                     window_id,
                 } if window_id == self.window.window().id() => {
-                    if !game_state.input(event) {
-                        match event {
-                            WindowEvent::CloseRequested
-                            | WindowEvent::KeyboardInput {
-                                input:
-                                    KeyboardInput {
-                                        state: ElementState::Pressed,
-                                        virtual_keycode: Some(VirtualKeyCode::Escape),
-                                        ..
-                                    },
-                                ..
-                            } => *control_flow = ControlFlow::Exit,
-                            WindowEvent::Resized(physical_size) => {
-                                game_state.resize(*physical_size);
-                            }
-                            WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                                // new_inner_size is &&mut so w have to dereference it twice
-                                game_state.resize(**new_inner_size);
-                            }
-                            _ => {}
+                    match event {
+                        WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+                        WindowEvent::Resized(physical_size) => {
+                            game_state.resize(*physical_size);
                         }
+                        WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                            // new_inner_size is &&mut so w have to dereference it twice
+                            game_state.resize(**new_inner_size);
+                        }
+                        _ => match game_state.input(event) {
+                            Ok(handled) => {
+                                if !handled {
+                                    if let WindowEvent::KeyboardInput {
+                                        input:
+                                            KeyboardInput {
+                                                state: ElementState::Pressed,
+                                                virtual_keycode: Some(VirtualKeyCode::Escape),
+                                                ..
+                                            },
+                                        ..
+                                    } = event
+                                    {
+                                        *control_flow = ControlFlow::Exit
+                                    }
+                                }
+                            }
+                            Err(e) => error!("Input Broken: {:?}", e),
+                        },
                     }
                 }
                 Event::RedrawRequested(_) => {
-                    game_state.update().unwrap();
+                    if let Ok(updated) = game_state.update() {
+                        if !updated {
+                            *control_flow = ControlFlow::Exit
+                        }
+                    }
                     match game_state.render(&self.window) {
                         Ok(_) => {}
                         // Todo: Review WGPU error
@@ -101,7 +111,7 @@ impl Engine {
                         // // The system is out of memory, we should probably quit
                         // Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
                         // All other errors (Outdated, Timeout) should be resolved by the next frame
-                        Err(e) => error!("{:?}", e),
+                        Err(e) => error!("Render Broken {:?}", e),
                     }
                 }
                 Event::RedrawEventsCleared => {

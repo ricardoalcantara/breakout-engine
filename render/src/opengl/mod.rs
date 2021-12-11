@@ -1,6 +1,6 @@
 use glutin::{ContextWrapper, PossiblyCurrent};
 
-pub mod render2d;
+pub mod renderer2d;
 pub mod texture;
 
 mod shader;
