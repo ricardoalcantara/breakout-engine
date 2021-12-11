@@ -114,6 +114,8 @@ impl GameState {
     pub fn render(&mut self, window: &MyWindow) -> Result<(), ()> {
         let world = self.context.get_world();
 
+        self.renderer.clean_color();
+
         for (_id, (sprite, transform)) in world.query_mut::<(&Sprite, &Transform2D)>() {
             let texture = self.asset_manager.get_texture(&sprite.texture_id);
             self.renderer.draw_texture(

@@ -16,5 +16,9 @@ pretty_env_logger = "0.4.0"
 log = "0.4.14"
 glam = "0.20.1"
 core = { path = "./core" }
-render = { path = "./render" }
 
+[[example]]
+name = "pong"
+
+[[example]]
+name = "breakout"

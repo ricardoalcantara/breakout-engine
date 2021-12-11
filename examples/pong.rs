@@ -5,7 +5,6 @@ use core::{
     components::{Sprite, Transform2D},
     AssetManager, EngineBuilder, GameContext, Input, KeyCode, Scene,
 };
-use log::info;
 
 struct MainState {}
 
@@ -14,44 +13,31 @@ impl MainState {
         Self {}
     }
 }
+
+struct Ball {
+    direction: glam::Vec2,
+}
+
 impl Scene for MainState {
     fn init(
         &mut self,
         _context: &mut GameContext,
         _asset_manager: &mut AssetManager,
     ) -> Result<(), ()> {
-        let texture_id_1 = _asset_manager.load_sprite("assets/awesomeface.png");
-        let texture_id_2 = _asset_manager.load_sprite("assets/happy-tree.png");
+        let pong_texture = _asset_manager.load_sprite("assets/pong-ball.png");
 
         let world = &mut _context.get_world();
         world.spawn((
             Sprite {
-                texture_id: texture_id_1.clone(),
+                texture_id: pong_texture,
             },
             Transform2D {
-                position: glam::vec2(0.0, 0.0),
-                scale: glam::vec2(300.0, 400.0),
+                position: glam::vec2(100.0, 100.0),
+                scale: glam::vec2(32.0, 32.0),
                 rotate: 0.0,
             },
-        ));
-        world.spawn((
-            Sprite {
-                texture_id: texture_id_2,
-            },
-            Transform2D {
-                position: glam::vec2(600.0, 100.0),
-                scale: glam::vec2(300.0, 400.0),
-                rotate: 45.0,
-            },
-        ));
-        world.spawn((
-            Sprite {
-                texture_id: texture_id_1,
-            },
-            Transform2D {
-                position: glam::vec2(250.0, 400.0),
-                scale: glam::vec2(150.0, 200.0),
-                rotate: 0.0,
+            Ball {
+                direction: glam::vec2(0.0, 1.0),
             },
         ));
 
@@ -72,13 +58,15 @@ impl Scene for MainState {
         _context: &mut GameContext,
         _dt: f32,
     ) -> Result<core::Transition, ()> {
-        if _input.is_key_pressed(KeyCode::Space) {
-            info!("Space Pressed")
+        if _input.is_key_pressed(KeyCode::Space) {}
+        if _input.is_key_released(KeyCode::Space) {}
+
+        let world = &mut _context.get_world();
+
+        for (_id, (ball, transform)) in world.query_mut::<(&mut Ball, &mut Transform2D)>() {
+            transform.position += ball.direction * 0.01;
         }
 
-        if _input.is_key_released(KeyCode::Space) {
-            info!("Space Released")
-        }
         Ok(core::Transition::None)
     }
 }
