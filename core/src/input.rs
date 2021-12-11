@@ -20,19 +20,19 @@ pub enum Event {
 }
 
 pub struct Input {
-    key_presseds: Vec<KeyCode>,
-    key_releaseds: Vec<KeyCode>,
-    mouse_presseds: Vec<MouseButton>,
-    mouse_releaseds: Vec<MouseButton>,
+    keys_pressed: Vec<KeyCode>,
+    keys_released: Vec<KeyCode>,
+    mouses_pressed: Vec<MouseButton>,
+    mouses_released: Vec<MouseButton>,
 }
 
 impl Input {
     pub(crate) fn new() -> Self {
         Self {
-            key_presseds: Vec::with_capacity(10),
-            key_releaseds: Vec::with_capacity(10),
-            mouse_presseds: Vec::with_capacity(3),
-            mouse_releaseds: Vec::with_capacity(3),
+            keys_pressed: Vec::with_capacity(10),
+            keys_released: Vec::with_capacity(10),
+            mouses_pressed: Vec::with_capacity(3),
+            mouses_released: Vec::with_capacity(3),
         }
     }
 
@@ -42,22 +42,22 @@ impl Input {
                 if let Some(key_code) = input.virtual_keycode {
                     let is_pressed = match input.state {
                         ElementState::Pressed => {
-                            if !self.key_presseds.contains(&key_code) {
-                                self.key_presseds.push(key_code.clone());
+                            if !self.keys_pressed.contains(&key_code) {
+                                self.keys_pressed.push(key_code.clone());
                             }
                             true
                         }
                         ElementState::Released => {
-                            if self.key_presseds.contains(&key_code) {
+                            if self.keys_pressed.contains(&key_code) {
                                 let index = self
-                                    .key_presseds
+                                    .keys_pressed
                                     .iter()
                                     .position(|x| *x == key_code)
                                     .unwrap();
-                                self.key_presseds.remove(index);
+                                self.keys_pressed.remove(index);
                             }
-                            if !self.key_releaseds.contains(&key_code) {
-                                self.key_releaseds.push(key_code.clone());
+                            if !self.keys_released.contains(&key_code) {
+                                self.keys_released.push(key_code.clone());
                             }
                             false
                         }
@@ -73,22 +73,22 @@ impl Input {
             WindowEvent::MouseInput { state, button, .. } => {
                 let is_pressed = match state {
                     ElementState::Pressed => {
-                        if !self.mouse_presseds.contains(button) {
-                            self.mouse_presseds.push(button.clone());
+                        if !self.mouses_pressed.contains(button) {
+                            self.mouses_pressed.push(button.clone());
                         }
                         true
                     }
                     ElementState::Released => {
-                        if self.mouse_presseds.contains(button) {
+                        if self.mouses_pressed.contains(button) {
                             let index = self
-                                .mouse_presseds
+                                .mouses_pressed
                                 .iter()
                                 .position(|x| *x == *button)
                                 .unwrap();
-                            self.mouse_presseds.remove(index);
+                            self.mouses_pressed.remove(index);
                         }
-                        if !self.mouse_releaseds.contains(button) {
-                            self.mouse_releaseds.push(button.clone());
+                        if !self.mouses_released.contains(button) {
+                            self.mouses_released.push(button.clone());
                         }
                         false
                     }
@@ -133,23 +133,23 @@ impl Input {
     // }
 
     pub fn is_mouse_pressed(&self, button: MouseButton) -> bool {
-        self.mouse_presseds.contains(&button)
+        self.mouses_pressed.contains(&button)
     }
 
     pub fn is_mouse_released(&self, button: MouseButton) -> bool {
-        self.mouse_releaseds.contains(&button)
+        self.mouses_released.contains(&button)
     }
 
     pub fn is_key_pressed(&self, key: KeyCode) -> bool {
-        self.key_presseds.contains(&key)
+        self.keys_pressed.contains(&key)
     }
 
     pub fn is_key_released(&self, key: KeyCode) -> bool {
-        self.key_releaseds.contains(&key)
+        self.keys_released.contains(&key)
     }
 
     pub(crate) fn end_frame(&mut self) {
-        self.key_releaseds.clear();
-        self.mouse_releaseds.clear();
+        self.keys_released.clear();
+        self.mouses_released.clear();
     }
 }
