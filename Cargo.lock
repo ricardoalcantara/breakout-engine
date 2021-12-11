@@ -1227,6 +1227,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "physics2d"
+version = "0.1.0"
+dependencies = [
+ "glam",
+ "hecs",
+]
+
+[[package]]
 name = "pkg-config"
 version = "0.3.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1404,6 +1412,7 @@ dependencies = [
  "core",
  "glam",
  "log",
+ "physics2d",
  "pretty_env_logger",
 ]
 

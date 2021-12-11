@@ -6,6 +6,8 @@ use core::{
     AssetManager, EngineBuilder, GameContext, Input, KeyCode, Scene,
 };
 
+use physics2d::{components::physics::Actor, systems::physics::system_update_physics};
+
 struct MainState {}
 
 impl MainState {
@@ -28,6 +30,7 @@ impl Scene for MainState {
 
         let world = &mut _context.get_world();
         world.spawn((
+            Actor {},
             Sprite {
                 texture_id: pong_texture,
             },
@@ -62,6 +65,8 @@ impl Scene for MainState {
         if _input.is_key_released(KeyCode::Space) {}
 
         let world = &mut _context.get_world();
+
+        system_update_physics(world);
 
         for (_id, (ball, transform)) in world.query_mut::<(&mut Ball, &mut Transform2D)>() {
             transform.position += ball.direction * 0.01;
