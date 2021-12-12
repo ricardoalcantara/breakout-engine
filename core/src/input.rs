@@ -1,13 +1,12 @@
 // pub use winint::event::;
-use winit::event::{ElementState, MouseScrollDelta, VirtualKeyCode, WindowEvent};
+use winit::event::{ElementState, MouseScrollDelta, WindowEvent};
 
-pub use winit::event::MouseButton;
-pub type KeyCode = VirtualKeyCode;
+pub use winit::event::{MouseButton, VirtualKeyCode};
 
 #[derive(Debug)]
 pub enum Event {
     KeyboardInput {
-        key_code: KeyCode,
+        key_code: VirtualKeyCode,
         is_pressed: bool,
     },
     MouseInput {
@@ -20,8 +19,8 @@ pub enum Event {
 }
 
 pub struct Input {
-    keys_pressed: Vec<KeyCode>,
-    keys_released: Vec<KeyCode>,
+    keys_pressed: Vec<VirtualKeyCode>,
+    keys_released: Vec<VirtualKeyCode>,
     mouses_pressed: Vec<MouseButton>,
     mouses_released: Vec<MouseButton>,
 }
@@ -140,11 +139,11 @@ impl Input {
         self.mouses_released.contains(&button)
     }
 
-    pub fn is_key_pressed(&self, key: KeyCode) -> bool {
+    pub fn is_key_pressed(&self, key: VirtualKeyCode) -> bool {
         self.keys_pressed.contains(&key)
     }
 
-    pub fn is_key_released(&self, key: KeyCode) -> bool {
+    pub fn is_key_released(&self, key: VirtualKeyCode) -> bool {
         self.keys_released.contains(&key)
     }
 

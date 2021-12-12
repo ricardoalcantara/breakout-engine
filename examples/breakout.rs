@@ -3,8 +3,10 @@ extern crate pretty_env_logger;
 
 use core::{
     components::{Sprite, Transform2D},
-    AssetManager, EngineBuilder, GameContext, Input, KeyCode, Scene,
+    AssetManager, EngineBuilder, GameContext, Input, Scene, VirtualKeyCode,
 };
+
+use physics2d::systems::physics::system_update_physics;
 
 struct MainState {}
 
@@ -71,8 +73,17 @@ impl Scene for MainState {
         _context: &mut GameContext,
         _dt: f32,
     ) -> Result<core::Transition, ()> {
-        if _input.is_key_pressed(KeyCode::Space) {}
-        if _input.is_key_released(KeyCode::Space) {}
+        if _input.is_key_pressed(VirtualKeyCode::Space) {}
+        if _input.is_key_released(VirtualKeyCode::Space) {}
+
+        let world = &mut _context.get_world();
+
+        system_update_physics(world);
+
+        for (_id, transform) in world.query_mut::<&mut Transform2D>() {
+            // transform.position += ball.direction * 0.01;
+        }
+
         Ok(core::Transition::None)
     }
 }

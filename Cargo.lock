@@ -1411,6 +1411,7 @@ version = "0.1.0"
 dependencies = [
  "core",
  "glam",
+ "hecs",
  "log",
  "physics2d",
  "pretty_env_logger",
