@@ -9,6 +9,7 @@ edition = "2021"
 members = [
     "core",
     "render",
+    "shapes",
 ]
 
 [dependencies]
@@ -16,8 +17,10 @@ pretty_env_logger = "0.4.0"
 log = "0.4.14"
 glam = "0.20.1"
 core = { path = "./core" }
+shapes = { path = "./shapes" }
 physics2d = { path = "./physics2d" }
 hecs = "0.7.1"
+rand = "0.8.4"
 
 [[example]]
 name = "pong"
