@@ -7,7 +7,6 @@ use core::{
 };
 use hecs::With;
 use log::error;
-use physics2d::components::physics::Actor;
 use rand::Rng;
 use shapes::rectangle::Rectangle;
 
@@ -48,7 +47,6 @@ impl Scene for MainState {
         let world = &mut _context.get_world();
         let speed = 0.02;
         world.spawn((
-            Actor {},
             Sprite {
                 texture_id: pong_texture,
             },
@@ -66,7 +64,6 @@ impl Scene for MainState {
         world.spawn((
             Player,
             Paddles { speed },
-            Actor {},
             Sprite {
                 texture_id: paddles_texture.clone(),
             },
@@ -84,7 +81,6 @@ impl Scene for MainState {
                 response_time: 60.0,
             },
             Paddles { speed },
-            Actor {},
             Sprite {
                 texture_id: paddles_texture,
             },
