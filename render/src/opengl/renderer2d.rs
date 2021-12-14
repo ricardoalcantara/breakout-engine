@@ -26,10 +26,17 @@ impl OpenGLRenderer2D {
 
         info!("OpenGL version {}", version);
 
+        #[cfg(debug_assertions)]
         let vs_src = std::fs::read_to_string("shaders/gl_shader.vert")
             .expect("Something went wrong reading vs_src");
+        #[cfg(debug_assertions)]
         let fs_src = std::fs::read_to_string("shaders/gl_shader.frag")
             .expect("Something went wrong reading fs_src");
+
+        #[cfg(not(debug_assertions))]
+        let vs_src = include_str!("../../../shaders/gl_shader.vert");
+        #[cfg(not(debug_assertions))]
+        let fs_src = include_str!("../../../shaders/gl_shader.frag");
 
         let projection = glam::Mat4::orthographic_rh_gl(0.0, 800.0, 600.0, 0.0, -1.0, 1.0);
         let shader = Shader::compile(&vs_src, &fs_src, None);

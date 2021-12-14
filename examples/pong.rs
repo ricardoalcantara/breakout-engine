@@ -10,11 +10,22 @@ use log::error;
 use rand::Rng;
 use shapes::rectangle::Rectangle;
 
-struct MainState {}
+const MAX_LEVEL_TIME: f32 = 5.0;
+
+struct MainState {
+    #[allow(dead_code)]
+    total_time: f32,
+    level: f32,
+    level_time: f32,
+}
 
 impl MainState {
     fn new() -> Self {
-        Self {}
+        Self {
+            total_time: 0.0,
+            level: 1.0,
+            level_time: MAX_LEVEL_TIME,
+        }
     }
 }
 
@@ -45,7 +56,7 @@ impl Scene for MainState {
         let paddles_texture = _asset_manager.load_sprite("assets/paddles.png");
 
         let world = &mut _context.get_world();
-        let speed = 0.02;
+        let speed = 200.0;
         world.spawn((
             Sprite {
                 texture_id: pong_texture,
@@ -78,7 +89,7 @@ impl Scene for MainState {
             AI {
                 direction: glam::Vec2::ZERO,
                 cooldown: 0.0,
-                response_time: 60.0,
+                response_time: 1.0,
             },
             Paddles { speed },
             Sprite {
@@ -111,7 +122,14 @@ impl Scene for MainState {
         let mut rng = rand::thread_rng();
         let world = &mut _context.get_world();
 
-        for (_id, transform) in world.query_mut::<With<Player, &mut Transform2D>>() {
+        self.level_time -= _dt;
+
+        if self.level_time <= 0.0 {
+            self.level_time = MAX_LEVEL_TIME;
+            self.level += 0.2;
+        }
+
+        for (_id, (transform, paddles)) in world.query_mut::<(&mut Transform2D, &Paddles)>() {
             let mut direction = glam::Vec2::ZERO;
 
             if input.is_key_pressed(VirtualKeyCode::Up) {
@@ -122,7 +140,7 @@ impl Scene for MainState {
                 direction.y = 1.0;
             }
 
-            transform.position += direction * 0.02;
+            transform.position += direction * paddles.speed * self.level * _dt;
         }
 
         {
@@ -142,7 +160,7 @@ impl Scene for MainState {
 
                 if ai.cooldown > ai.response_time {
                     ai.cooldown = 0.0;
-                    ai.response_time = rng.gen_range(60.0..1000.0);
+                    ai.response_time = rng.gen_range(1.0..5.0);
                     if transform.position.y > ball_position.y + ball_size.y / 2.0 {
                         ai.direction.y = -1.0;
                     } else if transform.position.y + transform.scale.y
@@ -152,7 +170,7 @@ impl Scene for MainState {
                     }
                 }
 
-                transform.position += ai.direction * paddles.speed;
+                transform.position += ai.direction * paddles.speed * self.level * _dt;
             }
         }
 
@@ -165,7 +183,7 @@ impl Scene for MainState {
         }
 
         'ball: for (_id, (ball, transform)) in world.query_mut::<(&mut Ball, &mut Transform2D)>() {
-            transform.position += ball.direction * ball.speed;
+            transform.position += ball.direction * ball.speed * self.level * _dt;
 
             if transform.position.y < 0.0 || transform.position.y > (600.0 - 32.0) {
                 ball.direction.y *= -1.0;

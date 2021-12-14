@@ -2,10 +2,93 @@ use crate::{game_state::GameState, Scene};
 use log::{error, info};
 use render::window::MyWindow;
 use winit::{
-    dpi::{LogicalSize, PhysicalSize},
+    dpi::PhysicalSize,
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::ControlFlow,
 };
+
+struct EngineTimer {
+    fps: u32,
+    fps_count: u32,
+    fps_time: f32,
+    frame_time_count: f32,
+    frame_time_avg: f32,
+    frame_time_spike_per_seconds: f32,
+    delta_target: Option<f32>,
+    time: std::time::Instant,
+}
+
+impl EngineTimer {
+    fn new() -> EngineTimer {
+        let frame_target = std::env::var("FPS_LOCK")
+            .unwrap_or(String::from("0.0"))
+            .parse::<f32>()
+            .unwrap_or(0.0);
+
+        let delta_target = if frame_target > 0.0 {
+            Some(1.0 / frame_target)
+        } else {
+            None
+        };
+
+        let time = std::time::Instant::now();
+        EngineTimer {
+            fps: 0,
+            fps_count: 0,
+            fps_time: 0.0,
+            frame_time_count: 0.0,
+            frame_time_avg: 0.0,
+            frame_time_spike_per_seconds: 0.0,
+            delta_target,
+            time,
+        }
+    }
+
+    fn update(&mut self) -> f32 {
+        let delta = self.time.elapsed().as_secs_f32();
+        self.time = std::time::Instant::now();
+
+        self.fps_count += 1;
+        self.fps_time += delta;
+
+        if self.fps_time >= 1.0 {
+            self.fps = self.fps_count;
+            self.fps_count = 0;
+            self.fps_time = 0.0;
+
+            self.frame_time_avg = self.frame_time_count / self.fps as f32;
+            self.frame_time_count = 0.0;
+
+            info!(
+                "
+Fps:             {:}
+Frame_time_high: {:}
+Frame_time_avg:  {:}",
+                self.fps, self.frame_time_spike_per_seconds, self.frame_time_avg
+            );
+            self.frame_time_spike_per_seconds = 0.0;
+        }
+
+        delta
+    }
+
+    fn wait(&mut self) {
+        let frame_time = self.time.elapsed().as_secs_f32();
+        self.frame_time_count += frame_time;
+
+        if frame_time > self.frame_time_spike_per_seconds {
+            self.frame_time_spike_per_seconds = frame_time;
+        }
+
+        if let Some(delta_target) = self.delta_target {
+            let remaining_delta = delta_target - frame_time;
+
+            if remaining_delta > 0.0 {
+                std::thread::sleep(std::time::Duration::from_secs_f32(remaining_delta));
+            }
+        }
+    }
+}
 
 pub struct EngineBuilder {
     title: String,
@@ -61,12 +144,13 @@ impl Engine {
         let event_loop = self.window.event_loop.take().unwrap();
         let mut game_state = GameState::new(state, render, &self.window);
 
+        let mut engine_timer = EngineTimer::new();
+
         event_loop.run(move |event, _, control_flow| {
             match event {
-                Event::WindowEvent {
-                    ref event,
-                    window_id,
-                } if window_id == self.window.window().id() => {
+                Event::WindowEvent { ref event, .. } => {
+                    // Todo: windows_id is not required for the engine
+                    // if window_id == self.window.window().id() =>
                     match event {
                         WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                         WindowEvent::Resized(physical_size) => {
@@ -97,8 +181,9 @@ impl Engine {
                         },
                     }
                 }
-                Event::RedrawRequested(_) => {
-                    if let Ok(updated) = game_state.update() {
+                Event::MainEventsCleared => {
+                    let delta = engine_timer.update();
+                    if let Ok(updated) = game_state.update(delta) {
                         if !updated {
                             *control_flow = ControlFlow::Exit
                         }
@@ -114,10 +199,17 @@ impl Engine {
                         Err(e) => error!("Render Broken {:?}", e),
                     }
                 }
+                Event::RedrawRequested(_) => {
+                    // Todo: windows_id is not required for the engine
+                    self.window.window().request_redraw();
+                }
                 Event::RedrawEventsCleared => {
                     // RedrawRequested will only trigger once, unless we manually
                     // request it.
-                    self.window.window().request_redraw();
+
+                    // https://github.com/rust-windowing/winit/blob/master/examples/control_flow.rs
+                    engine_timer.wait();
+                    *control_flow = ControlFlow::Poll;
                 }
                 _ => {}
             }

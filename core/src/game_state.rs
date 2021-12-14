@@ -1,12 +1,12 @@
+use std::time::Instant;
+
 use crate::{
     asset_manager::AssetManager,
     components::{Sprite, Transform2D},
     game_context::GameContext,
-    Event, Input, InputHandled, Scene, Transition,
+    Input, InputHandled, Scene, Transition,
 };
-use log::info;
 use render::{renderer::Renderer2D, window::MyWindow};
-use winit::event::WindowEvent;
 
 pub struct GameState {
     scenes: Vec<Box<dyn Scene>>,
@@ -23,8 +23,8 @@ impl GameState {
         R: Renderer2D + 'static,
     {
         // Todo: EngineConfiguration
-        window.window().set_cursor_visible(false);
-        window.window().set_title("false");
+        // window.window().set_cursor_visible(false);
+        // window.window().set_title("false");
         // window
         //     .window()
         //     .set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
@@ -41,6 +41,7 @@ impl GameState {
         }
 
         let input = Input::new();
+        let time = Instant::now();
 
         Self {
             scenes: vec![Box::new(state)],
@@ -86,10 +87,10 @@ impl GameState {
         }
     }
 
-    pub fn update(&mut self) -> Result<bool, ()> {
+    pub fn update(&mut self, delta: f32) -> Result<bool, ()> {
         let result = match self.scenes.last_mut() {
             Some(active_scene) => {
-                match active_scene.update(&mut self.input, &mut self.context, 0.0)? {
+                match active_scene.update(&mut self.input, &mut self.context, delta)? {
                     Transition::None => {}
                     Transition::Push(s) => {
                         self.scenes.push(s);
