@@ -3,7 +3,8 @@ extern crate pretty_env_logger;
 
 use core::{
     components::{Sprite, Transform2D},
-    AssetManager, EngineBuilder, GameContext, Input, Scene, VirtualKeyCode,
+    engine_context::EngineContext,
+    AssetManager, EngineBuilder, EngineSettings, GameContext, Input, Scene, VirtualKeyCode,
 };
 
 use physics2d::systems::physics::system_update_physics;
@@ -20,6 +21,7 @@ impl Scene for MainState {
         &mut self,
         _context: &mut GameContext,
         _asset_manager: &mut AssetManager,
+        _engine: &mut EngineContext,
     ) -> Result<(), ()> {
         let texture_id_1 = _asset_manager.load_sprite("assets/awesomeface.png");
         let texture_id_2 = _asset_manager.load_sprite("assets/happy-tree.png");
@@ -63,15 +65,17 @@ impl Scene for MainState {
         &mut self,
         _event: core::Event,
         _context: &mut GameContext,
+        _engine: &mut EngineContext,
     ) -> Result<core::InputHandled, ()> {
         Ok(core::InputHandled::None)
     }
 
     fn update(
         &mut self,
+        _dt: f32,
         _input: &mut Input,
         _context: &mut GameContext,
-        _dt: f32,
+        _engine: &mut EngineContext,
     ) -> Result<core::Transition, ()> {
         if _input.is_key_pressed(VirtualKeyCode::Space) {}
         if _input.is_key_released(VirtualKeyCode::Space) {}
@@ -92,8 +96,8 @@ fn main() {
     pretty_env_logger::init();
 
     EngineBuilder::new()
-        .with_title(String::from("Hello Engine"))
-        .with_size(800, 600)
+        .with_settings(EngineSettings::Title(String::from("Breakout")))
+        .with_settings(EngineSettings::WindowSize((800, 600)))
         .build()
         .unwrap()
         .run(MainState::new());

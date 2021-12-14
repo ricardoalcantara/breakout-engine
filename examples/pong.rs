@@ -3,7 +3,8 @@ extern crate pretty_env_logger;
 
 use core::{
     components::{Sprite, Transform2D},
-    AssetManager, EngineBuilder, GameContext, Input, Scene, VirtualKeyCode,
+    engine_context::EngineContext,
+    AssetManager, EngineBuilder, EngineSettings, GameContext, Input, Scene, VirtualKeyCode,
 };
 use hecs::With;
 use log::error;
@@ -51,7 +52,10 @@ impl Scene for MainState {
         &mut self,
         _context: &mut GameContext,
         _asset_manager: &mut AssetManager,
+        _engine: &mut EngineContext,
     ) -> Result<(), ()> {
+        _engine.update_settings(EngineSettings::Fullscreen(!_engine.fullscreen()));
+
         let pong_texture = _asset_manager.load_sprite("assets/pong-ball.png");
         let paddles_texture = _asset_manager.load_sprite("assets/paddles.png");
 
@@ -109,15 +113,17 @@ impl Scene for MainState {
         &mut self,
         _event: core::Event,
         _context: &mut GameContext,
+        _engine: &mut EngineContext,
     ) -> Result<core::InputHandled, ()> {
         Ok(core::InputHandled::None)
     }
 
     fn update(
         &mut self,
+        _dt: f32,
         input: &mut Input,
         _context: &mut GameContext,
-        _dt: f32,
+        _engine: &mut EngineContext,
     ) -> Result<core::Transition, ()> {
         let mut rng = rand::thread_rng();
         let world = &mut _context.get_world();
@@ -127,6 +133,14 @@ impl Scene for MainState {
         if self.level_time <= 0.0 {
             self.level_time = MAX_LEVEL_TIME;
             self.level += 0.2;
+        }
+
+        if input.is_key_pressed(VirtualKeyCode::F) {
+            _engine.update_settings(EngineSettings::Fullscreen(true));
+        }
+
+        if input.is_key_pressed(VirtualKeyCode::G) {
+            _engine.update_settings(EngineSettings::Fullscreen(false));
         }
 
         for (_id, (transform, paddles)) in world.query_mut::<(&mut Transform2D, &Paddles)>() {
@@ -228,8 +242,8 @@ fn main() {
     pretty_env_logger::init();
 
     EngineBuilder::new()
-        .with_title(String::from("Hello Engine"))
-        .with_size(800, 600)
+        .with_settings(EngineSettings::Title(String::from("Pong")))
+        .with_settings(EngineSettings::WindowSize((800, 600)))
         .build()
         .unwrap()
         .run(MainState::new());
