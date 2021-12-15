@@ -54,8 +54,6 @@ impl Scene for MainState {
         _asset_manager: &mut AssetManager,
         _engine: &mut EngineContext,
     ) -> Result<(), ()> {
-        _engine.update_settings(EngineSettings::Fullscreen(!_engine.fullscreen()));
-
         let pong_texture = _asset_manager.load_sprite("assets/pong-ball.png");
         let paddles_texture = _asset_manager.load_sprite("assets/paddles.png");
 
