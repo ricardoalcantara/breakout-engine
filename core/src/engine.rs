@@ -169,19 +169,6 @@ impl EngineBuilder {
         self
     }
 
-    #[deprecated]
-    pub fn with_title(mut self, title: String) -> Self {
-        self.engine_settings.push(EngineSettings::Title(title));
-        self
-    }
-
-    #[deprecated]
-    pub fn with_size(mut self, width: u32, height: u32) -> Self {
-        self.engine_settings
-            .push(EngineSettings::WindowSize((width, height)));
-        self
-    }
-
     pub fn build(self) -> Result<Engine, ()> {
         let mut window_builder = winit::window::WindowBuilder::new();
         window_builder = EngineSettings::apply_builder(window_builder, self.engine_settings);
