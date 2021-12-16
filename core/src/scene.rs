@@ -1,4 +1,7 @@
-use crate::{asset_manager::AssetManager, game_context::GameContext, Event, Input};
+use crate::{
+    asset_manager::AssetManager, engine_context::EngineContext, game_context::GameContext, Event,
+    Input,
+};
 
 pub enum Transition {
     None,
@@ -18,19 +21,26 @@ pub trait Scene {
         &mut self,
         _context: &mut GameContext,
         _asset_manager: &mut AssetManager,
+        _engine: &mut EngineContext,
     ) -> Result<(), ()> {
         Ok(())
     }
 
-    fn input(&mut self, _event: Event, _context: &mut GameContext) -> Result<InputHandled, ()> {
+    fn input(
+        &mut self,
+        _event: Event,
+        _context: &mut GameContext,
+        _engine: &mut EngineContext,
+    ) -> Result<InputHandled, ()> {
         Ok(InputHandled::None)
     }
 
     fn update(
         &mut self,
+        _dt: f32,
         _input: &mut Input,
         _context: &mut GameContext,
-        _dt: f32,
+        _engine: &mut EngineContext,
     ) -> Result<Transition, ()> {
         Ok(Transition::None)
     }

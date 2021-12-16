@@ -1,10 +1,9 @@
-use std::time::Instant;
-
 use crate::{
     asset_manager::AssetManager,
     components::{Sprite, Transform2D},
+    engine_context::EngineContext,
     game_context::GameContext,
-    Input, InputHandled, Scene, Transition,
+    EngineSettings, Input, InputHandled, Scene, Transition,
 };
 use render::{renderer::Renderer2D, window::MyWindow};
 
@@ -12,6 +11,7 @@ pub struct GameState {
     scenes: Vec<Box<dyn Scene>>,
     renderer: Box<dyn Renderer2D>,
     context: GameContext,
+    engine: EngineContext,
     asset_manager: AssetManager,
     input: Input,
 }
@@ -29,11 +29,14 @@ impl GameState {
         //     .window()
         //     .set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
 
+        let mut engine = EngineContext::new(&window);
         let mut context = GameContext::new();
         let mut asset_manager = AssetManager::new();
 
         let mut state = state;
-        state.init(&mut context, &mut asset_manager).unwrap();
+        state
+            .init(&mut context, &mut asset_manager, &mut engine)
+            .unwrap();
 
         for (id, preloaded_texture) in asset_manager.get_preload_textures() {
             let texture = renderer.generate_texture(preloaded_texture);
@@ -41,15 +44,19 @@ impl GameState {
         }
 
         let input = Input::new();
-        let time = Instant::now();
 
         Self {
             scenes: vec![Box::new(state)],
             renderer: Box::new(renderer),
             context,
+            engine,
             asset_manager,
             input,
         }
+    }
+
+    pub fn take_settings(&mut self) -> Vec<EngineSettings> {
+        self.engine.take_settings()
     }
 
     pub fn resize(&self, new_size: winit::dpi::PhysicalSize<u32>) {
@@ -59,27 +66,29 @@ impl GameState {
     pub fn input(&mut self, event: &winit::event::WindowEvent) -> Result<bool, ()> {
         if let Some(on_event) = self.input.on_event(event) {
             match self.scenes.last_mut() {
-                Some(active_scene) => match active_scene.input(on_event, &mut self.context)? {
-                    InputHandled::Transition(transition) => {
-                        match transition {
-                            Transition::None => {}
-                            Transition::Push(s) => {
-                                self.scenes.push(s);
-                            }
-                            Transition::Replace(s) => {
-                                self.scenes.pop();
-                                self.scenes.push(s);
-                            }
-                            Transition::Pop => {
-                                self.scenes.pop();
-                            }
-                        };
-                        Ok(true)
+                Some(active_scene) => {
+                    match active_scene.input(on_event, &mut self.context, &mut self.engine)? {
+                        InputHandled::Transition(transition) => {
+                            match transition {
+                                Transition::None => {}
+                                Transition::Push(s) => {
+                                    self.scenes.push(s);
+                                }
+                                Transition::Replace(s) => {
+                                    self.scenes.pop();
+                                    self.scenes.push(s);
+                                }
+                                Transition::Pop => {
+                                    self.scenes.pop();
+                                }
+                            };
+                            Ok(true)
+                        }
+                        InputHandled::Captured => Ok(true),
+                        // Todo: False will let esc close the window
+                        _ => Ok(false),
                     }
-                    InputHandled::Captured => Ok(true),
-                    // Todo: False will let esc close the window
-                    _ => Ok(false),
-                },
+                }
                 None => Ok(false),
             }
         } else {
@@ -90,7 +99,12 @@ impl GameState {
     pub fn update(&mut self, delta: f32) -> Result<bool, ()> {
         let result = match self.scenes.last_mut() {
             Some(active_scene) => {
-                match active_scene.update(&mut self.input, &mut self.context, delta)? {
+                match active_scene.update(
+                    delta,
+                    &mut self.input,
+                    &mut self.context,
+                    &mut self.engine,
+                )? {
                     Transition::None => {}
                     Transition::Push(s) => {
                         self.scenes.push(s);

@@ -90,42 +90,89 @@ Frame_time_avg:  {:}",
     }
 }
 
+pub enum EngineSettings {
+    Title(String),
+    WindowSize((u32, u32)),
+    Fullscreen(bool),
+}
+
+impl EngineSettings {
+    pub(crate) fn apply_builder(
+        window_builder: winit::window::WindowBuilder,
+        engine_settings: Vec<EngineSettings>,
+    ) -> winit::window::WindowBuilder {
+        let mut window_builder = window_builder;
+        for settings in engine_settings {
+            match settings {
+                EngineSettings::Title(title) => {
+                    window_builder = window_builder.with_title(title);
+                }
+                EngineSettings::WindowSize((width, height)) => {
+                    window_builder =
+                        window_builder.with_inner_size(PhysicalSize::new(width, height));
+                }
+                EngineSettings::Fullscreen(set) => {
+                    if set {
+                        window_builder = window_builder
+                            .with_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
+                    }
+                }
+            }
+        }
+
+        window_builder
+    }
+
+    pub(crate) fn apply_window(window: &mut MyWindow, engine_settings: Vec<EngineSettings>) {
+        for settings in engine_settings {
+            match settings {
+                EngineSettings::Title(title) => {
+                    window.window().set_title(&title);
+                }
+                EngineSettings::WindowSize((width, height)) => {
+                    window
+                        .window()
+                        .set_inner_size(PhysicalSize::new(width, height));
+                }
+                EngineSettings::Fullscreen(set) => {
+                    if set {
+                        window
+                            .window()
+                            .set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
+                    } else {
+                        window.window().set_fullscreen(None);
+                    }
+                }
+            }
+        }
+    }
+}
+
 pub struct EngineBuilder {
-    title: String,
-    width: u32,
-    height: u32,
+    engine_settings: Vec<EngineSettings>,
 }
 
 impl Default for EngineBuilder {
     fn default() -> Self {
         Self {
-            title: String::from("My Engine"),
-            width: 800,
-            height: 600,
+            engine_settings: Vec::new(),
         }
     }
 }
-
 impl EngineBuilder {
     pub fn new() -> EngineBuilder {
         EngineBuilder::default()
     }
 
-    pub fn with_title(mut self, title: String) -> Self {
-        self.title = title;
-        self
-    }
-
-    pub fn with_size(mut self, width: u32, height: u32) -> Self {
-        self.width = width;
-        self.height = height;
+    pub fn with_settings(mut self, engine_settings: EngineSettings) -> Self {
+        self.engine_settings.push(engine_settings);
         self
     }
 
     pub fn build(self) -> Result<Engine, ()> {
-        let window_builder = winit::window::WindowBuilder::new()
-            .with_title(self.title)
-            .with_inner_size(PhysicalSize::new(self.width, self.height));
+        let mut window_builder = winit::window::WindowBuilder::new();
+        window_builder = EngineSettings::apply_builder(window_builder, self.engine_settings);
+
         let my_window = render::build_window(window_builder, render::renderer::RenderAPI::OpenGL);
         Ok(Engine { window: my_window })
     }
@@ -188,6 +235,9 @@ impl Engine {
                             *control_flow = ControlFlow::Exit
                         }
                     }
+                    let settings = game_state.take_settings();
+                    EngineSettings::apply_window(&mut self.window, settings);
+
                     match game_state.render(&self.window) {
                         Ok(_) => {}
                         // Todo: Review WGPU error
