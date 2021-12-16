@@ -106,8 +106,6 @@ impl OpenGLTexture {
         }
     }
 
-    pub fn generate(&mut self, diffuse_image: image::DynamicImage) {}
-
     pub(crate) fn bind(&self) {
         unsafe {
             gl::BindTexture(gl::TEXTURE_2D, self.id);

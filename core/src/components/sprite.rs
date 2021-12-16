@@ -1,10 +1,10 @@
-use shapes::rectangle::Rectangle;
+use shapes::rectangle::Rect;
 
 use crate::TextureId;
 
 pub struct Sprite {
     pub texture_id: Option<TextureId>,
-    pub rect: Option<Rectangle>,
+    pub rect: Option<Rect>,
     pub color: Option<glam::Vec3>,
 }
 

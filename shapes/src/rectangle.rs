@@ -4,6 +4,9 @@ use std::ops::Add;
 use std::ops::AddAssign;
 use std::ops::MulAssign;
 
+pub type Rect = Rectangle<f32>;
+pub type IRect = Rectangle<i32>;
+
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Default, Hash)]
 pub struct Rectangle<T = f32> {
     pub x: T,

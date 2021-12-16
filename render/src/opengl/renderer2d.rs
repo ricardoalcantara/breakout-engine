@@ -1,11 +1,10 @@
 use crate::opengl::sprite_renderer::SpriteRenderer;
-use crate::texture::TextureType;
 use crate::Texture;
 use crate::{opengl::shader::Shader, renderer::Renderer2D};
 use glutin::{ContextWrapper, PossiblyCurrent};
 use image::DynamicImage;
 use log::info;
-use shapes::rectangle::Rectangle;
+use shapes::rectangle::Rect;
 use std::ffi::CStr;
 
 use super::texture::OpenGLTexture;
@@ -87,7 +86,7 @@ impl Renderer2D for OpenGLRenderer2D {
     fn draw_texture(
         &mut self,
         texture: Option<&Texture>,
-        rect: Option<Rectangle>,
+        rect: Option<Rect>,
         position: glam::Vec2,
         scale: glam::Vec2,
         rotate: f32,

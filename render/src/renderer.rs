@@ -1,5 +1,5 @@
 use image::DynamicImage;
-use shapes::rectangle::Rectangle;
+use shapes::rectangle::Rect;
 
 use crate::texture::Texture;
 
@@ -15,7 +15,7 @@ pub trait Renderer2D {
     fn draw_texture(
         &mut self,
         _texture: Option<&Texture>,
-        _rect: Option<Rectangle>,
+        _rect: Option<Rect>,
         _position: glam::Vec2,
         _scale: glam::Vec2,
         _rotate: f32,

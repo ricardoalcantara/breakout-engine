@@ -9,7 +9,7 @@ use core::{
 use hecs::With;
 use log::error;
 use rand::Rng;
-use shapes::rectangle::Rectangle;
+use shapes::rectangle::Rect;
 
 const MAX_LEVEL_TIME: f32 = 5.0;
 
@@ -73,7 +73,7 @@ impl Scene for MainState {
                 direction: glam::vec2(1.0, 1.0).normalize(),
                 speed,
             },
-            Rectangle::new_with_size(32.0, 32.0),
+            Rect::new_with_size(32.0, 32.0),
         ));
 
         world.spawn((
@@ -87,7 +87,7 @@ impl Scene for MainState {
                 position: glam::vec2(0.0, 100.0),
                 ..Default::default()
             },
-            Rectangle::new_with_size(32.0, 128.0),
+            Rect::new_with_size(32.0, 128.0),
         ));
 
         world.spawn((
@@ -105,7 +105,7 @@ impl Scene for MainState {
                 position: glam::vec2(800.0 - 32.0, 100.0),
                 ..Default::default()
             },
-            Rectangle::new_with_size(32.0, 128.0),
+            Rect::new_with_size(32.0, 128.0),
         ));
 
         Ok(())
@@ -161,7 +161,7 @@ impl Scene for MainState {
 
         {
             let (ball_position, ball_size) = if let Some((_id, (transform, collider))) = world
-                .query::<With<Ball, (&Transform2D, &Rectangle)>>()
+                .query::<With<Ball, (&Transform2D, &Rect)>>()
                 .iter()
                 .next()
             {
@@ -172,7 +172,7 @@ impl Scene for MainState {
             };
 
             for (_id, (ai, transform, paddles, collider)) in
-                world.query_mut::<(&mut AI, &mut Transform2D, &Paddles, &Rectangle)>()
+                world.query_mut::<(&mut AI, &mut Transform2D, &Paddles, &Rect)>()
             {
                 ai.cooldown += 1.0;
 
@@ -194,13 +194,13 @@ impl Scene for MainState {
 
         let mut paddles_collider = Vec::new();
         for (_id, (transform, collider)) in
-            world.query_mut::<With<Paddles, (&Transform2D, &Rectangle)>>()
+            world.query_mut::<With<Paddles, (&Transform2D, &Rect)>>()
         {
             paddles_collider.push(collider.moved_to(transform.position.into()));
         }
 
         'ball: for (_id, (ball, transform, collider)) in
-            world.query_mut::<(&mut Ball, &mut Transform2D, &Rectangle)>()
+            world.query_mut::<(&mut Ball, &mut Transform2D, &Rect)>()
         {
             transform.position += ball.direction * ball.speed * self.level * _dt;
 

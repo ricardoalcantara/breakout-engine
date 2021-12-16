@@ -3,7 +3,7 @@ use crate::texture::TextureType;
 use crate::Texture;
 use gl::types::*;
 use log::warn;
-use shapes::rectangle::Rectangle;
+use shapes::rectangle::Rect;
 use std::mem;
 use std::ptr;
 
@@ -13,6 +13,7 @@ type Float32x3 = [f32; 3];
 
 #[derive(Debug, Clone, Copy)]
 struct Vertex {
+    #[allow(dead_code)]
     position: Float32x2,
     color: Float32x3,
     texture_coords: Float32x2,
@@ -117,7 +118,7 @@ impl SpriteRenderer {
     pub fn draw_sprite(
         &self,
         texture: &Texture,
-        rect: Option<Rectangle>,
+        rect: Option<Rect>,
         position: glam::Vec2,
         scale: glam::Vec2,
         rotate: f32,
