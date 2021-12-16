@@ -8,5 +8,7 @@ pub enum TextureType {
 
 // Todo pub(crate)
 pub struct Texture {
+    pub width: u32,
+    pub height: u32,
     pub texture_type: TextureType,
 }

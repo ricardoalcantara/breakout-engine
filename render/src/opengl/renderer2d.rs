@@ -1,9 +1,10 @@
 use crate::opengl::sprite_renderer::SpriteRenderer;
-use crate::texture::TextureType;
 use crate::Texture;
 use crate::{opengl::shader::Shader, renderer::Renderer2D};
 use glutin::{ContextWrapper, PossiblyCurrent};
+use image::DynamicImage;
 use log::info;
+use shapes::rectangle::Rect;
 use std::ffi::CStr;
 
 use super::texture::OpenGLTexture;
@@ -11,6 +12,7 @@ use super::texture::OpenGLTexture;
 pub struct OpenGLRenderer2D {
     sprite_shader: Shader,
     sprite_renderer: SpriteRenderer,
+    default_texture: Texture,
 }
 
 impl OpenGLRenderer2D {
@@ -47,9 +49,18 @@ impl OpenGLRenderer2D {
 
         let sprite_renderer = SpriteRenderer::new();
 
+        let mut imgbuf = image::ImageBuffer::new(1, 1);
+        for (_, _, pixel) in imgbuf.enumerate_pixels_mut() {
+            *pixel = image::Rgb([255, 255, 255]);
+        }
+
+        let img = DynamicImage::ImageRgb8(imgbuf);
+        let default_texture = OpenGLTexture::generate_texture(img);
+
         Self {
             sprite_shader: shader,
             sprite_renderer,
+            default_texture,
         }
     }
 }
@@ -62,12 +73,7 @@ impl Renderer2D for OpenGLRenderer2D {
     }
 
     fn generate_texture(&self, img: image::DynamicImage) -> Texture {
-        let mut opengl_texture = OpenGLTexture::new();
-        opengl_texture.generate(img);
-
-        Texture {
-            texture_type: TextureType::OpenGL(opengl_texture),
-        }
+        OpenGLTexture::generate_texture(img)
     }
 
     fn clean_color(&self) {
@@ -79,16 +85,18 @@ impl Renderer2D for OpenGLRenderer2D {
 
     fn draw_texture(
         &mut self,
-        texture: &Texture,
+        texture: Option<&Texture>,
+        rect: Option<Rect>,
         position: glam::Vec2,
-        size: glam::Vec2,
+        scale: glam::Vec2,
         rotate: f32,
         color: glam::Vec3,
     ) {
         self.sprite_renderer.draw_sprite(
-            texture,
+            texture.unwrap_or(&self.default_texture),
+            rect,
             position,
-            size,
+            scale,
             rotate,
             color,
             &self.sprite_shader,

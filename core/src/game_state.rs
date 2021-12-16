@@ -22,13 +22,6 @@ impl GameState {
         S: Scene + 'static,
         R: Renderer2D + 'static,
     {
-        // Todo: EngineConfiguration
-        // window.window().set_cursor_visible(false);
-        // window.window().set_title("false");
-        // window
-        //     .window()
-        //     .set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
-
         let mut engine = EngineContext::new(&window);
         let mut context = GameContext::new();
         let mut asset_manager = AssetManager::new();
@@ -132,13 +125,19 @@ impl GameState {
         self.renderer.clean_color();
 
         for (_id, (sprite, transform)) in world.query_mut::<(&Sprite, &Transform2D)>() {
-            let texture = self.asset_manager.get_texture(&sprite.texture_id);
+            // Todo: Generate default texture
+            let texture = if let Some(texture_id) = &sprite.texture_id {
+                Some(self.asset_manager.get_texture(&texture_id))
+            } else {
+                None
+            };
             self.renderer.draw_texture(
                 texture,
+                sprite.rect,
                 transform.position,
                 transform.scale,
                 transform.rotate,
-                glam::vec3(1.0, 1.0, 1.0),
+                sprite.color.unwrap_or(glam::vec3(1.0, 1.0, 1.0)),
             );
         }
 

@@ -4,10 +4,10 @@ extern crate pretty_env_logger;
 use core::{
     components::{Sprite, Transform2D},
     engine_context::EngineContext,
-    AssetManager, EngineBuilder, EngineSettings, GameContext, Input, Scene, VirtualKeyCode,
+    AssetManager, EngineBuilder, EngineSettings, GameContext, Input, Scene,
 };
 
-use physics2d::systems::physics::system_update_physics;
+use shapes::rectangle::Rectangle;
 
 struct MainState {}
 
@@ -23,41 +23,32 @@ impl Scene for MainState {
         _asset_manager: &mut AssetManager,
         _engine: &mut EngineContext,
     ) -> Result<(), ()> {
-        let texture_id_1 = _asset_manager.load_sprite("assets/awesomeface.png");
-        let texture_id_2 = _asset_manager.load_sprite("assets/happy-tree.png");
-
+        let awesomeface = _asset_manager.load_sprite("assets/awesomeface.png");
         let world = &mut _context.get_world();
+
         world.spawn((
             Sprite {
-                texture_id: texture_id_1.clone(),
+                texture_id: Some(awesomeface),
+                rect: Some(Rectangle::new(0.0, 0.0, 256.0, 256.0)),
+                ..Default::default()
+            },
+            Transform2D {
+                position: glam::vec2(144.0, 44.0),
+                scale: glam::vec2(0.5, 0.5),
+                rotate: 0.0,
+            },
+        ));
+
+        world.spawn((
+            Sprite {
+                ..Default::default()
             },
             Transform2D {
                 position: glam::vec2(0.0, 0.0),
-                scale: glam::vec2(300.0, 400.0),
+                scale: glam::vec2(200.0, 200.0),
                 rotate: 0.0,
             },
         ));
-        world.spawn((
-            Sprite {
-                texture_id: texture_id_2,
-            },
-            Transform2D {
-                position: glam::vec2(600.0, 100.0),
-                scale: glam::vec2(300.0, 400.0),
-                rotate: 45.0,
-            },
-        ));
-        world.spawn((
-            Sprite {
-                texture_id: texture_id_1,
-            },
-            Transform2D {
-                position: glam::vec2(250.0, 400.0),
-                scale: glam::vec2(150.0, 200.0),
-                rotate: 0.0,
-            },
-        ));
-
         Ok(())
     }
 
@@ -77,17 +68,6 @@ impl Scene for MainState {
         _context: &mut GameContext,
         _engine: &mut EngineContext,
     ) -> Result<core::Transition, ()> {
-        if _input.is_key_pressed(VirtualKeyCode::Space) {}
-        if _input.is_key_released(VirtualKeyCode::Space) {}
-
-        let world = &mut _context.get_world();
-
-        system_update_physics(world);
-
-        for (_id, transform) in world.query_mut::<&mut Transform2D>() {
-            // transform.position += ball.direction * 0.01;
-        }
-
         Ok(core::Transition::None)
     }
 }

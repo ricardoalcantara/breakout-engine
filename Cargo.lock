@@ -253,6 +253,7 @@ dependencies = [
  "log",
  "pollster",
  "render",
+ "shapes",
  "winit",
 ]
 
@@ -1441,6 +1442,7 @@ dependencies = [
  "image",
  "log",
  "shaderc",
+ "shapes",
  "wgpu",
  "winit",
 ]

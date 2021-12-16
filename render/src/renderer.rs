@@ -1,4 +1,5 @@
 use image::DynamicImage;
+use shapes::rectangle::Rect;
 
 use crate::texture::Texture;
 
@@ -13,9 +14,10 @@ pub trait Renderer2D {
     fn clean_color(&self) {}
     fn draw_texture(
         &mut self,
-        _texture: &Texture,
+        _texture: Option<&Texture>,
+        _rect: Option<Rect>,
         _position: glam::Vec2,
-        _size: glam::Vec2,
+        _scale: glam::Vec2,
         _rotate: f32,
         _color: glam::Vec3,
     ) {
