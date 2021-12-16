@@ -15,6 +15,7 @@ glam = "0.20.1"
 image = "0.23"
 winit = "0.26.0"
 shaderc = { version = "0.7.3", optional = true }
+shapes = { path = "../shapes" }
 
 
 [features]

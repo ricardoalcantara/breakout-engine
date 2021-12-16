@@ -61,30 +61,33 @@ impl Scene for MainState {
         let speed = 200.0;
         world.spawn((
             Sprite {
-                texture_id: pong_texture,
+                texture_id: Some(pong_texture),
+                color: Some(glam::vec3(1.0, 0.0, 0.0)),
+                ..Default::default()
             },
             Transform2D {
                 position: glam::vec2(400.0, 300.0),
-                scale: glam::vec2(32.0, 32.0),
-                rotate: 0.0,
+                ..Default::default()
             },
             Ball {
                 direction: glam::vec2(1.0, 1.0).normalize(),
                 speed,
             },
+            Rectangle::new_with_size(32.0, 32.0),
         ));
 
         world.spawn((
             Player,
             Paddles { speed },
             Sprite {
-                texture_id: paddles_texture.clone(),
+                texture_id: Some(paddles_texture.clone()),
+                ..Default::default()
             },
             Transform2D {
                 position: glam::vec2(0.0, 100.0),
-                scale: glam::vec2(32.0, 128.0),
-                rotate: 0.0,
+                ..Default::default()
             },
+            Rectangle::new_with_size(32.0, 128.0),
         ));
 
         world.spawn((
@@ -95,13 +98,14 @@ impl Scene for MainState {
             },
             Paddles { speed },
             Sprite {
-                texture_id: paddles_texture,
+                texture_id: Some(paddles_texture),
+                ..Default::default()
             },
             Transform2D {
                 position: glam::vec2(800.0 - 32.0, 100.0),
-                scale: glam::vec2(32.0, 128.0),
-                rotate: 0.0,
+                ..Default::default()
             },
+            Rectangle::new_with_size(32.0, 128.0),
         ));
 
         Ok(())
@@ -156,27 +160,29 @@ impl Scene for MainState {
         }
 
         {
-            let (ball_position, ball_size) = if let Some((_id, transform)) =
-                world.query::<With<Ball, &Transform2D>>().iter().next()
+            let (ball_position, ball_size) = if let Some((_id, (transform, collider))) = world
+                .query::<With<Ball, (&Transform2D, &Rectangle)>>()
+                .iter()
+                .next()
             {
-                (transform.position, transform.scale)
+                (transform.position, collider.clone())
             } else {
                 error!("Where's the ball?");
                 return Ok(core::Transition::None);
             };
 
-            for (_id, (ai, transform, paddles)) in
-                world.query_mut::<(&mut AI, &mut Transform2D, &Paddles)>()
+            for (_id, (ai, transform, paddles, collider)) in
+                world.query_mut::<(&mut AI, &mut Transform2D, &Paddles, &Rectangle)>()
             {
                 ai.cooldown += 1.0;
 
                 if ai.cooldown > ai.response_time {
                     ai.cooldown = 0.0;
                     ai.response_time = rng.gen_range(1.0..5.0);
-                    if transform.position.y > ball_position.y + ball_size.y / 2.0 {
+                    if transform.position.y > ball_position.y + ball_size.height / 2.0 {
                         ai.direction.y = -1.0;
-                    } else if transform.position.y + transform.scale.y
-                        < ball_position.y + ball_size.y / 2.0
+                    } else if transform.position.y + collider.width
+                        < ball_position.y + ball_size.height / 2.0
                     {
                         ai.direction.y = 1.0;
                     }
@@ -187,34 +193,34 @@ impl Scene for MainState {
         }
 
         let mut paddles_collider = Vec::new();
-        for (_id, transform) in world.query_mut::<With<Paddles, &Transform2D>>() {
-            paddles_collider.push(Rectangle::from_position_size(
-                transform.position.into(),
-                transform.scale.into(),
-            ))
+        for (_id, (transform, collider)) in
+            world.query_mut::<With<Paddles, (&Transform2D, &Rectangle)>>()
+        {
+            paddles_collider.push(collider.moved_to(transform.position.into()));
         }
 
-        'ball: for (_id, (ball, transform)) in world.query_mut::<(&mut Ball, &mut Transform2D)>() {
+        'ball: for (_id, (ball, transform, collider)) in
+            world.query_mut::<(&mut Ball, &mut Transform2D, &Rectangle)>()
+        {
             transform.position += ball.direction * ball.speed * self.level * _dt;
 
             if transform.position.y < 0.0 || transform.position.y > (600.0 - 32.0) {
                 ball.direction.y *= -1.0;
             }
 
-            let ball_collider =
-                Rectangle::from_position_size(transform.position.into(), transform.scale.into());
+            let ball_collider = collider.moved_to(transform.position.into());
 
             for paddles in &paddles_collider {
                 if paddles.intersects(&ball_collider) {
                     ball.direction.x *= -1.0;
 
                     if transform.position.x > paddles.x {
-                        transform.position.x = paddles.x + transform.scale.x;
+                        transform.position.x = paddles.x + collider.width;
                     } else {
-                        transform.position.x = paddles.x - transform.scale.x;
+                        transform.position.x = paddles.x - collider.width;
                     }
 
-                    if transform.position.y + transform.scale.y / 2.0 > paddles.center().y {
+                    if transform.position.y + collider.height / 2.0 > paddles.center().y {
                         ball.direction.y = 1.0;
                     } else {
                         ball.direction.y = -1.0;

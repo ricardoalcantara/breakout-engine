@@ -3,17 +3,22 @@ use crate::texture::TextureType;
 use crate::Texture;
 use gl::types::*;
 use log::warn;
+use shapes::rectangle::Rectangle;
 use std::mem;
 use std::ptr;
 
+// Todo: VertexFormat::
+type Float32x2 = [f32; 2];
+type Float32x3 = [f32; 3];
+
+#[derive(Debug, Clone, Copy)]
 struct Vertex {
-    position: [f32; 2],
-    color: [f32; 3],
-    texture_coords: [f32; 2],
-    // color: [f32; 3],
+    position: Float32x2,
+    color: Float32x3,
+    texture_coords: Float32x2,
 }
 
-fn vertex(position: [f32; 2], color: [f32; 3], texture_coords: [f32; 2]) -> Vertex {
+fn vertex(position: Float32x2, color: Float32x3, texture_coords: Float32x2) -> Vertex {
     Vertex {
         position,
         color,
@@ -23,6 +28,8 @@ fn vertex(position: [f32; 2], color: [f32; 3], texture_coords: [f32; 2]) -> Vert
 
 pub struct SpriteRenderer {
     quad_vao: u32,
+    quad_vbo: u32,
+    vertices: [Vertex; 4],
 }
 
 impl SpriteRenderer {
@@ -32,10 +39,10 @@ impl SpriteRenderer {
         let mut quad_vao: u32 = 0;
 
         let vertices: [Vertex; 4] = [
-            vertex([1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0]), // 0
-            vertex([1.0, 0.0], [1.0, 1.0, 1.0], [1.0, 0.0]), // 1
-            vertex([0.0, 0.0], [1.0, 1.0, 1.0], [0.0, 0.0]), // 2
-            vertex([0.0, 1.0], [1.0, 1.0, 1.0], [0.0, 1.0]), // 3
+            vertex([1.0, 1.0], [1.0, 1.0, 1.0], [1.0, 1.0]), // 0 // Top Right
+            vertex([1.0, 0.0], [1.0, 1.0, 1.0], [1.0, 0.0]), // 1 // Bottom Right
+            vertex([0.0, 0.0], [1.0, 1.0, 1.0], [0.0, 0.0]), // 2 // Bottom Left
+            vertex([0.0, 1.0], [1.0, 1.0, 1.0], [0.0, 1.0]), // 3 // Top Left
         ];
 
         let indices: [u32; 6] = [
@@ -82,7 +89,7 @@ impl SpriteRenderer {
                 gl::FLOAT,
                 gl::FALSE,
                 mem::size_of::<Vertex>() as GLsizei,
-                (2 * mem::size_of::<GLfloat>()) as _,
+                mem::size_of::<Float32x2>() as _, // offset Position
             );
             gl::EnableVertexAttribArray(1);
             // texture_coords
@@ -92,7 +99,7 @@ impl SpriteRenderer {
                 gl::FLOAT,
                 gl::FALSE,
                 mem::size_of::<Vertex>() as GLsizei,
-                (5 * mem::size_of::<GLfloat>()) as _,
+                (mem::size_of::<Float32x2>() + mem::size_of::<Float32x3>()) as _, // offset Position + Color
             );
             gl::EnableVertexAttribArray(2);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
@@ -100,14 +107,19 @@ impl SpriteRenderer {
             gl::BindVertexArray(0);
         }
 
-        Self { quad_vao }
+        Self {
+            quad_vao,
+            quad_vbo: vbo,
+            vertices,
+        }
     }
 
     pub fn draw_sprite(
         &self,
         texture: &Texture,
+        rect: Option<Rectangle>,
         position: glam::Vec2,
-        size: glam::Vec2,
+        scale: glam::Vec2,
         rotate: f32,
         color: glam::Vec3,
         shader: &Shader,
@@ -115,17 +127,34 @@ impl SpriteRenderer {
         shader.use_program();
 
         let mut model = glam::Mat4::IDENTITY;
+        // let mut model = glam::Mat4::orthographic_rh(0.0, 512.0, 512.0, 0.0, -1.0, 1.0);
         model *= glam::Mat4::from_translation(glam::vec3(position.x, position.y, 0.0));
+        model *=
+            glam::Mat4::from_scale(glam::vec3(texture.width as f32, texture.height as f32, 1.0));
+        model *= glam::Mat4::from_scale(glam::vec3(scale.x, scale.y, 1.0));
 
-        // model *= glam::Mat4::from_translation(glam::vec3(0.5 * size.x, 0.5 * size.y, 0.0));
         model *= glam::Mat4::from_rotation_z(rotate.to_radians());
-        // model *= glam::Mat4::from_translation(glam::vec3(-0.5 * size.x, -0.5 * size.y, 0.0));
-
-        model *= glam::Mat4::from_scale(glam::vec3(size.x, size.y, 1.0));
 
         shader.set_matrix4(&"model", &model, false);
-        // Todo: reconsider the color
-        // shader.set_vector3f(&"spriteColor", &color, false);
+
+        let mut vertices = self.vertices;
+
+        for vertex in &mut vertices {
+            vertex.color = [color.x, color.y, color.z];
+        }
+
+        if let Some(rect) = rect {
+            let width = texture.width as f32;
+            let height = texture.height as f32;
+            vertices[0].texture_coords = [
+                (rect.x + rect.width) / width,
+                (rect.y + rect.height) / height,
+            ]; // Top Right
+            vertices[1].texture_coords = [rect.right() / width, rect.y / height]; // Bottom Right
+            vertices[2].texture_coords = [rect.x / width, rect.y / height]; // Bottom Left
+            vertices[3].texture_coords = [rect.x / width, rect.bottom() / height];
+            // Top Left
+        }
 
         if let TextureType::OpenGL(texture) = &texture.texture_type {
             unsafe { gl::ActiveTexture(gl::TEXTURE0) };
@@ -137,16 +166,13 @@ impl SpriteRenderer {
         unsafe {
             gl::BindVertexArray(self.quad_vao);
 
-            // Todo: Update Buffer
-            // let vertices = [0];
-            // let vbo: u32 = 0;
-            // gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
-            // gl::BufferSubData(
-            //     gl::ARRAY_BUFFER,
-            //     0,
-            //     mem::size_of_val(&vertices) as GLsizeiptr,
-            //     mem::transmute(&vertices[0]),
-            // );
+            gl::BindBuffer(gl::ARRAY_BUFFER, self.quad_vbo);
+            gl::BufferSubData(
+                gl::ARRAY_BUFFER,
+                0,
+                mem::size_of_val(&vertices) as GLsizeiptr,
+                mem::transmute(&vertices[0]),
+            );
 
             gl::DrawElements(gl::TRIANGLES, 6, gl::UNSIGNED_INT, ptr::null());
             gl::BindVertexArray(0);
