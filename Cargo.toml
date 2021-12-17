@@ -1,5 +1,5 @@
 [package]
-name = "rust-wgpu-breakout"
+name = "breakout_engine"
 version = "0.1.0"
 edition = "2021"
 
@@ -27,3 +27,6 @@ name = "pong"
 
 [[example]]
 name = "breakout"
+
+[profile.dev_shader]
+inherits = "dev"

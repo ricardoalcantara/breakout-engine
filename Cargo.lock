@@ -106,6 +106,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d8c1fef690941d3e7788d328517591fecc684c084084702d6ff1641e993699a"
 
 [[package]]
+name = "breakout_engine"
+version = "0.1.0"
+dependencies = [
+ "core",
+ "glam",
+ "hecs",
+ "log",
+ "physics2d",
+ "pretty_env_logger",
+ "rand",
+ "shapes",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1452,20 +1466,6 @@ name = "renderdoc-sys"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f1382d1f0a252c4bf97dc20d979a2fdd05b024acd7c2ed0f7595d7817666a157"
-
-[[package]]
-name = "rust-wgpu-breakout"
-version = "0.1.0"
-dependencies = [
- "core",
- "glam",
- "hecs",
- "log",
- "physics2d",
- "pretty_env_logger",
- "rand",
- "shapes",
-]
 
 [[package]]
 name = "scoped-tls"
