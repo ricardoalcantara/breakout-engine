@@ -1,7 +1,8 @@
-use crate::{
-    asset_manager::AssetManager, engine_context::EngineContext, game_context::GameContext, Event,
-    Input,
+use crate::core::{
+    asset_manager::AssetManager, engine_context::EngineContext, game_context::GameContext,
 };
+
+use super::input::{Event, Input};
 
 pub enum Transition {
     None,

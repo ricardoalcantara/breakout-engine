@@ -1,4 +1,5 @@
-use crate::{game_state::GameState, Scene};
+use super::scene::Scene;
+use crate::core::game_state::GameState;
 use log::{error, info};
 use render::window::MyWindow;
 use winit::{

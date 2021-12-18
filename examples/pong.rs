@@ -1,11 +1,16 @@
 extern crate log;
 extern crate pretty_env_logger;
 
-use core::{
+use breakout_engine::core::{
+    asset_manager::AssetManager,
     components::{Sprite, Transform2D},
+    engine::{EngineBuilder, EngineSettings},
     engine_context::EngineContext,
-    AssetManager, EngineBuilder, EngineSettings, GameContext, Input, Scene, VirtualKeyCode,
+    game_context::GameContext,
+    input::{Event, Input, VirtualKeyCode},
+    scene::{InputHandled, Scene, Transition},
 };
+use breakout_engine::math;
 use hecs::With;
 use log::error;
 use rand::Rng;
@@ -31,14 +36,14 @@ impl MainState {
 }
 
 struct Ball {
-    direction: glam::Vec2,
+    direction: math::Vec2,
     speed: f32,
 }
 
 struct Player;
 
 struct AI {
-    direction: glam::Vec2,
+    direction: math::Vec2,
     cooldown: f32,
     response_time: f32,
 }
@@ -62,15 +67,15 @@ impl Scene for MainState {
         world.spawn((
             Sprite {
                 texture_id: Some(pong_texture),
-                color: Some(glam::vec3(1.0, 0.0, 0.0)),
+                color: Some(math::vec3(1.0, 0.0, 0.0)),
                 ..Default::default()
             },
             Transform2D {
-                position: glam::vec2(400.0, 300.0),
+                position: math::vec2(400.0, 300.0),
                 ..Default::default()
             },
             Ball {
-                direction: glam::vec2(1.0, 1.0).normalize(),
+                direction: math::vec2(1.0, 1.0).normalize(),
                 speed,
             },
             Rect::new_with_size(32.0, 32.0),
@@ -84,7 +89,7 @@ impl Scene for MainState {
                 ..Default::default()
             },
             Transform2D {
-                position: glam::vec2(0.0, 100.0),
+                position: math::vec2(0.0, 100.0),
                 ..Default::default()
             },
             Rect::new_with_size(32.0, 128.0),
@@ -92,7 +97,7 @@ impl Scene for MainState {
 
         world.spawn((
             AI {
-                direction: glam::Vec2::ZERO,
+                direction: math::Vec2::ZERO,
                 cooldown: 0.0,
                 response_time: 1.0,
             },
@@ -102,7 +107,7 @@ impl Scene for MainState {
                 ..Default::default()
             },
             Transform2D {
-                position: glam::vec2(800.0 - 32.0, 100.0),
+                position: math::vec2(800.0 - 32.0, 100.0),
                 ..Default::default()
             },
             Rect::new_with_size(32.0, 128.0),
@@ -113,11 +118,11 @@ impl Scene for MainState {
 
     fn input(
         &mut self,
-        _event: core::Event,
+        _event: Event,
         _context: &mut GameContext,
         _engine: &mut EngineContext,
-    ) -> Result<core::InputHandled, ()> {
-        Ok(core::InputHandled::None)
+    ) -> Result<InputHandled, ()> {
+        Ok(InputHandled::None)
     }
 
     fn update(
@@ -126,7 +131,7 @@ impl Scene for MainState {
         input: &mut Input,
         _context: &mut GameContext,
         _engine: &mut EngineContext,
-    ) -> Result<core::Transition, ()> {
+    ) -> Result<Transition, ()> {
         let mut rng = rand::thread_rng();
         let world = &mut _context.get_world();
 
@@ -146,7 +151,7 @@ impl Scene for MainState {
         }
 
         for (_id, (transform, paddles)) in world.query_mut::<(&mut Transform2D, &Paddles)>() {
-            let mut direction = glam::Vec2::ZERO;
+            let mut direction = math::Vec2::ZERO;
 
             if input.is_key_pressed(VirtualKeyCode::Up) {
                 direction.y = -1.0;
@@ -168,7 +173,7 @@ impl Scene for MainState {
                 (transform.position, collider.clone())
             } else {
                 error!("Where's the ball?");
-                return Ok(core::Transition::None);
+                return Ok(Transition::None);
             };
 
             for (_id, (ai, transform, paddles, collider)) in
@@ -233,12 +238,12 @@ impl Scene for MainState {
                 transform.position.x = 416.0;
                 transform.position.y = 316.0;
                 let direction =
-                    glam::vec2(rng.gen_range(0.0..1.0), rng.gen_range(0.0..1.0)).normalize();
+                    math::vec2(rng.gen_range(0.0..1.0), rng.gen_range(0.0..1.0)).normalize();
                 ball.direction = direction;
             }
         }
 
-        Ok(core::Transition::None)
+        Ok(Transition::None)
     }
 }
 

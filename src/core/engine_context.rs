@@ -1,6 +1,5 @@
+use super::engine::EngineSettings;
 use render::window::MyWindow;
-
-use crate::EngineSettings;
 
 pub struct EngineContext {
     #[warn(dead_code)]

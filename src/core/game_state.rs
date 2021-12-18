@@ -1,9 +1,13 @@
-use crate::{
+use super::{
+    engine::EngineSettings,
+    input::Input,
+    scene::{InputHandled, Scene, Transition},
+};
+use crate::core::{
     asset_manager::AssetManager,
     components::{Sprite, Transform2D},
     engine_context::EngineContext,
     game_context::GameContext,
-    EngineSettings, Input, InputHandled, Scene, Transition,
 };
 use render::{renderer::Renderer2D, window::MyWindow};
 

@@ -1,6 +1,5 @@
+use crate::core::asset_manager::TextureId;
 use shapes::rectangle::Rect;
-
-use crate::TextureId;
 
 pub struct Sprite {
     pub texture_id: Option<TextureId>,
