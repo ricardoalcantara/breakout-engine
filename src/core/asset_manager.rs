@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use audio::audio::Audio;
+use audio::audio::{Audio, AudioSettings};
 use image::DynamicImage;
 use render::texture::Texture;
 
@@ -51,11 +51,12 @@ impl AssetManager {
         &self.textures[id]
     }
 
-    pub fn load_audio(&mut self, path: &str) -> AudioId {
+    pub fn load_audio(&mut self, path: &str, settings: Option<AudioSettings>) -> AudioId {
         self.audio_id_count += 1;
         let id = AudioId(self.audio_id_count);
         match Audio::load(path) {
-            Ok(audio) => {
+            Ok(mut audio) => {
+                audio.settings = settings;
                 self.audios.insert(id.clone(), audio);
             }
             Err(e) => {

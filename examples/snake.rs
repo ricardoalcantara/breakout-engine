@@ -1,6 +1,7 @@
 extern crate log;
 extern crate pretty_env_logger;
 
+use audio::audio::AudioSettings;
 use breakout_engine::core::{
     asset_manager::{AssetManager, AudioId},
     components::{Sprite, Transform2D},
@@ -95,7 +96,7 @@ impl MainState {
     fn refresh_frute(&mut self) {
         let mut rng = rand::thread_rng();
 
-        self.frute.x = rng.gen_range(0..GRID_WIDTH - 1) as f32;
+        self.frute.x = 0.0; //rng.gen_range(0..GRID_WIDTH - 1) as f32;
         self.frute.y = rng.gen_range(0..GRID_HEIGHT - 1) as f32;
     }
 
@@ -132,10 +133,16 @@ impl Scene for MainState {
 
         self.start();
 
-        let music_audio_id = _asset_manager.load_audio("assets/slow-piano-intermission.ogg");
-        self.effect_audio_id = Some(_asset_manager.load_audio("assets/coin.wav"));
+        let music_audio_id = _asset_manager.load_audio(
+            "assets/slow-piano-intermission.ogg",
+            Some(AudioSettings {
+                repeat_infinite: true,
+                ..Default::default()
+            }),
+        );
+        self.effect_audio_id = Some(_asset_manager.load_audio("assets/coin.wav", None));
 
-        _context.play_audio(music_audio_id, true);
+        _context.play_audio(music_audio_id);
 
         let world = &mut _context.get_world();
 
@@ -211,10 +218,6 @@ impl Scene for MainState {
 
             snake_state = SnakeState::Moving(*snake);
 
-            if *snake == self.frute {
-                snake_state = SnakeState::New
-            }
-
             if snake.x < 0.0 {
                 match self.game_mode {
                     GameMode::ACube => {
@@ -251,6 +254,10 @@ impl Scene for MainState {
                     GameMode::Else => snake_state = SnakeState::Dead,
                 }
             }
+
+            if *snake == self.frute {
+                snake_state = SnakeState::New
+            }
         }
 
         match snake_state {
@@ -259,7 +266,7 @@ impl Scene for MainState {
                 self.refresh_frute();
 
                 if let Some(effect_audio_id) = self.effect_audio_id.as_ref() {
-                    _context.play_audio(effect_audio_id.clone(), false);
+                    _context.play_audio(effect_audio_id.clone());
                 }
             }
             SnakeState::Dead => {

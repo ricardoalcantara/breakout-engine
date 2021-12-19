@@ -3,13 +3,29 @@ use std::{
     sync::Arc,
 };
 
+pub struct AudioSettings {
+    pub repeat_infinite: bool,
+}
+
+impl Default for AudioSettings {
+    fn default() -> Self {
+        Self {
+            repeat_infinite: false,
+        }
+    }
+}
+
 pub struct Audio {
     data: Arc<[u8]>,
+    pub settings: Option<AudioSettings>,
 }
 
 impl Audio {
     fn new(data: Arc<[u8]>) -> Audio {
-        Audio { data }
+        Audio {
+            data,
+            settings: None,
+        }
     }
 }
 

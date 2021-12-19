@@ -1,6 +1,5 @@
 use super::{
     engine::EngineSettings,
-    game_context::AudioQueuePlayer,
     input::Input,
     scene::{InputHandled, Scene, Transition},
 };
@@ -126,13 +125,8 @@ impl GameState {
         self.input.end_frame();
 
         for audio_queue in self.context.take_audio_queue() {
-            let (audio_id, repeat_infinite) = match audio_queue {
-                AudioQueuePlayer::Once(audio_id) => {
-                    (self.asset_manager.get_audio(&audio_id), false)
-                }
-                AudioQueuePlayer::Loop(audio_id) => (self.asset_manager.get_audio(&audio_id), true),
-            };
-            self.music_player.play(audio_id, repeat_infinite)
+            let audio = self.asset_manager.get_audio(&audio_queue);
+            self.music_player.play(audio);
         }
 
         result
