@@ -1,11 +1,16 @@
 extern crate log;
 extern crate pretty_env_logger;
 
-use core::{
+use breakout_engine::core::{
+    asset_manager::AssetManager,
     components::{Sprite, Transform2D},
+    engine::{EngineBuilder, EngineSettings},
     engine_context::EngineContext,
-    AssetManager, EngineBuilder, EngineSettings, GameContext, Input, Scene, VirtualKeyCode,
+    game_context::GameContext,
+    input::{Event, Input, VirtualKeyCode},
+    scene::{InputHandled, Scene, Transition},
 };
+use breakout_engine::math;
 use hecs::{With, World};
 use log::{error, info};
 use rand::Rng;
@@ -23,7 +28,7 @@ enum GameMode {
 
 enum SnakeState {
     Unknow,
-    Moving(glam::Vec2),
+    Moving(math::Vec2),
     New,
     Dead,
 }
@@ -31,16 +36,16 @@ enum SnakeState {
 struct Snake;
 struct Frute;
 struct MainState {
-    snake: Vec<glam::Vec2>,
-    frute: glam::Vec2,
-    direction: glam::Vec2,
+    snake: Vec<math::Vec2>,
+    frute: math::Vec2,
+    direction: math::Vec2,
     time: f32,
     delay: f32,
     game_mode: GameMode,
 }
 
-fn get_input_direction(_input: &mut Input) -> glam::Vec2 {
-    let mut direction = glam::Vec2::ZERO;
+fn get_input_direction(_input: &mut Input) -> math::Vec2 {
+    let mut direction = math::Vec2::ZERO;
 
     if _input.is_key_pressed(VirtualKeyCode::Up) {
         direction.y = -1.0;
@@ -62,22 +67,22 @@ impl MainState {
     fn new() -> Self {
         Self {
             snake: Vec::new(),
-            direction: glam::vec2(1.0, 0.0),
-            frute: glam::Vec2::ZERO,
+            direction: math::vec2(1.0, 0.0),
+            frute: math::Vec2::ZERO,
             time: f32::MAX,
             delay: 0.1,
             game_mode: GameMode::ACube,
         }
     }
 
-    fn spawn_snake_part(&self, world: &mut World, position: glam::Vec2) {
+    fn spawn_snake_part(&self, world: &mut World, position: math::Vec2) {
         world.spawn((
             Sprite {
                 ..Default::default()
             },
             Transform2D {
                 position,
-                scale: glam::vec2(TILE_SIZE as f32, TILE_SIZE as f32),
+                scale: math::vec2(TILE_SIZE as f32, TILE_SIZE as f32),
                 rotate: 0.0,
             },
             Snake,
@@ -94,11 +99,11 @@ impl MainState {
     fn start(&mut self) {
         let mut rng = rand::thread_rng();
         if rng.gen::<f32>() > 0.5 {
-            self.direction = glam::vec2(1.0, 0.0);
+            self.direction = math::vec2(1.0, 0.0);
         } else {
-            self.direction = glam::vec2(0.0, 1.0);
+            self.direction = math::vec2(0.0, 1.0);
         }
-        self.snake.push(glam::Vec2::ZERO);
+        self.snake.push(math::Vec2::ZERO);
 
         self.refresh_frute();
     }
@@ -127,15 +132,15 @@ impl Scene for MainState {
         self.start();
         world.spawn((
             Sprite {
-                color: Some(glam::vec3(1.0, 0.0, 0.0)),
+                color: Some(math::vec3(1.0, 0.0, 0.0)),
                 ..Default::default()
             },
             Transform2D {
-                position: glam::vec2(
+                position: math::vec2(
                     (self.frute.x as u32 * TILE_SIZE) as f32,
                     (self.frute.y as u32 * TILE_SIZE) as f32,
                 ),
-                scale: glam::vec2(TILE_SIZE as f32, TILE_SIZE as f32),
+                scale: math::vec2(TILE_SIZE as f32, TILE_SIZE as f32),
                 rotate: 0.0,
             },
             Frute,
@@ -145,11 +150,11 @@ impl Scene for MainState {
 
     fn input(
         &mut self,
-        _event: core::Event,
+        _event: Event,
         _context: &mut GameContext,
         _engine: &mut EngineContext,
-    ) -> Result<core::InputHandled, ()> {
-        Ok(core::InputHandled::None)
+    ) -> Result<InputHandled, ()> {
+        Ok(InputHandled::None)
     }
 
     fn update(
@@ -158,7 +163,7 @@ impl Scene for MainState {
         _input: &mut Input,
         _context: &mut GameContext,
         _engine: &mut EngineContext,
-    ) -> Result<core::Transition, ()> {
+    ) -> Result<Transition, ()> {
         let direction = get_input_direction(_input);
 
         if self.direction.x != 0.0 {
@@ -176,7 +181,7 @@ impl Scene for MainState {
         // Next Tick
         self.time += _dt;
         if self.time < self.delay {
-            return Ok(core::Transition::None);
+            return Ok(Transition::None);
         }
         self.time = 0.0;
 
@@ -284,7 +289,7 @@ impl Scene for MainState {
             transform.position = self.frute * TILE_SIZE as f32;
         }
 
-        Ok(core::Transition::None)
+        Ok(Transition::None)
     }
 }
 

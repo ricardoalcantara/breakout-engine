@@ -7,7 +7,6 @@ edition = "2021"
 
 [workspace]
 members = [
-    "core",
     "render",
     "shapes",
 ]
@@ -16,17 +15,23 @@ members = [
 pretty_env_logger = "0.4.0"
 log = "0.4.14"
 glam = "0.20.1"
-core = { path = "./core" }
 shapes = { path = "./shapes" }
 physics2d = { path = "./physics2d" }
 hecs = "0.7.1"
 rand = "0.8.4"
+anyhow = "1.0"
+pollster = "0.2"
+winit = "0.26.0"
+image = "0.23"
+render = { path = "./render", default-features = false, features = ["opengl"] }
+
 
 [[example]]
 name = "pong"
-
 [[example]]
-name = "breakout"
+name = "snake"
+[[example]]
+name = "empty"
 
 [profile.dev_shader]
 inherits = "dev"
