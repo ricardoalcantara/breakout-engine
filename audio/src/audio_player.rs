@@ -16,15 +16,13 @@ impl AudioPlayer {
         }
     }
 
-    pub fn play(&mut self, audio: &Audio) {
-        let source = audio.decoder();
-        self.handle.play_raw(source.convert_samples()).unwrap();
-    }
-
-    // Todo: Understand the play_once difference
-    // https://github.com/RustAudio/rodio/blob/master/src/lib.rs#L1
-    pub fn play_once(&mut self, audio: &Audio) {
-        let cursor = audio.cursor();
-        self.handle.play_once(cursor).unwrap();
+    pub fn play(&mut self, audio: &Audio, repeat_infinite: bool) {
+        if repeat_infinite {
+            let source = audio.decoder().repeat_infinite();
+            self.handle.play_raw(source.convert_samples()).unwrap();
+        } else {
+            let source = audio.decoder();
+            self.handle.play_raw(source.convert_samples()).unwrap();
+        }
     }
 }

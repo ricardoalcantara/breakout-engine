@@ -135,7 +135,7 @@ impl Scene for MainState {
         let music_audio_id = _asset_manager.load_audio("assets/slow-piano-intermission.ogg");
         self.effect_audio_id = Some(_asset_manager.load_audio("assets/coin.wav"));
 
-        _context.play_audio(music_audio_id);
+        _context.play_audio(music_audio_id, true);
 
         let world = &mut _context.get_world();
 
@@ -259,7 +259,7 @@ impl Scene for MainState {
                 self.refresh_frute();
 
                 if let Some(effect_audio_id) = self.effect_audio_id.as_ref() {
-                    _context.play_audio(effect_audio_id.clone());
+                    _context.play_audio(effect_audio_id.clone(), false);
                 }
             }
             SnakeState::Dead => {
