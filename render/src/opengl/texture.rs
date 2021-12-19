@@ -16,6 +16,15 @@ pub struct OpenGLTexture {
     filter_max: u32, // filtering mode if texture pixels > screen pixels
 }
 
+impl Drop for OpenGLTexture {
+    fn drop(&mut self) {
+        log::info!("DeleteTextures {:}", &self.id);
+        unsafe {
+            gl::DeleteTextures(1, &self.id);
+        }
+    }
+}
+
 impl OpenGLTexture {
     fn new() -> Self {
         let id = unsafe {
