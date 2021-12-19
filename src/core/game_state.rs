@@ -9,6 +9,8 @@ use crate::core::{
     engine_context::EngineContext,
     game_context::GameContext,
 };
+use audio::audio_player::AudioPlayer;
+use hecs::World;
 use render::{renderer::Renderer2D, window::MyWindow};
 
 pub struct GameState {
@@ -18,6 +20,7 @@ pub struct GameState {
     engine: EngineContext,
     asset_manager: AssetManager,
     input: Input,
+    music_player: AudioPlayer,
 }
 
 impl GameState {
@@ -35,13 +38,13 @@ impl GameState {
             .init(&mut context, &mut asset_manager, &mut engine)
             .unwrap();
 
-        for (id, preloaded_texture) in asset_manager.get_preload_textures() {
+        for (id, preloaded_texture) in asset_manager.take_preload_textures() {
             let texture = renderer.generate_texture(preloaded_texture);
             asset_manager.add_texture(id, texture);
         }
 
         let input = Input::new();
-
+        let music_player = AudioPlayer::new();
         Self {
             scenes: vec![Box::new(state)],
             renderer: Box::new(renderer),
@@ -49,6 +52,7 @@ impl GameState {
             engine,
             asset_manager,
             input,
+            music_player,
         }
     }
 
@@ -120,34 +124,46 @@ impl GameState {
         };
         self.input.end_frame();
 
+        for audio_id in self.context.take_audio_queue() {
+            let audio = self.asset_manager.get_audio(&audio_id);
+            self.music_player.play(audio)
+        }
+
         result
     }
 
     pub fn render(&mut self, window: &MyWindow) -> Result<(), ()> {
-        let world = self.context.get_world();
+        let world = &mut self.context.world;
 
-        self.renderer.clean_color();
+        self.renderer.clear_color(self.context.clear_color);
 
-        for (_id, (sprite, transform)) in world.query_mut::<(&Sprite, &Transform2D)>() {
-            // Todo: Generate default texture
-            let texture = if let Some(texture_id) = &sprite.texture_id {
-                Some(self.asset_manager.get_texture(&texture_id))
-            } else {
-                None
-            };
-            self.renderer.draw_texture(
-                texture,
-                sprite.rect,
-                transform.position,
-                transform.scale,
-                transform.rotate,
-                sprite.color.unwrap_or(glam::vec3(1.0, 1.0, 1.0)),
-            );
-        }
-
+        system_render_sprite(world, self.renderer.as_mut(), &mut self.asset_manager);
         // Todo: Encapsulate ir
         window.swap_buffers();
 
         Ok(())
+    }
+}
+
+fn system_render_sprite(
+    world: &mut World,
+    renderer: &mut dyn Renderer2D,
+    asset_manager: &AssetManager,
+) {
+    for (_id, (sprite, transform)) in world.query_mut::<(&Sprite, &Transform2D)>() {
+        // Todo: Generate default texture
+        let texture = if let Some(texture_id) = &sprite.texture_id {
+            Some(asset_manager.get_texture(&texture_id))
+        } else {
+            None
+        };
+        renderer.draw_texture(
+            texture,
+            sprite.rect,
+            transform.position,
+            transform.scale,
+            transform.rotate,
+            sprite.color.unwrap_or(glam::vec3(1.0, 1.0, 1.0)),
+        );
     }
 }

@@ -2,7 +2,7 @@ extern crate log;
 extern crate pretty_env_logger;
 
 use breakout_engine::core::{
-    asset_manager::AssetManager,
+    asset_manager::{AssetManager, AudioId},
     components::{Sprite, Transform2D},
     engine::{EngineBuilder, EngineSettings},
     engine_context::EngineContext,
@@ -33,6 +33,7 @@ enum SnakeState {
     Dead,
 }
 
+struct Player;
 struct Snake;
 struct Frute;
 struct MainState {
@@ -42,6 +43,7 @@ struct MainState {
     time: f32,
     delay: f32,
     game_mode: GameMode,
+    effect_audio_id: Option<AudioId>,
 }
 
 fn get_input_direction(_input: &mut Input) -> math::Vec2 {
@@ -72,6 +74,7 @@ impl MainState {
             time: f32::MAX,
             delay: 0.1,
             game_mode: GameMode::ACube,
+            effect_audio_id: None,
         }
     }
 
@@ -127,9 +130,15 @@ impl Scene for MainState {
             self.game_mode = GameMode::Else;
         }
 
+        self.start();
+
+        let music_audio_id = _asset_manager.load_audio("assets/slow-piano-intermission.ogg");
+        self.effect_audio_id = Some(_asset_manager.load_audio("assets/coin.wav"));
+
+        _context.play_audio(music_audio_id);
+
         let world = &mut _context.get_world();
 
-        self.start();
         world.spawn((
             Sprite {
                 color: Some(math::vec3(1.0, 0.0, 0.0)),
@@ -145,6 +154,7 @@ impl Scene for MainState {
             },
             Frute,
         ));
+
         Ok(())
     }
 
@@ -243,13 +253,14 @@ impl Scene for MainState {
             }
         }
 
-        let world = &mut _context.get_world();
-        let mut despawn = Vec::new();
-
         match snake_state {
             SnakeState::New => {
                 self.snake.push(self.frute);
                 self.refresh_frute();
+
+                if let Some(effect_audio_id) = self.effect_audio_id.as_ref() {
+                    _context.play_audio(effect_audio_id.clone());
+                }
             }
             SnakeState::Dead => {
                 self.restart();
@@ -264,6 +275,9 @@ impl Scene for MainState {
             }
             _ => (),
         }
+
+        let world = &mut _context.get_world();
+        let mut despawn = Vec::new();
 
         let mut snake_copy = self.snake.clone();
 

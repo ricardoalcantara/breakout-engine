@@ -76,9 +76,9 @@ impl Renderer2D for OpenGLRenderer2D {
         OpenGLTexture::generate_texture(img)
     }
 
-    fn clean_color(&self) {
+    fn clear_color(&self, color: glam::Vec3) {
         unsafe {
-            gl::ClearColor(0.0, 0.0, 0.0, 1.0);
+            gl::ClearColor(color.x, color.y, color.z, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT);
         }
     }

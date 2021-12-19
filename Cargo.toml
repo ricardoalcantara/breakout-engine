@@ -7,24 +7,25 @@ edition = "2021"
 
 [workspace]
 members = [
+    "audio",
     "render",
     "shapes",
 ]
 
 [dependencies]
-pretty_env_logger = "0.4.0"
-log = "0.4.14"
-glam = "0.20.1"
-shapes = { path = "./shapes" }
-physics2d = { path = "./physics2d" }
-hecs = "0.7.1"
-rand = "0.8.4"
 anyhow = "1.0"
-pollster = "0.2"
-winit = "0.26.0"
+glam = "0.20.1"
+hecs = "0.7.1"
 image = "0.23"
+log = "0.4.14"
+pollster = "0.2"
+pretty_env_logger = "0.4.0"
+rand = "0.8.4"
+winit = "0.26.0"
+audio = { path = "./audio" }
+physics2d = { path = "./physics2d" }
 render = { path = "./render", default-features = false, features = ["opengl"] }
-
+shapes = { path = "./shapes" }
 
 [[example]]
 name = "pong"

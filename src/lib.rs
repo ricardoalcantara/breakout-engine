@@ -1,3 +1,4 @@
+pub use audio;
 pub use shapes;
 
 pub mod core;
