@@ -1,17 +1,20 @@
 extern crate log;
 extern crate pretty_env_logger;
 
-use audio::audio::AudioSettings;
-use breakout_engine::core::{
-    asset_manager::{AssetManager, AudioId},
-    components::{Sprite, Transform2D},
-    engine::{EngineBuilder, EngineSettings},
-    engine_context::EngineContext,
-    game_context::GameContext,
-    input::{Event, Input, VirtualKeyCode},
-    scene::{InputHandled, Scene, Transition},
-};
+use breakout_engine::audio::AudioSettings;
 use breakout_engine::math;
+use breakout_engine::{
+    core::{
+        asset_manager::{AssetManager, AudioId},
+        components::{Sprite, Transform2D},
+        engine::{EngineBuilder, EngineSettings},
+        engine_context::EngineContext,
+        game_context::GameContext,
+        input::{Event, Input, VirtualKeyCode},
+        scene::{InputHandled, Scene, Transition},
+    },
+    error::BreakoutResult,
+};
 use hecs::{With, World};
 use log::{error, info};
 use rand::Rng;
@@ -34,7 +37,6 @@ enum SnakeState {
     Dead,
 }
 
-struct Player;
 struct Snake;
 struct Frute;
 struct MainState {
@@ -124,7 +126,7 @@ impl Scene for MainState {
         _context: &mut GameContext,
         _asset_manager: &mut AssetManager,
         _engine: &mut EngineContext,
-    ) -> Result<(), ()> {
+    ) -> BreakoutResult {
         let args: Vec<String> = std::env::args().collect();
         info!("{:?}", args);
         if args.len() > 2 && args[1] == "game_mode" && args[2] == "else" {
@@ -170,7 +172,7 @@ impl Scene for MainState {
         _event: Event,
         _context: &mut GameContext,
         _engine: &mut EngineContext,
-    ) -> Result<InputHandled, ()> {
+    ) -> BreakoutResult<InputHandled> {
         Ok(InputHandled::None)
     }
 
@@ -180,7 +182,7 @@ impl Scene for MainState {
         _input: &mut Input,
         _context: &mut GameContext,
         _engine: &mut EngineContext,
-    ) -> Result<Transition, ()> {
+    ) -> BreakoutResult<Transition> {
         let direction = get_input_direction(_input);
 
         if self.direction.x != 0.0 {
@@ -314,13 +316,12 @@ impl Scene for MainState {
     }
 }
 
-fn main() {
+fn main() -> BreakoutResult {
     pretty_env_logger::init();
 
     EngineBuilder::new()
         .with_settings(EngineSettings::Title(String::from("Snake")))
         .with_settings(EngineSettings::WindowSize((WIDTH, HEIGHT)))
-        .build()
-        .unwrap()
-        .run(MainState::new());
+        .build()?
+        .run(MainState::new())
 }

@@ -1,10 +1,13 @@
-use breakout_engine::core::{
-    asset_manager::AssetManager,
-    engine::{EngineBuilder, EngineSettings},
-    engine_context::EngineContext,
-    game_context::GameContext,
-    input::{Event, Input},
-    scene::{InputHandled, Scene, Transition},
+use breakout_engine::{
+    core::{
+        asset_manager::AssetManager,
+        engine::{EngineBuilder, EngineSettings},
+        engine_context::EngineContext,
+        game_context::GameContext,
+        input::{Event, Input},
+        scene::{InputHandled, Scene, Transition},
+    },
+    error::BreakoutResult,
 };
 
 extern crate log;
@@ -23,7 +26,7 @@ impl Scene for MainState {
         _context: &mut GameContext,
         _asset_manager: &mut AssetManager,
         _engine: &mut EngineContext,
-    ) -> Result<(), ()> {
+    ) -> BreakoutResult {
         Ok(())
     }
 
@@ -32,7 +35,7 @@ impl Scene for MainState {
         _event: Event,
         _context: &mut GameContext,
         _engine: &mut EngineContext,
-    ) -> Result<InputHandled, ()> {
+    ) -> BreakoutResult<InputHandled> {
         Ok(InputHandled::None)
     }
 
@@ -42,18 +45,17 @@ impl Scene for MainState {
         _input: &mut Input,
         _context: &mut GameContext,
         _engine: &mut EngineContext,
-    ) -> Result<Transition, ()> {
+    ) -> BreakoutResult<Transition> {
         Ok(Transition::None)
     }
 }
 
-fn main() {
+fn main() -> BreakoutResult {
     pretty_env_logger::init();
 
     EngineBuilder::new()
         .with_settings(EngineSettings::Title(String::from("Empty")))
         .with_settings(EngineSettings::WindowSize((800, 600)))
-        .build()
-        .unwrap()
-        .run(MainState::new());
+        .build()?
+        .run(MainState::new())
 }

@@ -1,7 +1,11 @@
 use super::scene::Scene;
-use crate::core::game_state::GameState;
+use crate::render::renderer::RenderAPI;
+use crate::render::window::MyWindow;
+use crate::{
+    core::game_state::GameState,
+    error::{BreakoutError, BreakoutResult},
+};
 use log::{error, info};
-use render::window::MyWindow;
 use winit::{
     dpi::PhysicalSize,
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
@@ -170,11 +174,11 @@ impl EngineBuilder {
         self
     }
 
-    pub fn build(self) -> Result<Engine, ()> {
+    pub fn build(self) -> BreakoutResult<Engine> {
         let mut window_builder = winit::window::WindowBuilder::new();
         window_builder = EngineSettings::apply_builder(window_builder, self.engine_settings);
 
-        let my_window = render::build_window(window_builder, render::renderer::RenderAPI::OpenGL);
+        let my_window = crate::render::build_window(window_builder, RenderAPI::OpenGL);
         Ok(Engine { window: my_window })
     }
 }
@@ -184,13 +188,13 @@ pub struct Engine {
 }
 
 impl Engine {
-    pub fn run<S>(mut self, state: S)
+    pub fn run<S>(mut self, state: S) -> BreakoutResult<()>
     where
         S: Scene + 'static,
     {
-        let render = self.window.create_renderer_2d();
+        let render = self.window.create_renderer_2d()?;
         let event_loop = self.window.event_loop.take().unwrap();
-        let mut game_state = GameState::new(state, render, &self.window);
+        let mut game_state = GameState::new(state, render, &self.window)?;
 
         let mut engine_timer = EngineTimer::new();
 

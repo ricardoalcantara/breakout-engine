@@ -1,5 +1,6 @@
-use crate::core::{
-    asset_manager::AssetManager, engine_context::EngineContext, game_context::GameContext,
+use crate::{
+    core::{asset_manager::AssetManager, engine_context::EngineContext, game_context::GameContext},
+    error::BreakoutResult,
 };
 
 use super::input::{Event, Input};
@@ -23,7 +24,7 @@ pub trait Scene {
         _context: &mut GameContext,
         _asset_manager: &mut AssetManager,
         _engine: &mut EngineContext,
-    ) -> Result<(), ()> {
+    ) -> BreakoutResult {
         Ok(())
     }
 
@@ -32,7 +33,7 @@ pub trait Scene {
         _event: Event,
         _context: &mut GameContext,
         _engine: &mut EngineContext,
-    ) -> Result<InputHandled, ()> {
+    ) -> BreakoutResult<InputHandled> {
         Ok(InputHandled::None)
     }
 
@@ -42,7 +43,7 @@ pub trait Scene {
         _input: &mut Input,
         _context: &mut GameContext,
         _engine: &mut EngineContext,
-    ) -> Result<Transition, ()> {
+    ) -> BreakoutResult<Transition> {
         Ok(Transition::None)
     }
 }

@@ -1,14 +1,12 @@
-#[cfg(feature = "opengl")]
 use crate::{
-    opengl::{self, renderer2d::OpenGLRenderer2D},
-    renderer::Renderer2D,
-    RenderAPI,
+    error::BreakoutResult,
+    render::{renderer::Renderer2D, RenderAPI},
 };
-#[cfg(feature = "opengl")]
 use glutin::{window::Window, ContextWrapper, PossiblyCurrent};
 
+use super::opengl::{self, renderer2d::OpenGLRenderer2D};
+
 pub(crate) enum WindowProvider {
-    #[cfg(feature = "opengl")]
     Glutin(ContextWrapper<PossiblyCurrent, glutin::window::Window>),
 }
 
@@ -21,13 +19,11 @@ pub struct MyWindow {
 impl MyWindow {
     pub fn build(window_builder: winit::window::WindowBuilder, render_api: RenderAPI) -> Self {
         let (window_provider, event_loop) = match render_api {
-            #[cfg(feature = "opengl")]
             RenderAPI::OpenGL => {
                 let (window, event_loop) = opengl::build_window(window_builder);
 
                 (WindowProvider::Glutin(window), event_loop)
             }
-            #[cfg(feature = "default")]
             RenderAPI::WGPU => todo!(),
             _ => todo!(""),
         };
@@ -39,15 +35,13 @@ impl MyWindow {
         }
     }
 
-    pub fn create_renderer_2d(&self) -> impl Renderer2D {
+    pub fn create_renderer_2d(&self) -> BreakoutResult<impl Renderer2D> {
         match self.render_api {
             RenderAPI::OpenGL => {
                 let WindowProvider::Glutin(window) = &self.window_provider;
                 OpenGLRenderer2D::new(window)
             }
-            #[cfg(feature = "default")]
             RenderAPI::WGPU => todo!(),
-            _ => todo!(""),
         }
     }
 

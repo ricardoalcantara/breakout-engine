@@ -1,11 +1,12 @@
-use crate::opengl::shader::Shader;
-use crate::texture::TextureType;
-use crate::Texture;
+use crate::render::texture::Texture;
+use crate::render::texture::TextureType;
+use crate::shapes::rectangle::Rect;
 use gl::types::*;
 use log::warn;
-use shapes::rectangle::Rect;
 use std::mem;
 use std::ptr;
+
+use super::shader::Shader;
 
 // Todo: VertexFormat::
 type Float32x2 = [f32; 2];

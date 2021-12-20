@@ -1,8 +1,9 @@
-use std::collections::HashMap;
-
-use audio::audio::{Audio, AudioSettings};
+use crate::{
+    audio::{Audio, AudioSettings},
+    render::texture::Texture,
+};
 use image::DynamicImage;
-use render::texture::Texture;
+use std::collections::HashMap;
 
 #[derive(Hash, PartialEq, Eq, Clone)]
 pub struct TextureId(i32);
@@ -32,6 +33,7 @@ impl AssetManager {
     pub fn load_sprite(&mut self, path: &str) -> TextureId {
         self.texture_id_count += 1;
         let id = TextureId(self.texture_id_count);
+        // Todo: BeakoutResult
         let img = image::open(path).unwrap();
         self.preload_textures.insert(id.clone(), img);
 
@@ -54,6 +56,7 @@ impl AssetManager {
     pub fn load_audio(&mut self, path: &str, settings: Option<AudioSettings>) -> AudioId {
         self.audio_id_count += 1;
         let id = AudioId(self.audio_id_count);
+        // Todo: BeakoutResult
         match Audio::load(path) {
             Ok(mut audio) => {
                 audio.settings = settings;

@@ -1,6 +1,7 @@
-pub type BreakoutResult<T> = Result<T, BreakoutError>;
+pub type BreakoutResult<T = ()> = Result<T, BreakoutError>;
 
 #[derive(Debug)]
 pub enum BreakoutError {
-    GenericError(String),
+    RenderError(&'static str),
+    GenericError(&'static str),
 }

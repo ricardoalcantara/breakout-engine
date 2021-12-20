@@ -3,15 +3,18 @@ use super::{
     input::Input,
     scene::{InputHandled, Scene, Transition},
 };
-use crate::core::{
-    asset_manager::AssetManager,
-    components::{Sprite, Transform2D},
-    engine_context::EngineContext,
-    game_context::GameContext,
+use crate::{
+    audio::AudioPlayer,
+    core::{
+        asset_manager::AssetManager,
+        components::{Sprite, Transform2D},
+        engine_context::EngineContext,
+        game_context::GameContext,
+    },
+    error::{BreakoutError, BreakoutResult},
+    render::{renderer::Renderer2D, window::MyWindow},
 };
-use audio::audio_player::AudioPlayer;
 use hecs::World;
-use render::{renderer::Renderer2D, window::MyWindow};
 
 pub struct GameState {
     scenes: Vec<Box<dyn Scene>>,
@@ -24,7 +27,7 @@ pub struct GameState {
 }
 
 impl GameState {
-    pub fn new<S, R>(state: S, renderer: R, window: &MyWindow) -> Self
+    pub fn new<S, R>(state: S, renderer: R, window: &MyWindow) -> BreakoutResult<Self>
     where
         S: Scene + 'static,
         R: Renderer2D + 'static,
@@ -39,13 +42,13 @@ impl GameState {
             .unwrap();
 
         for (id, preloaded_texture) in asset_manager.take_preload_textures() {
-            let texture = renderer.generate_texture(preloaded_texture);
+            let texture = renderer.generate_texture(preloaded_texture)?;
             asset_manager.add_texture(id, texture);
         }
 
         let input = Input::new();
         let music_player = AudioPlayer::new();
-        Self {
+        Ok(Self {
             scenes: vec![Box::new(state)],
             renderer: Box::new(renderer),
             context,
@@ -53,7 +56,7 @@ impl GameState {
             asset_manager,
             input,
             music_player,
-        }
+        })
     }
 
     pub fn take_settings(&mut self) -> Vec<EngineSettings> {
@@ -64,7 +67,7 @@ impl GameState {
         self.renderer.as_ref().resize(new_size);
     }
 
-    pub fn input(&mut self, event: &winit::event::WindowEvent) -> Result<bool, ()> {
+    pub fn input(&mut self, event: &winit::event::WindowEvent) -> BreakoutResult<bool> {
         if let Some(on_event) = self.input.on_event(event) {
             match self.scenes.last_mut() {
                 Some(active_scene) => {
@@ -97,7 +100,7 @@ impl GameState {
         }
     }
 
-    pub fn update(&mut self, delta: f32) -> Result<bool, ()> {
+    pub fn update(&mut self, delta: f32) -> BreakoutResult<bool> {
         let result = match self.scenes.last_mut() {
             Some(active_scene) => {
                 match active_scene.update(
@@ -132,7 +135,7 @@ impl GameState {
         result
     }
 
-    pub fn render(&mut self, window: &MyWindow) -> Result<(), ()> {
+    pub fn render(&mut self, window: &MyWindow) -> BreakoutResult {
         let world = &mut self.context.world;
 
         self.renderer.clear_color(self.context.clear_color);

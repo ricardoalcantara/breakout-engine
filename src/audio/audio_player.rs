@@ -1,6 +1,5 @@
+use super::audio::{Audio, AudioSettings};
 use rodio::{OutputStream, OutputStreamHandle, Source};
-
-use crate::audio::{Audio, AudioSettings};
 
 pub struct AudioPlayer {
     _stream: OutputStream,

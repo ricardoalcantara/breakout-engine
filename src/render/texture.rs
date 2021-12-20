@@ -1,4 +1,4 @@
-use crate::opengl::texture::OpenGLTexture;
+use super::opengl::texture::OpenGLTexture;
 
 // Todo pub(crate)
 pub enum TextureType {

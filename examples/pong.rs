@@ -1,20 +1,23 @@
 extern crate log;
 extern crate pretty_env_logger;
 
-use breakout_engine::core::{
-    asset_manager::AssetManager,
-    components::{Sprite, Transform2D},
-    engine::{EngineBuilder, EngineSettings},
-    engine_context::EngineContext,
-    game_context::GameContext,
-    input::{Event, Input, VirtualKeyCode},
-    scene::{InputHandled, Scene, Transition},
-};
 use breakout_engine::math;
+use breakout_engine::shapes::rectangle::Rect;
+use breakout_engine::{
+    core::{
+        asset_manager::AssetManager,
+        components::{Sprite, Transform2D},
+        engine::{EngineBuilder, EngineSettings},
+        engine_context::EngineContext,
+        game_context::GameContext,
+        input::{Event, Input, VirtualKeyCode},
+        scene::{InputHandled, Scene, Transition},
+    },
+    error::BreakoutResult,
+};
 use hecs::With;
 use log::error;
 use rand::Rng;
-use shapes::rectangle::Rect;
 
 const MAX_LEVEL_TIME: f32 = 5.0;
 
@@ -58,7 +61,7 @@ impl Scene for MainState {
         _context: &mut GameContext,
         _asset_manager: &mut AssetManager,
         _engine: &mut EngineContext,
-    ) -> Result<(), ()> {
+    ) -> BreakoutResult {
         let pong_texture = _asset_manager.load_sprite("assets/pong-ball.png");
         let paddles_texture = _asset_manager.load_sprite("assets/paddles.png");
 
@@ -121,7 +124,7 @@ impl Scene for MainState {
         _event: Event,
         _context: &mut GameContext,
         _engine: &mut EngineContext,
-    ) -> Result<InputHandled, ()> {
+    ) -> BreakoutResult<InputHandled> {
         Ok(InputHandled::None)
     }
 
@@ -131,7 +134,7 @@ impl Scene for MainState {
         input: &mut Input,
         _context: &mut GameContext,
         _engine: &mut EngineContext,
-    ) -> Result<Transition, ()> {
+    ) -> BreakoutResult<Transition> {
         let mut rng = rand::thread_rng();
         let world = &mut _context.get_world();
 
@@ -247,13 +250,12 @@ impl Scene for MainState {
     }
 }
 
-fn main() {
+fn main() -> BreakoutResult {
     pretty_env_logger::init();
 
     EngineBuilder::new()
         .with_settings(EngineSettings::Title(String::from("Pong")))
         .with_settings(EngineSettings::WindowSize((800, 600)))
-        .build()
-        .unwrap()
-        .run(MainState::new());
+        .build()?
+        .run(MainState::new())
 }

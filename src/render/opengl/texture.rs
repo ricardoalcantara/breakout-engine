@@ -1,7 +1,11 @@
+use crate::{
+    error::BreakoutResult,
+    render::texture::{Texture, TextureType},
+};
+
+use super::check_gl_ok;
 use image::GenericImageView;
 use std::ffi::c_void;
-
-use crate::texture::{Texture, TextureType};
 
 pub struct OpenGLTexture {
     // holds the ID of the texture object, used for all texture operations to reference to this particlar texture
@@ -44,7 +48,7 @@ impl OpenGLTexture {
         }
     }
 
-    pub fn generate_texture(diffuse_image: image::DynamicImage) -> Texture {
+    pub fn generate_texture(diffuse_image: image::DynamicImage) -> BreakoutResult<Texture> {
         let dimensions = diffuse_image.dimensions();
 
         let width = dimensions.0;
@@ -83,6 +87,7 @@ impl OpenGLTexture {
                 gl::UNSIGNED_BYTE,
                 data_ptr,
             );
+            check_gl_ok()?;
             // set Texture wrap and filter modes
             gl::TexParameteri(
                 gl::TEXTURE_2D,
@@ -108,11 +113,11 @@ impl OpenGLTexture {
             gl::BindTexture(gl::TEXTURE_2D, 0);
         };
 
-        Texture {
+        Ok(Texture {
             width,
             height,
             texture_type: TextureType::OpenGL(opengl_texture),
-        }
+        })
     }
 
     pub(crate) fn bind(&self) {

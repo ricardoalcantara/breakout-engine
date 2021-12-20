@@ -1,11 +1,7 @@
 use renderer::RenderAPI;
-use texture::Texture;
 use window::MyWindow;
 
-#[cfg(feature = "opengl")]
 pub mod opengl;
-#[cfg(feature = "default")]
-pub mod wgpu;
 
 pub mod renderer;
 pub mod texture;

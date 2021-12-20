@@ -1,13 +1,14 @@
-use crate::opengl::sprite_renderer::SpriteRenderer;
-use crate::Texture;
-use crate::{opengl::shader::Shader, renderer::Renderer2D};
+use crate::{
+    error::BreakoutResult,
+    render::{renderer::Renderer2D, texture::Texture},
+    shapes::rectangle::Rect,
+};
 use glutin::{ContextWrapper, PossiblyCurrent};
 use image::DynamicImage;
 use log::info;
-use shapes::rectangle::Rect;
 use std::ffi::CStr;
 
-use super::texture::OpenGLTexture;
+use super::{shader::Shader, sprite_renderer::SpriteRenderer, texture::OpenGLTexture};
 
 pub struct OpenGLRenderer2D {
     sprite_shader: Shader,
@@ -16,7 +17,9 @@ pub struct OpenGLRenderer2D {
 }
 
 impl OpenGLRenderer2D {
-    pub fn new(window: &ContextWrapper<PossiblyCurrent, glutin::window::Window>) -> Self {
+    pub fn new(
+        window: &ContextWrapper<PossiblyCurrent, glutin::window::Window>,
+    ) -> BreakoutResult<Self> {
         gl::load_with(|symbol| window.get_proc_address(symbol));
 
         let version = unsafe {
@@ -55,13 +58,13 @@ impl OpenGLRenderer2D {
         }
 
         let img = DynamicImage::ImageRgb8(imgbuf);
-        let default_texture = OpenGLTexture::generate_texture(img);
+        let default_texture = OpenGLTexture::generate_texture(img)?;
 
-        Self {
+        Ok(Self {
             sprite_shader: shader,
             sprite_renderer,
             default_texture,
-        }
+        })
     }
 }
 
@@ -72,7 +75,7 @@ impl Renderer2D for OpenGLRenderer2D {
         }
     }
 
-    fn generate_texture(&self, img: image::DynamicImage) -> Texture {
+    fn generate_texture(&self, img: image::DynamicImage) -> BreakoutResult<Texture> {
         OpenGLTexture::generate_texture(img)
     }
 
