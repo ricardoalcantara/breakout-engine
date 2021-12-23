@@ -9,6 +9,7 @@ use breakout_engine::{
         scene::{InputHandled, Scene, Transition},
     },
     error::BreakoutResult,
+    math,
 };
 
 extern crate log;
@@ -33,8 +34,26 @@ impl Scene for MainState {
         let world = &mut _context.get_world();
 
         world.spawn((
-            Label::new(String::from("Hello world"), font, 48.0),
+            Label::new_with_font(String::from("Hello world"), font, 48.0),
             Transform2D::default(),
+        ));
+
+        world.spawn((
+            Label::new(String::from("Hello world"), 48.0),
+            Transform2D {
+                position: math::vec2(0.0, 60.0),
+                ..Default::default()
+            },
+        ));
+
+        world.spawn((
+            Label {
+                ..Default::default()
+            },
+            Transform2D {
+                position: math::vec2(0.0, 60.0),
+                ..Default::default()
+            },
         ));
 
         Ok(())

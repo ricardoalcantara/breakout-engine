@@ -1,32 +1,11 @@
-use crate::render::texture::Texture;
-use crate::render::texture::TextureType;
+use super::shader::Shader;
+use super::vertex::{vertex, vertex_format, Vertex};
+use crate::render::texture::{Texture, TextureType};
 use crate::shapes::rectangle::Rect;
 use gl::types::*;
 use log::warn;
 use std::mem;
 use std::ptr;
-
-use super::shader::Shader;
-
-// Todo: VertexFormat::
-type Float32x2 = [f32; 2];
-type Float32x3 = [f32; 3];
-
-#[derive(Debug, Clone, Copy)]
-struct Vertex {
-    #[allow(dead_code)]
-    position: Float32x2,
-    color: Float32x3,
-    texture_coords: Float32x2,
-}
-
-fn vertex(position: Float32x2, color: Float32x3, texture_coords: Float32x2) -> Vertex {
-    Vertex {
-        position,
-        color,
-        texture_coords,
-    }
-}
 
 pub struct SpriteRenderer {
     quad_vao: u32,
@@ -91,7 +70,7 @@ impl SpriteRenderer {
                 gl::FLOAT,
                 gl::FALSE,
                 mem::size_of::<Vertex>() as GLsizei,
-                mem::size_of::<Float32x2>() as _, // offset Position
+                mem::size_of::<vertex_format::Float32x2>() as _, // offset Position
             );
             gl::EnableVertexAttribArray(1);
             // texture_coords
@@ -101,7 +80,8 @@ impl SpriteRenderer {
                 gl::FLOAT,
                 gl::FALSE,
                 mem::size_of::<Vertex>() as GLsizei,
-                (mem::size_of::<Float32x2>() + mem::size_of::<Float32x3>()) as _, // offset Position + Color
+                (mem::size_of::<vertex_format::Float32x2>()
+                    + mem::size_of::<vertex_format::Float32x3>()) as _, // offset Position + Color
             );
             gl::EnableVertexAttribArray(2);
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
@@ -137,7 +117,7 @@ impl SpriteRenderer {
 
         model *= glam::Mat4::from_rotation_z(rotate.to_radians());
 
-        shader.set_matrix4(&"model", &model, false);
+        shader.set_matrix4(&"model", &model);
 
         let mut vertices = self.vertices;
 

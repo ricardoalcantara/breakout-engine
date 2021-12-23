@@ -201,7 +201,7 @@ impl Engine {
         event_loop.run(move |event, _, control_flow| {
             match event {
                 Event::WindowEvent { ref event, .. } => {
-                    // Todo: windows_id is not required for the engine
+                    // TODO: windows_id is not required for the engine
                     // if window_id == self.window.window().id() =>
                     match event {
                         WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
@@ -245,17 +245,11 @@ impl Engine {
 
                     match game_state.render(&self.window) {
                         Ok(_) => {}
-                        // Todo: Review WGPU error
-                        // // Reconfigure the surface if lost
-                        // Err(wgpu::SurfaceError::Lost) => state.resize(state.size),
-                        // // The system is out of memory, we should probably quit
-                        // Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
-                        // All other errors (Outdated, Timeout) should be resolved by the next frame
                         Err(e) => error!("Render Broken {:?}", e),
                     }
                 }
                 Event::RedrawRequested(_) => {
-                    // Todo: windows_id is not required for the engine
+                    // TODO: windows_id is not required for the engine
                     self.window.window().request_redraw();
                 }
                 Event::RedrawEventsCleared => {

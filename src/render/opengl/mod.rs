@@ -4,6 +4,7 @@ use crate::error::{BreakoutError, BreakoutResult};
 
 pub mod renderer2d;
 pub mod texture;
+pub mod vertex;
 
 mod shader;
 mod sprite_renderer;

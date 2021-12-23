@@ -51,8 +51,8 @@ impl OpenGLRenderer2D {
         let shader = Shader::compile(&vs_src, &fs_src, None);
 
         shader.use_program();
-        shader.set_integer(&"image", 0, false);
-        shader.set_matrix4(&"projection", &projection, false);
+        shader.set_integer(&"image", 0);
+        shader.set_matrix4(&"projection", &projection);
 
         let sprite_renderer = SpriteRenderer::new();
 
