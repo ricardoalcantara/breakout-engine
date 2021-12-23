@@ -4,13 +4,12 @@ use crate::{
 };
 
 use super::check_gl_ok;
-use glam::vec3;
 use image::GenericImageView;
 use std::ffi::c_void;
 
 pub struct OpenGLTexture {
     // holds the ID of the texture object, used for all texture operations to reference to this particlar texture
-    id: u32,
+    pub(crate) id: u32,
     // texture Format
     pub internal_format: u32, // format of texture object
     pub image_format: u32,    // format of loaded image
@@ -74,6 +73,14 @@ impl OpenGLTexture {
 
         unsafe {
             gl::BindTexture(gl::TEXTURE_2D, opengl_texture.id);
+            #[rustfmt::skip]
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_S, opengl_texture.wrap_s as i32);
+            #[rustfmt::skip]
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_WRAP_T, opengl_texture.wrap_t as i32);
+            #[rustfmt::skip]
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MIN_FILTER, opengl_texture.filter_min as i32);
+            #[rustfmt::skip]
+            gl::TexParameteri(gl::TEXTURE_2D, gl::TEXTURE_MAG_FILTER, opengl_texture.filter_max as i32);
             gl::TexImage2D(
                 gl::TEXTURE_2D,
                 0,
@@ -87,27 +94,6 @@ impl OpenGLTexture {
                 // img_ptr,
             );
             check_gl_ok()?;
-            // set Texture wrap and filter modes
-            gl::TexParameteri(
-                gl::TEXTURE_2D,
-                gl::TEXTURE_WRAP_S,
-                opengl_texture.wrap_s as i32,
-            );
-            gl::TexParameteri(
-                gl::TEXTURE_2D,
-                gl::TEXTURE_WRAP_T,
-                opengl_texture.wrap_t as i32,
-            );
-            gl::TexParameteri(
-                gl::TEXTURE_2D,
-                gl::TEXTURE_MIN_FILTER,
-                opengl_texture.filter_min as i32,
-            );
-            gl::TexParameteri(
-                gl::TEXTURE_2D,
-                gl::TEXTURE_MAG_FILTER,
-                opengl_texture.filter_max as i32,
-            );
             // unbind texture
             gl::BindTexture(gl::TEXTURE_2D, 0);
         };

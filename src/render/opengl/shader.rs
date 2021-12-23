@@ -82,49 +82,48 @@ impl Shader {
         unsafe { gl::UseProgram(self.id) }
     }
 
-    // Todo: for later https://learnopengl.com/code_viewer_gh.php?code=src/7.in_practice/3.2d_game/0.full_source/shader.cpp
-
+    // TODO: for later https://learnopengl.com/code_viewer_gh.php?code=src/7.in_practice/3.2d_game/0.full_source/shader.cpp
     // pub fn set_float    (const char *name, float value, bool useShader = false);
-    pub fn set_integer(&self, name: &str, value: i32, use_shader: bool) {
-        if use_shader {
-            self.use_program();
-        }
-
-        let c_name = CString::new(name).unwrap();
+    pub fn set_integer(&self, name: &str, value: i32) {
+        let c_name = CString::new(name).expect("CString::new failed");
         unsafe {
-            let uniform_location = gl::GetUniformLocation(self.id, c_name.as_ptr());
-            gl::Uniform1i(uniform_location, value);
+            gl::Uniform1i(gl::GetUniformLocation(self.id, c_name.as_ptr()), value);
+        }
+    }
+    pub fn set_integer_vector(&self, name: &str, value: &[i32]) {
+        let c_name = CString::new(name).expect("CString::new failed");
+        unsafe {
+            gl::Uniform1iv(
+                gl::GetUniformLocation(self.id, c_name.as_ptr()),
+                value.len() as GLsizei,
+                value.as_ptr(),
+            );
         }
     }
     // pub fn set_vector2f (const char *name, float x, float y, bool useShader = false);
     // pub fn set_vector2f (const char *name, const glm::vec2 &value, bool useShader = false);
     // pub fn set_vector3f (const char *name, float x, float y, float z, bool useShader = false);
-    pub fn set_vector3f(&self, name: &str, value: &glam::Vec3, use_shader: bool) {
-        if use_shader {
-            self.use_program();
-        }
-
-        let c_name = CString::new(name).unwrap();
+    pub fn set_vector3f(&self, name: &str, value: &glam::Vec3) {
+        let c_name = CString::new(name).expect("CString::new failed");
         unsafe {
-            let uniform_location = gl::GetUniformLocation(self.id, c_name.as_ptr());
-            gl::Uniform3f(uniform_location, value.x, value.y, value.z);
+            gl::Uniform3f(
+                gl::GetUniformLocation(self.id, c_name.as_ptr()),
+                value.x,
+                value.y,
+                value.z,
+            );
         }
     }
     // pub fn set_vector4f (const char *name, float x, float y, float z, float w, bool useShader = false);
     // pub fn set_vector4f (const char *name, const glm::vec4 &value, bool useShader = false);
 
-    // pub fn set_matrix4  (&self, const char *name, const glm::mat4 &matrix, use_shader: bool) {
-    pub fn set_matrix4(&self, name: &str, matrix: &glam::Mat4, use_shader: bool) {
-        if use_shader {
-            self.use_program();
-        }
-
-        let c_name = CString::new(name).unwrap();
+    // pub fn set_matrix4  (&self, const char *name, const glm::mat4 &matrix) {
+    pub fn set_matrix4(&self, name: &str, matrix: &glam::Mat4) {
+        let c_name = CString::new(name).expect("CString::new failed");
         let matrix_array = matrix.to_cols_array_2d();
         unsafe {
-            let uniform_location = gl::GetUniformLocation(self.id, c_name.as_ptr());
             gl::UniformMatrix4fv(
-                uniform_location,
+                gl::GetUniformLocation(self.id, c_name.as_ptr()),
                 1,
                 gl::FALSE as GLboolean,
                 mem::transmute(&matrix_array[0]),

@@ -70,7 +70,7 @@ impl Scene for MainState {
         world.spawn((
             Sprite {
                 texture_id: Some(pong_texture),
-                color: Some(math::vec3(1.0, 0.0, 0.0)),
+                color: Some(math::vec4(1.0, 0.0, 0.0, 1.0)),
                 ..Default::default()
             },
             Transform2D {

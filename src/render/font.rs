@@ -13,6 +13,11 @@ impl Font {
         Ok(Font { font })
     }
 
+    pub fn new_from_bytes(buf: &[u8]) -> BreakoutResult<Font> {
+        let font = FontVec::try_from_vec(buf.into()).map_err(BreakoutError::InvalidFont)?;
+        Ok(Font { font })
+    }
+
     pub(crate) fn get_texture_from_text(&self, text: &str, size: f32) -> DynamicImage {
         // The font size to use
         let scale = PxScale::from(size);

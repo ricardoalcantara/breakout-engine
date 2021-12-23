@@ -150,7 +150,7 @@ impl Scene for MainState {
 
         world.spawn((
             Sprite {
-                color: Some(math::vec3(1.0, 0.0, 0.0)),
+                color: Some(math::vec4(1.0, 0.0, 0.0, 1.0)),
                 ..Default::default()
             },
             Transform2D {

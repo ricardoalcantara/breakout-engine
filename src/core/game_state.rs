@@ -12,19 +12,25 @@ use crate::{
         engine_context::EngineContext,
         game_context::GameContext,
     },
-    error::{BreakoutError, BreakoutResult},
-    render::{renderer::Renderer2D, window::MyWindow},
+    error::BreakoutResult,
+    render::{font::Font, renderer::Renderer2D, window::MyWindow},
 };
 use hecs::World;
+use image::GenericImageView;
+use std::{
+    cell::{RefCell, RefMut},
+    rc::Rc,
+};
 
 pub struct GameState {
     scenes: Vec<Box<dyn Scene>>,
-    renderer: Box<dyn Renderer2D>,
+    renderer: Rc<RefCell<dyn Renderer2D>>,
     context: GameContext,
     engine: EngineContext,
     asset_manager: AssetManager,
     input: Input,
     music_player: AudioPlayer,
+    default_font: Font,
 }
 
 impl GameState {
@@ -33,30 +39,30 @@ impl GameState {
         S: Scene + 'static,
         R: Renderer2D + 'static,
     {
+        let renderer = Rc::new(RefCell::new(renderer));
         let mut engine = EngineContext::new(&window);
         let mut context = GameContext::new();
-        let mut asset_manager = AssetManager::new();
+        let mut asset_manager = AssetManager::new(Rc::clone(&renderer));
 
         let mut state = state;
         state
             .init(&mut context, &mut asset_manager, &mut engine)
             .unwrap();
 
-        for (id, preloaded_texture) in asset_manager.take_preload_textures() {
-            let texture = renderer.generate_texture(preloaded_texture)?;
-            asset_manager.add_texture(id, texture);
-        }
-
         let input = Input::new();
         let music_player = AudioPlayer::new();
+        let default_font_byte = include_bytes!("../../assets/Roboto-Regular.ttf");
+
+        let default_font = Font::new_from_bytes(default_font_byte)?;
         Ok(Self {
             scenes: vec![Box::new(state)],
-            renderer: Box::new(renderer),
+            renderer,
             context,
             engine,
             asset_manager,
             input,
             music_player,
+            default_font,
         })
     }
 
@@ -65,7 +71,7 @@ impl GameState {
     }
 
     pub fn resize(&self, new_size: winit::dpi::PhysicalSize<u32>) {
-        self.renderer.as_ref().resize(new_size);
+        self.renderer.as_ref().borrow().resize(new_size);
     }
 
     pub fn input(&mut self, event: &winit::event::WindowEvent) -> BreakoutResult<bool> {
@@ -90,7 +96,7 @@ impl GameState {
                             Ok(true)
                         }
                         InputHandled::Captured => Ok(true),
-                        // Todo: False will let esc close the window
+                        // TODO: False will let esc close the window
                         _ => Ok(false),
                     }
                 }
@@ -137,55 +143,68 @@ impl GameState {
     }
 
     pub fn render(&mut self, window: &MyWindow) -> BreakoutResult {
-        let world = &mut self.context.world;
+        self.system_render_sprite();
 
-        self.renderer.clear_color(self.context.clear_color);
-
-        system_render_sprite(world, self.renderer.as_mut(), &mut self.asset_manager);
-        // Todo: Encapsulate ir
         window.swap_buffers();
-
         Ok(())
     }
-}
 
-fn system_render_sprite(
-    world: &mut World,
-    renderer: &mut dyn Renderer2D,
-    asset_manager: &AssetManager,
-) {
-    for (_id, (sprite, transform)) in world.query_mut::<(&Sprite, &Transform2D)>() {
-        let texture = if let Some(texture_id) = &sprite.texture_id {
-            Some(asset_manager.get_texture(&texture_id))
-        } else {
-            None
-        };
-        renderer.draw_texture(
-            texture,
-            sprite.rect,
-            transform.position,
-            transform.scale,
-            transform.rotate,
-            sprite.color.unwrap_or(glam::vec3(1.0, 1.0, 1.0)),
-        );
-    }
+    fn system_render_sprite(&self) {
+        let world = &self.context.world;
 
-    for (_id, (label, transform)) in world.query_mut::<(&mut Label, &Transform2D)>() {
-        if label.texture.is_none() {
-            let font = asset_manager.get_font(label.font_id.as_ref().unwrap());
-            let image = font.get_texture_from_text(&label.text, label.size);
-            let texture = renderer.generate_texture(image).unwrap();
+        let mut renderer = self.renderer.borrow_mut();
+        renderer.clear_color(self.context.clear_color);
 
-            label.texture = Some(texture);
+        renderer.begin_draw();
+        for (_id, (sprite, transform)) in world.query::<(&Sprite, &Transform2D)>().iter() {
+            if let Some(texture_id) = &sprite.texture_id {
+                let texture = self.asset_manager.get_texture(&texture_id);
+                renderer.draw_texture(
+                    texture,
+                    sprite.rect,
+                    transform.position,
+                    transform.scale,
+                    transform.rotate,
+                    sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
+                );
+            } else {
+                renderer.draw_quad(
+                    glam::Vec2::ONE,
+                    transform.position,
+                    transform.scale,
+                    transform.rotate,
+                    sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
+                );
+            };
         }
 
-        renderer.draw_texture(
-            label.texture.as_ref(),
-            None,
-            transform.position,
-            transform.scale,
-            transform.rotate,
-            label.color.unwrap_or(glam::vec3(1.0, 1.0, 1.0)),
-        );
+        for (_id, (label, transform)) in world.query::<(&mut Label, &Transform2D)>().iter() {
+            if label.texture.is_none() {
+                let font = if let Some(font_id) = &label.font_id {
+                    self.asset_manager.get_font(font_id)
+                } else {
+                    &self.default_font
+                };
+                let image = font.get_texture_from_text(&label.text, label.size);
+                let (width, height) = image.dimensions();
+                let texture = renderer.generate_texture(image).unwrap();
+
+                // TODO: Load it before this stage, end user will only get width and height after the first render
+                label.texture = Some(texture);
+                label.width = width as f32;
+                label.height = height as f32;
+            }
+
+            renderer.draw_texture(
+                // TODO: Error Prone
+                label.texture.as_ref().unwrap(),
+                None,
+                transform.position,
+                transform.scale,
+                transform.rotate,
+                label.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
+            );
+        }
+        renderer.end_draw();
     }
 }

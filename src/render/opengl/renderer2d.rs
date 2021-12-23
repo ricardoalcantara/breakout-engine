@@ -1,19 +1,16 @@
 use crate::{
     error::BreakoutResult,
-    render::{renderer::Renderer2D, texture::Texture},
+    render::{opengl::render2d_pipeline::Render2dPipeline, renderer::Renderer2D, texture::Texture},
     shapes::rectangle::Rect,
 };
 use glutin::{ContextWrapper, PossiblyCurrent};
-use image::DynamicImage;
 use log::info;
 use std::ffi::CStr;
 
-use super::{shader::Shader, sprite_renderer::SpriteRenderer, texture::OpenGLTexture};
+use super::texture::OpenGLTexture;
 
 pub struct OpenGLRenderer2D {
-    sprite_shader: Shader,
-    sprite_renderer: SpriteRenderer,
-    default_texture: Texture,
+    render2d_pipeline: Render2dPipeline,
 }
 
 impl OpenGLRenderer2D {
@@ -35,40 +32,9 @@ impl OpenGLRenderer2D {
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
         }
 
-        #[cfg(dev_shader)]
-        let vs_src = std::fs::read_to_string("shaders/gl_shader.vert")
-            .expect("Something went wrong reading vs_src");
-        #[cfg(dev_shader)]
-        let fs_src = std::fs::read_to_string("shaders/gl_shader.frag")
-            .expect("Something went wrong reading fs_src");
+        let render2d_pipeline = Render2dPipeline::new();
 
-        #[cfg(not(dev_shader))]
-        let vs_src = include_str!("../../../shaders/gl_shader.vert");
-        #[cfg(not(dev_shader))]
-        let fs_src = include_str!("../../../shaders/gl_shader.frag");
-
-        let projection = glam::Mat4::orthographic_rh_gl(0.0, 800.0, 600.0, 0.0, -1.0, 1.0);
-        let shader = Shader::compile(&vs_src, &fs_src, None);
-
-        shader.use_program();
-        shader.set_integer(&"image", 0, false);
-        shader.set_matrix4(&"projection", &projection, false);
-
-        let sprite_renderer = SpriteRenderer::new();
-
-        let mut imgbuf = image::ImageBuffer::new(1, 1);
-        for (_, _, pixel) in imgbuf.enumerate_pixels_mut() {
-            *pixel = image::Rgb([255, 255, 255]);
-        }
-
-        let img = DynamicImage::ImageRgb8(imgbuf);
-        let default_texture = OpenGLTexture::generate_texture(img)?;
-
-        Ok(Self {
-            sprite_shader: shader,
-            sprite_renderer,
-            default_texture,
-        })
+        Ok(Self { render2d_pipeline })
     }
 }
 
@@ -90,23 +56,37 @@ impl Renderer2D for OpenGLRenderer2D {
         }
     }
 
+    fn begin_draw(&mut self) {
+        self.render2d_pipeline.begin_batch();
+    }
+
+    fn end_draw(&mut self) {
+        self.render2d_pipeline.end_batch();
+        self.render2d_pipeline.flush();
+    }
+
+    fn draw_quad(
+        &mut self,
+        size: glam::Vec2,
+        position: glam::Vec2,
+        scale: glam::Vec2,
+        rotate: f32,
+        color: glam::Vec4,
+    ) {
+        self.render2d_pipeline
+            .draw_quad(size, position, scale, rotate, color);
+    }
+
     fn draw_texture(
         &mut self,
-        texture: Option<&Texture>,
+        texture: &Texture,
         rect: Option<Rect>,
         position: glam::Vec2,
         scale: glam::Vec2,
         rotate: f32,
-        color: glam::Vec3,
+        color: glam::Vec4,
     ) {
-        self.sprite_renderer.draw_sprite(
-            texture.unwrap_or(&self.default_texture),
-            rect,
-            position,
-            scale,
-            rotate,
-            color,
-            &self.sprite_shader,
-        );
+        self.render2d_pipeline
+            .draw_texture(texture, rect, position, scale, rotate, color);
     }
 }

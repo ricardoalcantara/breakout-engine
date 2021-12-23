@@ -20,6 +20,7 @@ pretty_env_logger = "0.4.0"
 rand = "0.8.4"
 rodio = "0.14.0"
 winit = "0.26.0"
+memoffset = "0.6.5"
 
 [[example]]
 name = "empty"
@@ -29,6 +30,8 @@ name = "menu"
 name = "pong"
 [[example]]
 name = "snake"
+[[example]]
+name = "tilemap"
 
 [profile.dev_shader]
 inherits = "dev"

@@ -1,10 +1,9 @@
 use crate::{
     audio::{Audio, AudioSettings},
     error::{BreakoutError, BreakoutResult},
-    render::{font::Font, texture::Texture},
+    render::{font::Font, renderer::Renderer2D, texture::Texture},
 };
-use image::DynamicImage;
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
 #[derive(Hash, PartialEq, Eq, Clone)]
 pub struct TextureId(i32);
@@ -15,50 +14,62 @@ pub struct AudioId(i32);
 #[derive(Hash, PartialEq, Eq, Clone)]
 pub struct FontId(i32);
 
+struct AutoIncrementId {
+    ids: HashMap<String, i32>,
+}
+
+impl AutoIncrementId {
+    fn new() -> AutoIncrementId {
+        AutoIncrementId {
+            ids: HashMap::new(),
+        }
+    }
+
+    fn get_id<T>(&mut self) -> i32 {
+        let key = std::any::type_name::<T>().to_string();
+        let id = if self.ids.contains_key(&key) {
+            self.ids[&key] + 1
+        } else {
+            0
+        };
+
+        self.ids.insert(key, id);
+        id
+    }
+}
+
 pub struct AssetManager {
-    // Textures
-    texture_id_count: i32,
-    preload_textures: HashMap<TextureId, DynamicImage>,
+    auto_increment_id: AutoIncrementId,
     textures: HashMap<TextureId, Texture>,
-    // Audios
-    audio_id_count: i32,
     audios: HashMap<AudioId, Audio>,
-    // Fonts
-    font_id_count: i32,
     fonts: HashMap<FontId, Font>,
+    renderer: Rc<RefCell<dyn Renderer2D>>,
 }
 
 impl AssetManager {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new<R>(renderer: Rc<RefCell<R>>) -> Self
+    where
+        R: Renderer2D + 'static,
+    {
         Self {
-            texture_id_count: 0,
-            preload_textures: HashMap::new(),
+            auto_increment_id: AutoIncrementId::new(),
             textures: HashMap::new(),
-            audio_id_count: 0,
             audios: HashMap::new(),
-            font_id_count: 0,
             fonts: HashMap::new(),
+            renderer,
         }
     }
 }
 
 impl AssetManager {
     pub fn load_texture(&mut self, path: &str) -> BreakoutResult<TextureId> {
-        let texture = image::open(path).map_err(BreakoutError::ImageError)?;
+        let image = image::open(path).map_err(BreakoutError::ImageError)?;
+        let texture = self.renderer.borrow().generate_texture(image)?;
 
-        self.texture_id_count += 1;
-        let id = TextureId(self.texture_id_count);
-        self.preload_textures.insert(id.clone(), texture);
+        let id = TextureId(self.auto_increment_id.get_id::<TextureId>());
+        self.textures.insert(id.clone(), texture);
 
         Ok(id)
-    }
-
-    pub(crate) fn take_preload_textures(&mut self) -> HashMap<TextureId, DynamicImage> {
-        self.preload_textures.drain().collect()
-    }
-
-    pub(crate) fn add_texture(&mut self, id: TextureId, texture: Texture) {
-        self.textures.insert(id, texture);
     }
 
     pub fn get_texture(&self, id: &TextureId) -> &Texture {
@@ -75,8 +86,7 @@ impl AssetManager {
         let mut audio = Audio::load(path).map_err(BreakoutError::IOError)?;
         audio.settings = settings;
 
-        self.audio_id_count += 1;
-        let id = AudioId(self.audio_id_count);
+        let id = AudioId(self.auto_increment_id.get_id::<AudioId>());
         self.audios.insert(id.clone(), audio);
 
         Ok(id)
@@ -91,8 +101,7 @@ impl AssetManager {
     pub fn load_font(&mut self, path: &str) -> BreakoutResult<FontId> {
         let font = Font::new(path)?;
 
-        self.font_id_count += 1;
-        let id = FontId(self.font_id_count);
+        let id = FontId(self.auto_increment_id.get_id::<FontId>());
         self.fonts.insert(id.clone(), font);
 
         Ok(id)
