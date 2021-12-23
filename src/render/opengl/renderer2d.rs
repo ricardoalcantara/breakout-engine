@@ -30,6 +30,10 @@ impl OpenGLRenderer2D {
         };
 
         info!("OpenGL version {}", version);
+        unsafe {
+            gl::Enable(gl::BLEND);
+            gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
+        }
 
         #[cfg(dev_shader)]
         let vs_src = std::fs::read_to_string("shaders/gl_shader.vert")

@@ -98,7 +98,7 @@ impl MainState {
     fn refresh_frute(&mut self) {
         let mut rng = rand::thread_rng();
 
-        self.frute.x = 0.0; //rng.gen_range(0..GRID_WIDTH - 1) as f32;
+        self.frute.x = rng.gen_range(0..GRID_WIDTH - 1) as f32;
         self.frute.y = rng.gen_range(0..GRID_HEIGHT - 1) as f32;
     }
 
@@ -141,8 +141,8 @@ impl Scene for MainState {
                 repeat_infinite: true,
                 ..Default::default()
             }),
-        );
-        self.effect_audio_id = Some(_asset_manager.load_audio("assets/coin.wav", None));
+        )?;
+        self.effect_audio_id = Some(_asset_manager.load_audio("assets/coin.wav", None)?);
 
         _context.play_audio(music_audio_id);
 

@@ -62,8 +62,8 @@ impl Scene for MainState {
         _asset_manager: &mut AssetManager,
         _engine: &mut EngineContext,
     ) -> BreakoutResult {
-        let pong_texture = _asset_manager.load_sprite("assets/pong-ball.png");
-        let paddles_texture = _asset_manager.load_sprite("assets/paddles.png");
+        let pong_texture = _asset_manager.load_texture("assets/pong-ball.png")?;
+        let paddles_texture = _asset_manager.load_texture("assets/paddles.png")?;
 
         let world = &mut _context.get_world();
         let speed = 200.0;

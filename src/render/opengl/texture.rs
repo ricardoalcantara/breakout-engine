@@ -4,6 +4,7 @@ use crate::{
 };
 
 use super::check_gl_ok;
+use glam::vec3;
 use image::GenericImageView;
 use std::ffi::c_void;
 
@@ -22,7 +23,7 @@ pub struct OpenGLTexture {
 
 impl Drop for OpenGLTexture {
     fn drop(&mut self) {
-        log::info!("DeleteTextures {:}", &self.id);
+        log::debug!("DeleteTextures {:}", &self.id);
         unsafe {
             gl::DeleteTextures(1, &self.id);
         }
@@ -54,22 +55,19 @@ impl OpenGLTexture {
         let width = dimensions.0;
         let height = dimensions.1;
 
+        let data = diffuse_image.to_bytes();
+        // let img_ptr = data.as_ptr() as *const c_void;
+
         let mut opengl_texture = OpenGLTexture::new();
 
-        let data_ptr = match diffuse_image.color() {
+        match diffuse_image.color() {
             image::ColorType::Rgba8 => {
                 opengl_texture.internal_format = gl::RGBA;
                 opengl_texture.image_format = gl::RGBA;
-                let data = diffuse_image.as_rgba8().unwrap();
-                let img_ptr: *const c_void = data.as_ptr() as *const c_void;
-                img_ptr
             }
             image::ColorType::Rgb8 => {
                 opengl_texture.internal_format = gl::RGB;
                 opengl_texture.image_format = gl::RGB;
-                let data = diffuse_image.as_rgb8().unwrap();
-                let img_ptr: *const c_void = data.as_ptr() as *const c_void;
-                img_ptr
             }
             _ => panic!("ColorType not supportes"),
         };
@@ -85,7 +83,8 @@ impl OpenGLTexture {
                 0,
                 opengl_texture.image_format,
                 gl::UNSIGNED_BYTE,
-                data_ptr,
+                std::mem::transmute::<*const u8, *const c_void>(data.as_ptr()),
+                // img_ptr,
             );
             check_gl_ok()?;
             // set Texture wrap and filter modes

@@ -1,4 +1,5 @@
 use super::{
+    components::Label,
     engine::EngineSettings,
     input::Input,
     scene::{InputHandled, Scene, Transition},
@@ -154,7 +155,6 @@ fn system_render_sprite(
     asset_manager: &AssetManager,
 ) {
     for (_id, (sprite, transform)) in world.query_mut::<(&Sprite, &Transform2D)>() {
-        // Todo: Generate default texture
         let texture = if let Some(texture_id) = &sprite.texture_id {
             Some(asset_manager.get_texture(&texture_id))
         } else {
@@ -167,6 +167,25 @@ fn system_render_sprite(
             transform.scale,
             transform.rotate,
             sprite.color.unwrap_or(glam::vec3(1.0, 1.0, 1.0)),
+        );
+    }
+
+    for (_id, (label, transform)) in world.query_mut::<(&mut Label, &Transform2D)>() {
+        if label.texture.is_none() {
+            let font = asset_manager.get_font(label.font_id.as_ref().unwrap());
+            let image = font.get_texture_from_text(&label.text, label.size);
+            let texture = renderer.generate_texture(image).unwrap();
+
+            label.texture = Some(texture);
+        }
+
+        renderer.draw_texture(
+            label.texture.as_ref(),
+            None,
+            transform.position,
+            transform.scale,
+            transform.rotate,
+            label.color.unwrap_or(glam::vec3(1.0, 1.0, 1.0)),
         );
     }
 }
