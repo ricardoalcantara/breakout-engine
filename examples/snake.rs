@@ -42,7 +42,8 @@ struct Frute;
 struct MainState {
     snake: Vec<math::Vec2>,
     frute: math::Vec2,
-    direction: math::Vec2,
+    current_direction: math::Vec2,
+    input_direction: math::Vec2,
     time: f32,
     delay: f32,
     game_mode: GameMode,
@@ -72,7 +73,8 @@ impl MainState {
     fn new() -> Self {
         Self {
             snake: Vec::new(),
-            direction: math::vec2(1.0, 0.0),
+            current_direction: math::vec2(1.0, 0.0),
+            input_direction: math::vec2(1.0, 0.0),
             frute: math::Vec2::ZERO,
             time: f32::MAX,
             delay: 0.1,
@@ -105,9 +107,9 @@ impl MainState {
     fn start(&mut self) {
         let mut rng = rand::thread_rng();
         if rng.gen::<f32>() > 0.5 {
-            self.direction = math::vec2(1.0, 0.0);
+            self.current_direction = math::vec2(1.0, 0.0);
         } else {
-            self.direction = math::vec2(0.0, 1.0);
+            self.current_direction = math::vec2(0.0, 1.0);
         }
         self.snake.push(math::Vec2::ZERO);
 
@@ -185,15 +187,15 @@ impl Scene for MainState {
     ) -> BreakoutResult<Transition> {
         let direction = get_input_direction(_input);
 
-        if self.direction.x != 0.0 {
+        if self.current_direction.x != 0.0 {
             if direction.y != 0.0 {
-                self.direction.x = 0.0;
-                self.direction.y = direction.y;
+                self.input_direction.x = 0.0;
+                self.input_direction.y = direction.y;
             }
-        } else if self.direction.y != 0.0 {
+        } else if self.current_direction.y != 0.0 {
             if direction.x != 0.0 {
-                self.direction.y = 0.0;
-                self.direction.x = direction.x;
+                self.input_direction.y = 0.0;
+                self.input_direction.x = direction.x;
             }
         }
 
@@ -202,6 +204,7 @@ impl Scene for MainState {
         if self.time < self.delay {
             return Ok(Transition::None);
         }
+        self.current_direction = self.input_direction;
         self.time = 0.0;
 
         // Update Snake Pieces
@@ -216,7 +219,7 @@ impl Scene for MainState {
         let mut snake_state = SnakeState::Unknow;
 
         if let Some(snake) = self.snake.first_mut() {
-            *snake = *snake + self.direction;
+            *snake = *snake + self.current_direction;
 
             snake_state = SnakeState::Moving(*snake);
 
@@ -224,7 +227,7 @@ impl Scene for MainState {
                 match self.game_mode {
                     GameMode::ACube => {
                         snake.x = GRID_WIDTH as f32;
-                        self.direction.x *= 1.0;
+                        self.current_direction.x *= 1.0;
                     }
                     GameMode::Else => snake_state = SnakeState::Dead,
                 }
@@ -233,7 +236,7 @@ impl Scene for MainState {
                 match self.game_mode {
                     GameMode::ACube => {
                         snake.y = GRID_HEIGHT as f32;
-                        self.direction.y *= 1.0;
+                        self.current_direction.y *= 1.0;
                     }
                     GameMode::Else => snake_state = SnakeState::Dead,
                 }
@@ -242,7 +245,7 @@ impl Scene for MainState {
                 match self.game_mode {
                     GameMode::ACube => {
                         snake.x = 0.0;
-                        self.direction.x *= 1.0;
+                        self.current_direction.x *= 1.0;
                     }
                     GameMode::Else => snake_state = SnakeState::Dead,
                 }
@@ -251,7 +254,7 @@ impl Scene for MainState {
                 match self.game_mode {
                     GameMode::ACube => {
                         snake.y = 0.0;
-                        self.direction.y *= 1.0;
+                        self.current_direction.y *= 1.0;
                     }
                     GameMode::Else => snake_state = SnakeState::Dead,
                 }
