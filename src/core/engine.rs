@@ -201,7 +201,6 @@ impl Engine {
         event_loop.run(move |event, _, control_flow| {
             match event {
                 Event::WindowEvent { ref event, .. } => {
-                    // TODO: windows_id is not required for the engine
                     // if window_id == self.window.window().id() =>
                     match event {
                         WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
@@ -249,7 +248,7 @@ impl Engine {
                     }
                 }
                 Event::RedrawRequested(_) => {
-                    // TODO: windows_id is not required for the engine
+                    // windows_id is not required for the engine
                     self.window.window().request_redraw();
                 }
                 Event::RedrawEventsCleared => {

@@ -155,20 +155,27 @@ impl GameState {
         let mut renderer = self.renderer.borrow_mut();
         renderer.clear_color(self.context.clear_color);
 
+        renderer.begin_draw();
         for (_id, (sprite, transform)) in world.query::<(&Sprite, &Transform2D)>().iter() {
-            let texture = if let Some(texture_id) = &sprite.texture_id {
-                Some(self.asset_manager.get_texture(&texture_id))
+            if let Some(texture_id) = &sprite.texture_id {
+                let texture = self.asset_manager.get_texture(&texture_id);
+                renderer.draw_texture(
+                    texture,
+                    sprite.rect,
+                    transform.position,
+                    transform.scale,
+                    transform.rotate,
+                    sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
+                );
             } else {
-                None
+                renderer.draw_quad(
+                    glam::Vec2::ONE,
+                    transform.position,
+                    transform.scale,
+                    transform.rotate,
+                    sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
+                );
             };
-            renderer.draw_texture(
-                texture,
-                sprite.rect,
-                transform.position,
-                transform.scale,
-                transform.rotate,
-                sprite.color.unwrap_or(glam::vec3(1.0, 1.0, 1.0)),
-            );
         }
 
         for (_id, (label, transform)) in world.query::<(&mut Label, &Transform2D)>().iter() {
@@ -189,13 +196,15 @@ impl GameState {
             }
 
             renderer.draw_texture(
-                label.texture.as_ref(),
+                // TODO: Error Prone
+                label.texture.as_ref().unwrap(),
                 None,
                 transform.position,
                 transform.scale,
                 transform.rotate,
-                label.color.unwrap_or(glam::vec3(1.0, 1.0, 1.0)),
+                label.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
             );
         }
+        renderer.end_draw();
     }
 }

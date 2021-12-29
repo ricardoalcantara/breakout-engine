@@ -30,7 +30,7 @@ impl AutoIncrementId {
         let id = if self.ids.contains_key(&key) {
             self.ids[&key] + 1
         } else {
-            1
+            0
         };
 
         self.ids.insert(key, id);

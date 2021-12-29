@@ -90,6 +90,16 @@ impl Shader {
             gl::Uniform1i(gl::GetUniformLocation(self.id, c_name.as_ptr()), value);
         }
     }
+    pub fn set_integer_vector(&self, name: &str, value: &[i32]) {
+        let c_name = CString::new(name).expect("CString::new failed");
+        unsafe {
+            gl::Uniform1iv(
+                gl::GetUniformLocation(self.id, c_name.as_ptr()),
+                value.len() as GLsizei,
+                value.as_ptr(),
+            );
+        }
+    }
     // pub fn set_vector2f (const char *name, float x, float y, bool useShader = false);
     // pub fn set_vector2f (const char *name, const glm::vec2 &value, bool useShader = false);
     // pub fn set_vector3f (const char *name, float x, float y, float z, bool useShader = false);

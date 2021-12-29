@@ -6,7 +6,7 @@ pub struct Label {
     pub size: f32,
     pub width: f32,
     pub height: f32,
-    pub color: Option<glam::Vec3>,
+    pub color: Option<glam::Vec4>,
     pub texture: Option<Texture>,
 }
 

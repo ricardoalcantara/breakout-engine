@@ -1,4 +1,4 @@
-use glutin::{ContextWrapper, PossiblyCurrent};
+use glutin::{Api, ContextWrapper, GlRequest, PossiblyCurrent};
 
 use crate::error::{BreakoutError, BreakoutResult};
 
@@ -6,8 +6,8 @@ pub mod renderer2d;
 pub mod texture;
 pub mod vertex;
 
+mod render2d_pipeline;
 mod shader;
-mod sprite_renderer;
 
 pub fn build_window(
     window_builder: winit::window::WindowBuilder,
@@ -17,6 +17,7 @@ pub fn build_window(
 ) {
     let event_loop = glutin::event_loop::EventLoop::new();
     let window = glutin::ContextBuilder::new()
+        .with_gl(GlRequest::Specific(Api::OpenGl, (3, 3)))
         .build_windowed(window_builder, &event_loop)
         .unwrap();
 
