@@ -21,11 +21,13 @@ const TILE_SIZE: u32 = 16;
 const GRID_WIDTH: u32 = (WIDTH / TILE_SIZE) - 1;
 const GRID_HEIGHT: u32 = (HEIGHT / TILE_SIZE) - 1;
 
-struct MainState {}
+struct MainState {
+    rotation: f32,
+}
 
 impl MainState {
     fn new() -> Self {
-        Self {}
+        Self { rotation: 0.0 }
     }
 }
 impl Scene for MainState {
@@ -81,6 +83,14 @@ impl Scene for MainState {
         _context: &mut GameContext,
         _engine: &mut EngineContext,
     ) -> BreakoutResult<Transition> {
+        let world = &mut _context.get_world();
+        self.rotation += _dt;
+        if self.rotation > std::f32::consts::TAU {
+            self.rotation = std::f32::consts::TAU - self.rotation;
+        }
+        for (_id, transform) in &mut world.query::<&mut Transform2D>() {
+            transform.rotate = self.rotation;
+        }
         Ok(Transition::None)
     }
 }

@@ -89,40 +89,71 @@ impl Render2dData {
         size: glam::Vec2,
         sub_tex_rect: Option<Rect>,
         scale: glam::Vec2,
+        rotate: f32,
         color: glam::Vec4,
         tex_index: f32,
     ) {
         let offset = self.quad_count as usize * 4;
-        self.vertices[offset].position = [
-            position.x + (size.x * scale.x),
-            position.y + (size.y * scale.x),
-            0.0,
-        ];
-        self.vertices[offset + 1].position = [position.x + (size.x * scale.x), position.y, 0.0];
-        self.vertices[offset + 2].position = [position.x, position.y, 0.0];
-        self.vertices[offset + 3].position = [position.x, position.y + (size.y * scale.x), 0.0];
 
-        self.vertices[offset].color = [color.x, color.y, color.z, 1.0];
-        self.vertices[offset + 1].color = [color.x, color.y, color.z, 1.0];
-        self.vertices[offset + 2].color = [color.x, color.y, color.z, 1.0];
-        self.vertices[offset + 3].color = [color.x, color.y, color.z, 1.0];
+        if rotate == 0.0 {
+            self.vertices[offset].position = glam::vec3(
+                position.x + (size.x * scale.x),
+                position.y + (size.y * scale.x),
+                0.0,
+            );
+            self.vertices[offset + 1].position =
+                glam::vec3(position.x + (size.x * scale.x), position.y, 0.0);
+            self.vertices[offset + 2].position = glam::vec3(position.x, position.y, 0.0);
+            self.vertices[offset + 3].position =
+                glam::vec3(position.x, position.y + (size.y * scale.x), 0.0);
+        } else {
+            let transform = glam::Mat4::from_scale_rotation_translation(
+                glam::vec3(size.x, size.y, 1.0) * glam::vec3(scale.x, scale.y, 1.0),
+                glam::Quat::from_rotation_z(rotate),
+                glam::vec3(position.x, position.y, 1.0),
+            );
+
+            self.vertices[offset].position = {
+                let tmp = transform * glam::vec4(1.0, 1.0, 0.0, 1.0);
+                glam::vec3(tmp.x, tmp.y, tmp.z)
+            };
+            self.vertices[offset + 1].position = {
+                let tmp = transform * glam::vec4(1.0, 0.0, 0.0, 1.0);
+                glam::vec3(tmp.x, tmp.y, tmp.z)
+            };
+            self.vertices[offset + 2].position = {
+                let tmp = transform * glam::vec4(0.0, 0.0, 0.0, 1.0);
+                glam::vec3(tmp.x, tmp.y, tmp.z)
+            };
+            self.vertices[offset + 3].position = {
+                let tmp = transform * glam::vec4(0.0, 1.0, 0.0, 1.0);
+                glam::vec3(tmp.x, tmp.y, tmp.z)
+            };
+        }
+
+        self.vertices[offset].color = color;
+        self.vertices[offset + 1].color = color;
+        self.vertices[offset + 2].color = color;
+        self.vertices[offset + 3].color = color;
 
         if let Some(rect) = sub_tex_rect {
             let width = size.x;
             let height = size.y;
-            self.vertices[offset].texture_coords = [
+            self.vertices[offset].texture_coords = glam::vec2(
                 (rect.x + rect.width) / width,
                 (rect.y + rect.height) / height,
-            ]; // Top Right
-            self.vertices[offset + 1].texture_coords = [rect.right() / width, rect.y / height]; // Bottom Right
-            self.vertices[offset + 2].texture_coords = [rect.x / width, rect.y / height]; // Bottom Left
-            self.vertices[offset + 3].texture_coords = [rect.x / width, rect.bottom() / height];
+            ); // Top Right
+            self.vertices[offset + 1].texture_coords =
+                glam::vec2(rect.right() / width, rect.y / height); // Bottom Right
+            self.vertices[offset + 2].texture_coords = glam::vec2(rect.x / width, rect.y / height); // Bottom Left
+            self.vertices[offset + 3].texture_coords =
+                glam::vec2(rect.x / width, rect.bottom() / height);
             // Top Left
         } else {
-            self.vertices[offset].texture_coords = [1.0, 1.0];
-            self.vertices[offset + 1].texture_coords = [1.0, 0.0];
-            self.vertices[offset + 2].texture_coords = [0.0, 0.0];
-            self.vertices[offset + 3].texture_coords = [0.0, 1.0];
+            self.vertices[offset].texture_coords = glam::vec2(1.0, 1.0);
+            self.vertices[offset + 1].texture_coords = glam::vec2(1.0, 0.0);
+            self.vertices[offset + 2].texture_coords = glam::vec2(0.0, 0.0);
+            self.vertices[offset + 3].texture_coords = glam::vec2(0.0, 1.0);
         }
 
         self.vertices[offset].tex_index = tex_index;
@@ -292,7 +323,7 @@ impl Render2dPipeline {
         size: glam::Vec2,
         position: glam::Vec2,
         scale: glam::Vec2,
-        rotate: f32,
+        rotated: f32,
         color: glam::Vec4,
     ) {
         self.shader.use_program();
@@ -304,7 +335,7 @@ impl Render2dPipeline {
         }
 
         self.render_data
-            .add_quad(position, size, None, scale, color, 0.0);
+            .add_quad(position, size, None, scale, rotated, color, 0.0);
     }
 
     pub fn draw_texture(
@@ -313,14 +344,10 @@ impl Render2dPipeline {
         rect: Option<Rect>,
         position: glam::Vec2,
         scale: glam::Vec2,
-        rotate: f32,
+        rotated: f32,
         color: glam::Vec4,
     ) {
         self.shader.use_program();
-
-        // let mut model = glam::Mat4::IDENTITY;
-        // model *= glam::Mat4::from_rotation_z((90.0f32).to_radians());
-        // let x = model * glam::Vec4::ONE;
 
         if !self.render_data.can_add_quad() {
             self.end_batch();
@@ -339,6 +366,7 @@ impl Render2dPipeline {
             glam::vec2(texture.width as f32, texture.height as f32),
             rect,
             scale,
+            rotated,
             color,
             tex_index,
         );

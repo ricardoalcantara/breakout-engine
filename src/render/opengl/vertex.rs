@@ -5,30 +5,19 @@ pub(crate) mod vertex_format {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub(crate) struct Vertex {
-    pub(crate) position: vertex_format::Float32x3,
-    pub(crate) color: vertex_format::Float32x4,
-    pub(crate) texture_coords: vertex_format::Float32x2,
+    pub(crate) position: glam::Vec3,
+    pub(crate) color: glam::Vec4,
+    pub(crate) texture_coords: glam::Vec2,
     pub(crate) tex_index: f32,
-}
-
-impl Default for Vertex {
-    fn default() -> Self {
-        Self {
-            position: [0.0, 0.0, 0.0],
-            color: [0.0, 0.0, 0.0, 0.0],
-            texture_coords: [0.0, 0.0],
-            tex_index: 0.0,
-        }
-    }
 }
 
 impl Vertex {
     pub(crate) fn new(
-        position: vertex_format::Float32x3,
-        color: vertex_format::Float32x4,
-        texture_coords: vertex_format::Float32x2,
+        position: glam::Vec3,
+        color: glam::Vec4,
+        texture_coords: glam::Vec2,
         tex_index: f32,
     ) -> Vertex {
         Vertex {
