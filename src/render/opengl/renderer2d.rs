@@ -19,14 +19,17 @@ impl OpenGLRenderer2D {
     ) -> BreakoutResult<Self> {
         gl::load_with(|symbol| window.get_proc_address(symbol));
 
-        let version = unsafe {
+        let (version, max_texture_image_units) = unsafe {
+            let mut max_texture_image_units = 0;
+            gl::GetIntegerv(gl::MAX_TEXTURE_IMAGE_UNITS, &mut max_texture_image_units);
             let data = CStr::from_ptr(gl::GetString(gl::VERSION) as *const _)
                 .to_bytes()
                 .to_vec();
-            String::from_utf8(data).unwrap()
+            (String::from_utf8(data).unwrap(), max_texture_image_units)
         };
 
         info!("OpenGL version {}", version);
+        info!("Max Texture Image Units {}", max_texture_image_units);
         unsafe {
             gl::Enable(gl::BLEND);
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);

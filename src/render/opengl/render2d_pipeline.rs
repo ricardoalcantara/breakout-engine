@@ -297,7 +297,11 @@ impl Render2dPipeline {
                 gl::ARRAY_BUFFER,
                 0,
                 mem::size_of_val(vertices) as GLsizeiptr,
-                mem::transmute(&vertices[0]),
+                if vertices.len() > 0 {
+                    mem::transmute(&vertices[0])
+                } else {
+                    ptr::null()
+                },
             );
         }
     }
