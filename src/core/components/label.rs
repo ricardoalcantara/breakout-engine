@@ -8,11 +8,12 @@ pub struct Label {
     pub height: f32,
     pub color: Option<glam::Vec4>,
     pub texture: Option<Texture>,
+    pub visible: bool,
 }
 
 impl Default for Label {
     fn default() -> Self {
-        Self {
+        Label {
             text: String::from(""),
             font_id: None,
             size: 0.0,
@@ -20,6 +21,7 @@ impl Default for Label {
             height: 0.0,
             color: None,
             texture: None,
+            visible: true,
         }
     }
 }
@@ -28,12 +30,8 @@ impl Label {
     pub fn new(text: String, size: f32) -> Label {
         Label {
             text,
-            font_id: None,
             size,
-            width: 0.0,
-            height: 0.0,
-            color: None,
-            texture: None,
+            ..Default::default()
         }
     }
 
@@ -42,10 +40,7 @@ impl Label {
             text,
             font_id: Some(font_id),
             size,
-            width: 0.0,
-            height: 0.0,
-            color: None,
-            texture: None,
+            ..Default::default()
         }
     }
 }

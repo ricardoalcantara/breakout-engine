@@ -8,10 +8,10 @@ pub enum RenderAPI {
 }
 
 pub trait Renderer2D {
-    fn resize(&self, _new_size: winit::dpi::PhysicalSize<u32>);
+    fn resize(&mut self, _new_size: winit::dpi::PhysicalSize<u32>);
     fn generate_texture(&self, img: DynamicImage) -> BreakoutResult<Texture>;
     fn clear_color(&self, _color: glam::Vec3);
-    fn begin_draw(&mut self);
+    fn begin_draw(&mut self, camera: Option<glam::Mat4>);
     fn end_draw(&mut self);
     fn draw_quad(
         &mut self,

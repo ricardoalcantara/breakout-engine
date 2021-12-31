@@ -5,6 +5,7 @@ pub struct EngineContext {
     #[warn(dead_code)]
     engine_settings: Vec<EngineSettings>,
     is_fullscreen: bool,
+    window_size: glam::UVec2,
 }
 
 impl EngineContext {
@@ -12,6 +13,10 @@ impl EngineContext {
         EngineContext {
             engine_settings: Vec::new(),
             is_fullscreen: window.window().fullscreen().is_some(),
+            window_size: {
+                let size = window.window().inner_size();
+                glam::uvec2(size.width, size.height)
+            },
         }
     }
 
@@ -28,5 +33,9 @@ impl EngineContext {
 
     pub fn fullscreen(&self) -> bool {
         self.is_fullscreen
+    }
+
+    pub fn window_size(&self) -> glam::UVec2 {
+        self.window_size
     }
 }

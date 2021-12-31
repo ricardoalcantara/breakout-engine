@@ -35,16 +35,19 @@ impl OpenGLRenderer2D {
             gl::BlendFunc(gl::SRC_ALPHA, gl::ONE_MINUS_SRC_ALPHA);
         }
 
-        let render2d_pipeline = Render2dPipeline::new();
+        let s = window.window().inner_size();
+        let render2d_pipeline = Render2dPipeline::new(s.width, s.height);
 
         Ok(Self { render2d_pipeline })
     }
 }
 
 impl Renderer2D for OpenGLRenderer2D {
-    fn resize(&self, _new_size: winit::dpi::PhysicalSize<u32>) {
+    fn resize(&mut self, _new_size: winit::dpi::PhysicalSize<u32>) {
         unsafe {
             gl::Viewport(0, 0, _new_size.width as _, _new_size.height as _);
+            self.render2d_pipeline
+                .resize(_new_size.width, _new_size.height)
         }
     }
 
@@ -59,7 +62,12 @@ impl Renderer2D for OpenGLRenderer2D {
         }
     }
 
-    fn begin_draw(&mut self) {
+    fn begin_draw(&mut self, camera: Option<glam::Mat4>) {
+        if let Some(camera) = camera {
+            self.render2d_pipeline.set_camera(camera);
+        } else {
+            self.render2d_pipeline.default_camera();
+        }
         self.render2d_pipeline.begin_batch();
     }
 

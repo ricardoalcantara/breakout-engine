@@ -3,7 +3,7 @@ extern crate pretty_env_logger;
 use breakout_engine::{
     core::{
         asset_manager::AssetManager,
-        components::{Sprite, Transform2D},
+        components::{Camera2D, Sprite, Transform2D},
         engine::{EngineBuilder, EngineSettings},
         engine_context::EngineContext,
         game_context::GameContext,
@@ -21,6 +21,8 @@ const TILE_SIZE: u32 = 16;
 const GRID_WIDTH: u32 = (WIDTH / TILE_SIZE) - 1;
 const GRID_HEIGHT: u32 = (HEIGHT / TILE_SIZE) - 1;
 
+struct InputTag;
+
 struct MainState {
     rotation: f32,
 }
@@ -30,6 +32,7 @@ impl MainState {
         Self { rotation: 0.0 }
     }
 }
+
 impl Scene for MainState {
     fn init(
         &mut self,
@@ -64,6 +67,14 @@ impl Scene for MainState {
                 ));
             }
         }
+
+        world.spawn((
+            InputTag,
+            Camera2D::keep_width(400),
+            Transform2D {
+                ..Default::default()
+            },
+        ));
         Ok(())
     }
 

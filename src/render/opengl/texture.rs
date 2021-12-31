@@ -41,10 +41,10 @@ impl OpenGLTexture {
             id,
             internal_format: gl::RGBA,
             image_format: gl::RGBA,
-            wrap_s: gl::REPEAT,
-            wrap_t: gl::REPEAT,
-            filter_min: gl::LINEAR,
-            filter_max: gl::LINEAR,
+            wrap_s: gl::CLAMP_TO_EDGE,
+            wrap_t: gl::CLAMP_TO_EDGE,
+            filter_min: gl::NEAREST,
+            filter_max: gl::NEAREST,
         }
     }
 

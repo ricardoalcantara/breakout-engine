@@ -86,7 +86,7 @@ impl Render2dData {
     fn add_quad(
         &mut self,
         position: glam::Vec2,
-        size: glam::Vec2,
+        texture_size: glam::Vec2,
         sub_tex_rect: Option<Rect>,
         scale: glam::Vec2,
         rotate: f32,
@@ -94,21 +94,26 @@ impl Render2dData {
         tex_index: f32,
     ) {
         let offset = self.quad_count as usize * 4;
-
+        let render_rect_size = if let Some(r) = sub_tex_rect {
+            r.size().into()
+        } else {
+            texture_size
+        };
         if rotate == 0.0 {
             self.vertices[offset].position = glam::vec3(
-                position.x + (size.x * scale.x),
-                position.y + (size.y * scale.x),
+                position.x + (render_rect_size.x * scale.x),
+                position.y + (render_rect_size.y * scale.x),
                 0.0,
             );
             self.vertices[offset + 1].position =
-                glam::vec3(position.x + (size.x * scale.x), position.y, 0.0);
+                glam::vec3(position.x + (render_rect_size.x * scale.x), position.y, 0.0);
             self.vertices[offset + 2].position = glam::vec3(position.x, position.y, 0.0);
             self.vertices[offset + 3].position =
-                glam::vec3(position.x, position.y + (size.y * scale.x), 0.0);
+                glam::vec3(position.x, position.y + (render_rect_size.y * scale.x), 0.0);
         } else {
             let transform = glam::Mat4::from_scale_rotation_translation(
-                glam::vec3(size.x, size.y, 1.0) * glam::vec3(scale.x, scale.y, 1.0),
+                glam::vec3(render_rect_size.x, render_rect_size.y, 1.0)
+                    * glam::vec3(scale.x, scale.y, 1.0),
                 glam::Quat::from_rotation_z(rotate),
                 glam::vec3(position.x, position.y, 1.0),
             );
@@ -137,8 +142,8 @@ impl Render2dData {
         self.vertices[offset + 3].color = color;
 
         if let Some(rect) = sub_tex_rect {
-            let width = size.x;
-            let height = size.y;
+            let width = texture_size.x;
+            let height = texture_size.y;
             self.vertices[offset].texture_coords = glam::vec2(
                 (rect.x + rect.width) / width,
                 (rect.y + rect.height) / height,
@@ -196,10 +201,11 @@ impl Render2dData {
 pub struct Render2dPipeline {
     shader: Shader,
     render_data: Render2dData,
+    default_camera: glam::Mat4,
 }
 
 impl Render2dPipeline {
-    pub fn new() -> Self {
+    pub fn new(width: u32, height: u32) -> Self {
         #[cfg(dev_shader)]
         let vs_src = std::fs::read_to_string("shaders/render2d_shader.vert")
             .expect("Something went wrong reading vs_src");
@@ -212,7 +218,8 @@ impl Render2dPipeline {
         #[cfg(not(dev_shader))]
         let fs_src = include_str!("../../../shaders/render2d_shader.frag");
 
-        let projection = glam::Mat4::orthographic_rh_gl(0.0, 800.0, 600.0, 0.0, -1.0, 1.0);
+        let default_camera =
+            glam::Mat4::orthographic_rh_gl(0.0, width as f32, height as f32, 0.0, -1.0, 1.0);
         let shader = Shader::compile(&vs_src, &fs_src, None);
 
         shader.use_program();
@@ -226,7 +233,7 @@ impl Render2dPipeline {
         //     shader.set_integer(&format!("u_texture{}", i), i as i32);
         // }
 
-        shader.set_matrix4(&"projection", &projection);
+        shader.set_matrix4(&"projection", &default_camera);
 
         let mut render_data = Render2dData::new();
 
@@ -282,7 +289,22 @@ impl Render2dPipeline {
         Self {
             shader,
             render_data,
+            default_camera,
         }
+    }
+
+    pub fn resize(&mut self, width: u32, height: u32) {
+        self.default_camera =
+            glam::Mat4::orthographic_rh_gl(0.0, width as f32, height as f32, 0.0, -1.0, 1.0);
+        self.shader.set_matrix4(&"projection", &self.default_camera);
+    }
+
+    pub fn set_camera(&self, camera: glam::Mat4) {
+        self.shader.set_matrix4(&"projection", &camera);
+    }
+
+    pub fn default_camera(&self) {
+        self.shader.set_matrix4(&"projection", &self.default_camera);
     }
 
     pub fn begin_batch(&mut self) {

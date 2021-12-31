@@ -54,7 +54,6 @@ impl<T> Rectangle<T> {
         self.y += offset.y;
     }
 
-    /// Moves the `Rect`'s origin to (x, y)
     pub fn move_to(&mut self, destination: glam::XY<T>)
     where
         T: AddAssign,
@@ -63,8 +62,6 @@ impl<T> Rectangle<T> {
         self.y = destination.y;
     }
 
-    /// Scales the `Rect` by a factor of (sx, sy),
-    /// growing towards the bottom-left
     pub fn scale(&mut self, sx: T, sy: T)
     where
         T: MulAssign,
@@ -78,6 +75,20 @@ impl<T> Rectangle<T>
 where
     T: Copy,
 {
+    pub fn size(&self) -> glam::XY<T> {
+        glam::XY {
+            x: self.width,
+            y: self.height,
+        }
+    }
+
+    pub fn position(&self) -> glam::XY<T> {
+        glam::XY {
+            x: self.x,
+            y: self.y,
+        }
+    }
+
     pub fn intersects(&self, other: &Rectangle<T>) -> bool
     where
         T: Add<Output = T> + PartialOrd,

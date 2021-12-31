@@ -1,5 +1,5 @@
 use super::{
-    components::Label,
+    components::{Camera2D, Label},
     engine::EngineSettings,
     input::Input,
     scene::{InputHandled, Scene, Transition},
@@ -17,10 +17,7 @@ use crate::{
 };
 use hecs::World;
 use image::GenericImageView;
-use std::{
-    cell::{RefCell, RefMut},
-    rc::Rc,
-};
+use std::{cell::RefCell, rc::Rc};
 
 pub struct GameState {
     scenes: Vec<Box<dyn Scene>>,
@@ -31,6 +28,7 @@ pub struct GameState {
     input: Input,
     music_player: AudioPlayer,
     default_font: Font,
+    window_size: glam::UVec2,
 }
 
 impl GameState {
@@ -52,8 +50,10 @@ impl GameState {
         let input = Input::new();
         let music_player = AudioPlayer::new();
         let default_font_byte = include_bytes!("../../assets/Roboto-Regular.ttf");
-
         let default_font = Font::new_from_bytes(default_font_byte)?;
+        let size = window.window().inner_size();
+        let window_size = glam::uvec2(size.width, size.height);
+
         Ok(Self {
             scenes: vec![Box::new(state)],
             renderer,
@@ -63,6 +63,7 @@ impl GameState {
             input,
             music_player,
             default_font,
+            window_size,
         })
     }
 
@@ -70,8 +71,9 @@ impl GameState {
         self.engine.take_settings()
     }
 
-    pub fn resize(&self, new_size: winit::dpi::PhysicalSize<u32>) {
-        self.renderer.as_ref().borrow().resize(new_size);
+    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
+        self.window_size = glam::uvec2(new_size.width, new_size.height);
+        self.renderer.as_ref().borrow_mut().resize(new_size);
     }
 
     pub fn input(&mut self, event: &winit::event::WindowEvent) -> BreakoutResult<bool> {
@@ -155,8 +157,19 @@ impl GameState {
         let mut renderer = self.renderer.borrow_mut();
         renderer.clear_color(self.context.clear_color);
 
-        renderer.begin_draw();
+        let camera_projection = if let Some((_id, (camera, transform))) =
+            world.query::<(&Camera2D, &Transform2D)>().iter().next()
+        {
+            Some(camera.get_view_matrix(&self.window_size, &transform.position))
+        } else {
+            None
+        };
+
+        renderer.begin_draw(camera_projection);
         for (_id, (sprite, transform)) in world.query::<(&Sprite, &Transform2D)>().iter() {
+            if !sprite.visible {
+                continue;
+            }
             if let Some(texture_id) = &sprite.texture_id {
                 let texture = self.asset_manager.get_texture(&texture_id);
                 renderer.draw_texture(
@@ -179,6 +192,9 @@ impl GameState {
         }
 
         for (_id, (label, transform)) in world.query::<(&mut Label, &Transform2D)>().iter() {
+            if !label.visible {
+                continue;
+            }
             if label.texture.is_none() {
                 let font = if let Some(font_id) = &label.font_id {
                     self.asset_manager.get_font(font_id)
