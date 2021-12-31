@@ -150,10 +150,10 @@ impl Render2dData {
             ); // Top Right
             self.vertices[offset + 1].texture_coords =
                 glam::vec2(rect.right() / width, rect.y / height); // Bottom Right
-            self.vertices[offset + 2].texture_coords = glam::vec2(rect.x / width, rect.y / height); // Bottom Left
+            self.vertices[offset + 2].texture_coords =
+                glam::vec2((rect.x + 0.5) / width, rect.y / height); // Bottom Left
             self.vertices[offset + 3].texture_coords =
-                glam::vec2(rect.x / width, rect.bottom() / height);
-            // Top Left
+                glam::vec2((rect.x + 0.5) / width, rect.bottom() / height); // Top Left
         } else {
             self.vertices[offset].texture_coords = glam::vec2(1.0, 1.0);
             self.vertices[offset + 1].texture_coords = glam::vec2(1.0, 0.0);

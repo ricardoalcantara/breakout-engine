@@ -5,7 +5,7 @@ pub struct EngineContext {
     #[warn(dead_code)]
     engine_settings: Vec<EngineSettings>,
     is_fullscreen: bool,
-    window_size: glam::UVec2,
+    pub(crate) window_size: glam::UVec2,
 }
 
 impl EngineContext {

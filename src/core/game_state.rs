@@ -39,7 +39,7 @@ impl GameState {
     {
         let renderer = Rc::new(RefCell::new(renderer));
         let mut engine = EngineContext::new(&window);
-        let mut context = GameContext::new();
+        let mut context = GameContext::new(&window);
         let mut asset_manager = AssetManager::new(Rc::clone(&renderer));
 
         let mut state = state;
@@ -73,6 +73,8 @@ impl GameState {
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
         self.window_size = glam::uvec2(new_size.width, new_size.height);
+        self.engine.window_size = glam::uvec2(new_size.width, new_size.height);
+        self.context.window_size = glam::uvec2(new_size.width, new_size.height);
         self.renderer.as_ref().borrow_mut().resize(new_size);
     }
 
@@ -170,12 +172,20 @@ impl GameState {
             if !sprite.visible {
                 continue;
             }
+            let position = if transform.pixel_snap {
+                glam::vec2(
+                    transform.position.x as i32 as f32,
+                    transform.position.y as i32 as f32,
+                )
+            } else {
+                transform.position
+            };
             if let Some(texture_id) = &sprite.texture_id {
                 let texture = self.asset_manager.get_texture(&texture_id);
                 renderer.draw_texture(
                     texture,
                     sprite.rect,
-                    transform.position,
+                    position,
                     transform.scale,
                     transform.rotate,
                     sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
@@ -183,7 +193,7 @@ impl GameState {
             } else {
                 renderer.draw_quad(
                     glam::Vec2::ONE,
-                    transform.position,
+                    position,
                     transform.scale,
                     transform.rotate,
                     sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),

@@ -63,6 +63,7 @@ impl Scene for MainState {
                         position: math::vec2((x * TILE_SIZE) as f32, (y * TILE_SIZE) as f32),
                         scale: math::vec2((TILE_SIZE - 1) as f32, (TILE_SIZE - 1) as f32),
                         rotate: 0.0,
+                        ..Default::default()
                     },
                 ));
             }
