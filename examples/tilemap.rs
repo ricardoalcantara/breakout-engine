@@ -57,6 +57,7 @@ impl Scene for MainState {
                 world.spawn((
                     Sprite {
                         color: Some(math::vec4(1.0, 0.0, 0.0, 1.0)),
+                        center_origin: true,
                         ..Default::default()
                     },
                     Transform2D {
@@ -101,7 +102,7 @@ impl Scene for MainState {
             self.rotation = std::f32::consts::TAU - self.rotation;
         }
         for (_id, transform) in &mut world.query::<&mut Transform2D>() {
-            transform.rotate = self.rotation;
+            // transform.rotate = self.rotation;
         }
         Ok(Transition::None)
     }

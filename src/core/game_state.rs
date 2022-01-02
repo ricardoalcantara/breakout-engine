@@ -201,6 +201,7 @@ impl GameState {
                     position: position,
                     scale: transform.scale,
                     rotate: transform.rotate,
+                    center_origin: sprite.center_origin,
                     color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
                 });
             };

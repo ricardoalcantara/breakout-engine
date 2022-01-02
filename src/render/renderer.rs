@@ -12,6 +12,7 @@ pub struct RenderQuad {
     pub position: glam::Vec2,
     pub scale: glam::Vec2,
     pub rotate: f32,
+    pub center_origin: bool,
     pub color: glam::Vec4,
 }
 

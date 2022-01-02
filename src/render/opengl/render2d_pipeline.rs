@@ -127,42 +127,21 @@ impl Render2dData {
             QuadOrigin::Center => &CENTER_QUAD,
         };
 
-        if rotate == 0.0 {
-            self.vertices[offset].position = glam::vec3(
-                position.x + (render_rect_size.x * scale.x),
-                position.y + (render_rect_size.y * scale.x),
-                0.0,
-            );
-            self.vertices[offset + 1].position =
-                glam::vec3(position.x + (render_rect_size.x * scale.x), position.y, 0.0);
-            self.vertices[offset + 2].position = glam::vec3(position.x, position.y, 0.0);
-            self.vertices[offset + 3].position =
-                glam::vec3(position.x, position.y + (render_rect_size.y * scale.x), 0.0);
+        let transform = if rotate == 0.0 {
+            glam::Mat4::from_translation(position.extend(0.0))
+                * glam::Mat4::from_scale(render_rect_size.extend(0.0) * scale.extend(0.0))
         } else {
-            let transform = glam::Mat4::from_scale_rotation_translation(
-                glam::vec3(render_rect_size.x, render_rect_size.y, 1.0)
-                    * glam::vec3(scale.x, scale.y, 1.0),
+            glam::Mat4::from_scale_rotation_translation(
+                render_rect_size.extend(0.0) * scale.extend(0.0),
                 glam::Quat::from_rotation_z(rotate),
-                glam::vec3(position.x, position.y, 1.0),
-            );
+                position.extend(0.0),
+            )
+        };
 
-            self.vertices[offset].position = {
-                let tmp = transform * quad[0];
-                glam::vec3(tmp.x, tmp.y, tmp.z)
-            };
-            self.vertices[offset + 1].position = {
-                let tmp = transform * quad[1];
-                glam::vec3(tmp.x, tmp.y, tmp.z)
-            };
-            self.vertices[offset + 2].position = {
-                let tmp = transform * quad[2];
-                glam::vec3(tmp.x, tmp.y, tmp.z)
-            };
-            self.vertices[offset + 3].position = {
-                let tmp = transform * quad[3];
-                glam::vec3(tmp.x, tmp.y, tmp.z)
-            };
-        }
+        self.vertices[offset].position = (transform * quad[0]).truncate();
+        self.vertices[offset + 1].position = (transform * quad[1]).truncate();
+        self.vertices[offset + 2].position = (transform * quad[2]).truncate();
+        self.vertices[offset + 3].position = (transform * quad[3]).truncate();
 
         self.vertices[offset].color = color;
         self.vertices[offset + 1].color = color;
@@ -388,7 +367,11 @@ impl Render2dPipeline {
             quad.scale,
             quad.rotate,
             quad.color,
-            QuadOrigin::TopLeft,
+            if quad.center_origin {
+                QuadOrigin::Center
+            } else {
+                QuadOrigin::TopLeft
+            },
             0.0,
         );
     }
