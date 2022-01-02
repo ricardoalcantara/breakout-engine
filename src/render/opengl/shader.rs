@@ -84,6 +84,7 @@ impl Shader {
 
     // TODO: for later https://learnopengl.com/code_viewer_gh.php?code=src/7.in_practice/3.2d_game/0.full_source/shader.cpp
     // pub fn set_float    (const char *name, float value, bool useShader = false);
+    #[allow(dead_code)]
     pub fn set_integer(&self, name: &str, value: i32) {
         let c_name = CString::new(name).expect("CString::new failed");
         unsafe {
@@ -103,6 +104,7 @@ impl Shader {
     // pub fn set_vector2f (const char *name, float x, float y, bool useShader = false);
     // pub fn set_vector2f (const char *name, const glm::vec2 &value, bool useShader = false);
     // pub fn set_vector3f (const char *name, float x, float y, float z, bool useShader = false);
+    #[allow(dead_code)]
     pub fn set_vector3f(&self, name: &str, value: &glam::Vec3) {
         let c_name = CString::new(name).expect("CString::new failed");
         unsafe {

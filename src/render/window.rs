@@ -25,7 +25,6 @@ impl MyWindow {
                 (WindowProvider::Glutin(window), event_loop)
             }
             RenderAPI::WGPU => todo!(),
-            _ => todo!(""),
         };
 
         Self {

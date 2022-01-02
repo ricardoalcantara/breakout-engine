@@ -105,6 +105,7 @@ impl OpenGLTexture {
         })
     }
 
+    #[allow(dead_code)]
     pub(crate) fn bind(&self) {
         unsafe {
             gl::BindTexture(gl::TEXTURE_2D, self.id);
