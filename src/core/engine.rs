@@ -3,7 +3,7 @@ use crate::render::renderer::RenderAPI;
 use crate::render::window::MyWindow;
 use crate::{
     core::game_state::GameState,
-    error::{BreakoutError, BreakoutResult},
+    error::{BreakoutResult},
 };
 use log::{error, info};
 use winit::{

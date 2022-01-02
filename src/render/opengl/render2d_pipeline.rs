@@ -2,10 +2,10 @@ use super::check_gl_ok;
 use super::shader::Shader;
 use super::vertex::Vertex;
 use crate::render::renderer::{RenderQuad, RenderTexture};
-use crate::render::texture::{Texture, TextureType};
+use crate::render::texture::{TextureType};
 use crate::shapes::rectangle::Rect;
 use gl::types::*;
-use log::warn;
+
 use memoffset::offset_of;
 use std::ffi::c_void;
 use std::mem;

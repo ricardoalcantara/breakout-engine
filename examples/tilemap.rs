@@ -101,7 +101,7 @@ impl Scene for MainState {
         if self.rotation > std::f32::consts::TAU {
             self.rotation = std::f32::consts::TAU - self.rotation;
         }
-        for (_id, transform) in &mut world.query::<&mut Transform2D>() {
+        for (_id, _transform) in &mut world.query::<&mut Transform2D>() {
             // transform.rotate = self.rotation;
         }
         Ok(Transition::None)

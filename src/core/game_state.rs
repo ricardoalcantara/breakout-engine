@@ -19,7 +19,7 @@ use crate::{
         window::MyWindow,
     },
 };
-use hecs::World;
+
 use image::GenericImageView;
 use std::{cell::RefCell, rc::Rc};
 
@@ -207,7 +207,7 @@ impl GameState {
             };
         }
 
-        for (_id, (label, transform)) in world.query::<(&mut Label, &Transform2D)>().iter() {
+        for (_id, (label, _transform)) in world.query::<(&mut Label, &Transform2D)>().iter() {
             if !label.visible {
                 continue;
             }
