@@ -5,6 +5,7 @@ pub struct Sprite {
     pub rect: Option<Rect>,
     pub color: Option<glam::Vec4>,
     pub visible: bool,
+    pub center_origin: bool,
 }
 
 impl Default for Sprite {
@@ -14,6 +15,7 @@ impl Default for Sprite {
             color: None,
             rect: None,
             visible: true,
+            center_origin: false,
         }
     }
 }

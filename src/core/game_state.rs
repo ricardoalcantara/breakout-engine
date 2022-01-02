@@ -13,7 +13,11 @@ use crate::{
         game_context::GameContext,
     },
     error::BreakoutResult,
-    render::{font::Font, renderer::Renderer2D, window::MyWindow},
+    render::{
+        font::Font,
+        renderer::{RenderQuad, RenderTexture, Renderer2D},
+        window::MyWindow,
+    },
 };
 use hecs::World;
 use image::GenericImageView;
@@ -182,22 +186,23 @@ impl GameState {
             };
             if let Some(texture_id) = &sprite.texture_id {
                 let texture = self.asset_manager.get_texture(&texture_id);
-                renderer.draw_texture(
-                    texture,
-                    sprite.rect,
-                    position,
-                    transform.scale,
-                    transform.rotate,
-                    sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
-                );
+                renderer.draw_texture(RenderTexture {
+                    texture: texture,
+                    rect: sprite.rect,
+                    position: position,
+                    scale: transform.scale,
+                    rotate: transform.rotate,
+                    center_origin: sprite.center_origin,
+                    color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
+                });
             } else {
-                renderer.draw_quad(
-                    glam::Vec2::ONE,
-                    position,
-                    transform.scale,
-                    transform.rotate,
-                    sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
-                );
+                renderer.draw_quad(RenderQuad {
+                    size: glam::Vec2::ONE,
+                    position: position,
+                    scale: transform.scale,
+                    rotate: transform.rotate,
+                    color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
+                });
             };
         }
 
@@ -221,15 +226,17 @@ impl GameState {
                 label.height = height as f32;
             }
 
-            renderer.draw_texture(
-                // TODO: Error Prone
-                label.texture.as_ref().unwrap(),
-                None,
-                transform.position,
-                transform.scale,
-                transform.rotate,
-                label.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
-            );
+            // TODO: Render Text is broken!
+            // renderer.draw_texture(
+            //     // TODO: Error Prone
+            //     label.texture.as_ref().unwrap(),
+            //     None,
+            //     transform.position,
+            //     transform.scale,
+            //     transform.rotate,
+            //     false,
+            //     label.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
+            // );
         }
         renderer.end_draw();
     }

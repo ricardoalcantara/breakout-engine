@@ -1,9 +1,11 @@
 use super::check_gl_ok;
 use super::shader::Shader;
 use super::vertex::Vertex;
+use crate::render::renderer::{RenderQuad, RenderTexture};
 use crate::render::texture::{Texture, TextureType};
 use crate::shapes::rectangle::Rect;
 use gl::types::*;
+use log::warn;
 use memoffset::offset_of;
 use std::ffi::c_void;
 use std::mem;
@@ -13,6 +15,25 @@ const MAX_QUAD_COUNT: usize = 10000;
 const MAX_VERTEX_COUNT: usize = MAX_QUAD_COUNT * 4;
 const MAX_INDEX_COUNT: usize = MAX_QUAD_COUNT * 6;
 const MAX_TEXTURE_COUNT: usize = 32;
+
+const TOP_LEFT_QUAD: [glam::Vec4; 4] = [
+    glam::const_vec4!([1.0, 1.0, 0.0, 1.0]),
+    glam::const_vec4!([1.0, 0.0, 0.0, 1.0]),
+    glam::const_vec4!([0.0, 0.0, 0.0, 1.0]),
+    glam::const_vec4!([0.0, 1.0, 0.0, 1.0]),
+];
+
+const CENTER_QUAD: [glam::Vec4; 4] = [
+    glam::const_vec4!([0.5, 0.5, 0.0, 1.0]),
+    glam::const_vec4!([0.5, -0.5, 0.0, 1.0]),
+    glam::const_vec4!([-0.5, -0.5, 0.0, 1.0]),
+    glam::const_vec4!([-0.5, 0.5, 0.0, 1.0]),
+];
+
+pub enum QuadOrigin {
+    TopLeft,
+    Center,
+}
 
 struct Render2dData {
     quad_vao: u32,
@@ -91,6 +112,7 @@ impl Render2dData {
         scale: glam::Vec2,
         rotate: f32,
         color: glam::Vec4,
+        origin: QuadOrigin,
         tex_index: f32,
     ) {
         let offset = self.quad_count as usize * 4;
@@ -99,6 +121,12 @@ impl Render2dData {
         } else {
             texture_size
         };
+
+        let quad = match origin {
+            QuadOrigin::TopLeft => &TOP_LEFT_QUAD,
+            QuadOrigin::Center => &CENTER_QUAD,
+        };
+
         if rotate == 0.0 {
             self.vertices[offset].position = glam::vec3(
                 position.x + (render_rect_size.x * scale.x),
@@ -119,19 +147,19 @@ impl Render2dData {
             );
 
             self.vertices[offset].position = {
-                let tmp = transform * glam::vec4(1.0, 1.0, 0.0, 1.0);
+                let tmp = transform * quad[0];
                 glam::vec3(tmp.x, tmp.y, tmp.z)
             };
             self.vertices[offset + 1].position = {
-                let tmp = transform * glam::vec4(1.0, 0.0, 0.0, 1.0);
+                let tmp = transform * quad[1];
                 glam::vec3(tmp.x, tmp.y, tmp.z)
             };
             self.vertices[offset + 2].position = {
-                let tmp = transform * glam::vec4(0.0, 0.0, 0.0, 1.0);
+                let tmp = transform * quad[2];
                 glam::vec3(tmp.x, tmp.y, tmp.z)
             };
             self.vertices[offset + 3].position = {
-                let tmp = transform * glam::vec4(0.0, 1.0, 0.0, 1.0);
+                let tmp = transform * quad[3];
                 glam::vec3(tmp.x, tmp.y, tmp.z)
             };
         }
@@ -344,14 +372,7 @@ impl Render2dPipeline {
         self.render_data.reset()
     }
 
-    pub fn draw_quad(
-        &mut self,
-        size: glam::Vec2,
-        position: glam::Vec2,
-        scale: glam::Vec2,
-        rotated: f32,
-        color: glam::Vec4,
-    ) {
+    pub fn draw_quad(&mut self, quad: RenderQuad) {
         self.shader.use_program();
 
         if !self.render_data.can_add_quad() {
@@ -360,19 +381,21 @@ impl Render2dPipeline {
             self.begin_batch()
         }
 
-        self.render_data
-            .add_quad(position, size, None, scale, rotated, color, 0.0);
+        self.render_data.add_quad(
+            quad.position,
+            quad.size,
+            None,
+            quad.scale,
+            quad.rotate,
+            quad.color,
+            QuadOrigin::TopLeft,
+            0.0,
+        );
     }
 
-    pub fn draw_texture(
-        &mut self,
-        texture: &Texture,
-        rect: Option<Rect>,
-        position: glam::Vec2,
-        scale: glam::Vec2,
-        rotated: f32,
-        color: glam::Vec4,
-    ) {
+    pub fn draw_texture(&mut self, render_texture: RenderTexture) {
+        let texture = render_texture.texture;
+
         self.shader.use_program();
 
         if !self.render_data.can_add_quad() {
@@ -388,12 +411,17 @@ impl Render2dPipeline {
         };
 
         self.render_data.add_quad(
-            position,
+            render_texture.position,
             glam::vec2(texture.width as f32, texture.height as f32),
-            rect,
-            scale,
-            rotated,
-            color,
+            render_texture.rect,
+            render_texture.scale,
+            render_texture.rotate,
+            render_texture.color,
+            if render_texture.center_origin {
+                QuadOrigin::Center
+            } else {
+                QuadOrigin::TopLeft
+            },
             tex_index,
         );
     }

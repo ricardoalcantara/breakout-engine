@@ -1,7 +1,10 @@
 use crate::{
     error::BreakoutResult,
-    render::{opengl::render2d_pipeline::Render2dPipeline, renderer::Renderer2D, texture::Texture},
-    shapes::rectangle::Rect,
+    render::{
+        opengl::render2d_pipeline::Render2dPipeline,
+        renderer::{RenderQuad, RenderTexture, Renderer2D},
+        texture::Texture,
+    },
 };
 use glutin::{ContextWrapper, PossiblyCurrent};
 use log::info;
@@ -76,28 +79,11 @@ impl Renderer2D for OpenGLRenderer2D {
         self.render2d_pipeline.flush();
     }
 
-    fn draw_quad(
-        &mut self,
-        size: glam::Vec2,
-        position: glam::Vec2,
-        scale: glam::Vec2,
-        rotate: f32,
-        color: glam::Vec4,
-    ) {
-        self.render2d_pipeline
-            .draw_quad(size, position, scale, rotate, color);
+    fn draw_quad(&mut self, quad: RenderQuad) {
+        self.render2d_pipeline.draw_quad(quad);
     }
 
-    fn draw_texture(
-        &mut self,
-        texture: &Texture,
-        rect: Option<Rect>,
-        position: glam::Vec2,
-        scale: glam::Vec2,
-        rotate: f32,
-        color: glam::Vec4,
-    ) {
-        self.render2d_pipeline
-            .draw_texture(texture, rect, position, scale, rotate, color);
+    fn draw_texture(&mut self, texture: RenderTexture) {
+        self.render2d_pipeline.draw_texture(texture);
     }
 }

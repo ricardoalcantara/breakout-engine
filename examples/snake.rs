@@ -92,6 +92,7 @@ impl MainState {
                 position,
                 scale: math::vec2(TILE_SIZE as f32, TILE_SIZE as f32),
                 rotate: 0.0,
+                ..Default::default()
             },
             Snake,
         ));
@@ -162,6 +163,7 @@ impl Scene for MainState {
                 ),
                 scale: math::vec2(TILE_SIZE as f32, TILE_SIZE as f32),
                 rotate: 0.0,
+                ..Default::default()
             },
             Frute,
         ));
