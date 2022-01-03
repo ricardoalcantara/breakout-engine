@@ -2,10 +2,11 @@ use super::check_gl_ok;
 use super::shader::Shader;
 use super::vertex::Vertex;
 use crate::render::renderer::{RenderQuad, RenderTexture};
-use crate::render::texture::{TextureType};
+use crate::render::texture::TextureType;
 use crate::shapes::rectangle::Rect;
 use gl::types::*;
 
+use log::warn;
 use memoffset::offset_of;
 use std::ffi::c_void;
 use std::mem;
@@ -45,10 +46,18 @@ struct Render2dData {
 
     texture_slot_index: usize,
     texture_slots: [u32; MAX_TEXTURE_COUNT],
+    texture_max_texture_count: usize,
 }
 
 impl Render2dData {
-    fn new() -> Render2dData {
+    fn new(texture_max_texture_count: usize) -> Render2dData {
+        assert!(
+            texture_max_texture_count <= MAX_TEXTURE_COUNT,
+            "texture_max_texture_count {} is higher than MAX_TEXTURE_COUNT {}",
+            texture_max_texture_count,
+            MAX_TEXTURE_COUNT
+        );
+
         let mut white_texture = 0;
         unsafe {
             gl::GenTextures(1, &mut white_texture);
@@ -82,6 +91,7 @@ impl Render2dData {
 
             texture_slot_index: 1,
             texture_slots,
+            texture_max_texture_count,
         }
     }
 
@@ -89,7 +99,17 @@ impl Render2dData {
         self.quad_count < MAX_QUAD_COUNT as i32
     }
 
+    fn can_add_quad_with_texture(&self, tex_id: &u32) -> bool {
+        self.quad_count < MAX_QUAD_COUNT as i32
+            && (self.texture_slots.contains(tex_id)
+                || self.texture_slot_index < self.texture_max_texture_count)
+    }
+
     fn append_texture(&mut self, tex_id: u32) -> f32 {
+        assert!(
+            self.texture_slot_index < self.texture_max_texture_count,
+            "It's not possible to append more textures than the driver supports"
+        );
         for (i, tex_index) in self.texture_slots.iter().enumerate() {
             if *tex_index == tex_id {
                 return i as f32;
@@ -195,7 +215,10 @@ impl Render2dData {
 
     fn bind_textures(&self) {
         unsafe {
-            for (i, t) in self.texture_slots.iter().enumerate() {
+            for (i, t) in self.texture_slots[0..self.texture_max_texture_count as usize]
+                .iter()
+                .enumerate()
+            {
                 // gl::BindTextureUnit(i as GLuint, *t);
                 gl::ActiveTexture(gl::TEXTURE0 + i as u32);
                 gl::BindTexture(gl::TEXTURE_2D, *t);
@@ -212,7 +235,7 @@ pub struct Render2dPipeline {
 }
 
 impl Render2dPipeline {
-    pub fn new(width: u32, height: u32) -> Self {
+    pub fn new(width: u32, height: u32, max_textures: i32) -> Self {
         #[cfg(dev_shader)]
         let vs_src = std::fs::read_to_string("shaders/render2d_shader.vert")
             .expect("Something went wrong reading vs_src");
@@ -225,9 +248,10 @@ impl Render2dPipeline {
         #[cfg(not(dev_shader))]
         let fs_src = include_str!("../../../shaders/render2d_shader.frag");
 
+        let fs = str::replace(&fs_src, "$MAX_TEXTURE_COUNT", &max_textures.to_string());
         let default_camera =
             glam::Mat4::orthographic_rh_gl(0.0, width as f32, height as f32, 0.0, -1.0, 1.0);
-        let shader = Shader::compile(&vs_src, &fs_src, None);
+        let shader = Shader::compile(&vs_src, &fs, None);
 
         shader.use_program();
         let mut textures = [0; MAX_TEXTURE_COUNT];
@@ -235,14 +259,14 @@ impl Render2dPipeline {
             textures[i] = i as i32;
         }
 
-        shader.set_integer_vector(&"u_textures", &textures);
-        // for i in 0..MAX_TEXTURE_COUNT {
+        shader.set_integer_vector(&"u_textures", &textures[0..max_textures as usize]);
+        // for i in 0..max_textures {
         //     shader.set_integer(&format!("u_texture{}", i), i as i32);
         // }
 
         shader.set_matrix4(&"projection", &default_camera);
 
-        let mut render_data = Render2dData::new();
+        let mut render_data = Render2dData::new(max_textures as usize);
 
         unsafe {
             gl::GenVertexArrays(1, &mut render_data.quad_vao);
@@ -381,17 +405,20 @@ impl Render2dPipeline {
 
         self.shader.use_program();
 
-        if !self.render_data.can_add_quad() {
+        let tex_id = if let TextureType::OpenGL(opengl_texture) = &texture.texture_type {
+            opengl_texture.id
+        } else {
+            warn!("It would have a TextureType::OpenGL texture_type");
+            self.render_data.texture_slots[0]
+        };
+
+        if !self.render_data.can_add_quad_with_texture(&tex_id) {
             self.end_batch();
             self.flush();
             self.begin_batch()
         }
 
-        let tex_index = if let TextureType::OpenGL(opengl_texture) = &texture.texture_type {
-            self.render_data.append_texture(opengl_texture.id)
-        } else {
-            0.0
-        };
+        let tex_index = self.render_data.append_texture(tex_id);
 
         self.render_data.add_quad(
             render_texture.position,
