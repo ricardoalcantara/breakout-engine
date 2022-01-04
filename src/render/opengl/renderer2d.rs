@@ -39,7 +39,7 @@ impl OpenGLRenderer2D {
         }
 
         let s = window.window().inner_size();
-        let render2d_pipeline = Render2dPipeline::new(s.width, s.height);
+        let render2d_pipeline = Render2dPipeline::new(s.width, s.height, max_texture_image_units);
 
         Ok(Self { render2d_pipeline })
     }
