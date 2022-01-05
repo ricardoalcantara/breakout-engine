@@ -42,7 +42,7 @@ struct Render2dData {
     quad_ebo: u32,
 
     quad_count: i32,
-    vertices: Box<[Vertex; MAX_VERTEX_COUNT]>,
+    vertices: Box<[Vertex]>,
 
     texture_slot_index: usize,
     texture_slots: [u32; MAX_TEXTURE_COUNT],
@@ -87,7 +87,7 @@ impl Render2dData {
             quad_ebo: 0,
 
             quad_count: 0,
-            vertices: Box::new([Vertex::default(); MAX_VERTEX_COUNT]),
+            vertices: vec![Vertex::default(); MAX_VERTEX_COUNT].into_boxed_slice(),
 
             texture_slot_index: 1,
             texture_slots,
