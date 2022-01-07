@@ -2,7 +2,7 @@ use crate::{
     error::BreakoutResult,
     render::{
         opengl::render2d_pipeline::Render2dPipeline,
-        renderer::{RenderQuad, RenderTexture, Renderer2D},
+        renderer::{RenderQuad, RenderText, RenderTexture, Renderer2D},
         texture::Texture,
     },
 };
@@ -85,5 +85,24 @@ impl Renderer2D for OpenGLRenderer2D {
 
     fn draw_texture(&mut self, texture: RenderTexture) {
         self.render2d_pipeline.draw_texture(texture);
+    }
+
+    fn draw_text(&mut self, _text: RenderText) {
+        _text.font.draw(
+            _text.text,
+            _text.position,
+            _text.size,
+            |texture, position, rect| {
+                self.draw_texture(RenderTexture {
+                    texture,
+                    rect: Some(rect),
+                    position: _text.position + position,
+                    scale: _text.scale,
+                    rotate: 0.0,
+                    center_origin: false,
+                    color: _text.color,
+                })
+            },
+        )
     }
 }
