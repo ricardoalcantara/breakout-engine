@@ -88,11 +88,9 @@ impl Renderer2D for OpenGLRenderer2D {
     }
 
     fn draw_text(&mut self, _text: RenderText) {
-        _text.font.draw(
-            _text.text,
-            _text.position,
-            _text.size,
-            |texture, position, rect| {
+        _text
+            .font
+            .draw(_text.text, _text.size, |texture, position, rect| {
                 self.draw_texture(RenderTexture {
                     texture,
                     rect: Some(rect),
@@ -102,7 +100,6 @@ impl Renderer2D for OpenGLRenderer2D {
                     center_origin: false,
                     color: _text.color,
                 })
-            },
-        )
+            });
     }
 }

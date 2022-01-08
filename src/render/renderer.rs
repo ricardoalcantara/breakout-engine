@@ -19,7 +19,7 @@ pub struct RenderQuad {
 pub struct RenderText<'a> {
     pub text: &'a str,
     pub font: &'a crate::font::Font<Texture>,
-    pub size: f32,
+    pub size: u32,
     pub position: glam::Vec2,
     pub scale: glam::Vec2,
     pub color: glam::Vec4,

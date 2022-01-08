@@ -1,4 +1,5 @@
 use image::{DynamicImage, Rgba};
+use log::warn;
 use std::{collections::HashMap, path::Path};
 
 use crate::shapes::rectangle::Rect;
@@ -22,11 +23,12 @@ pub struct Character {
 pub struct FontAtlas<T> {
     texture: T,
     characters: HashMap<char, Character>,
+    line_spacing: u32,
 }
 
 pub struct Font<T> {
     face: freetype::Face,
-    atlas: HashMap<String, FontAtlas<T>>,
+    atlas: HashMap<u32, FontAtlas<T>>,
 }
 
 impl<T> Font<T> {
@@ -47,10 +49,26 @@ impl<T> Font<T> {
     }
 
     // TODO: return BreakoutResult
+    pub fn new_from_memory(buffer: &[u8]) -> Font<T> {
+        let lib =
+            freetype::Library::init().expect("ERROR::FREETYPE: Could not init FreeType Library");
+
+        let face = lib
+            .new_memory_face(buffer.to_vec(), 0)
+            .expect("ERROR::FREETYPE: Failed to load font");
+
+        let atlas = HashMap::new();
+        Font { face, atlas }
+    }
+
+    // TODO: return BreakoutResult
     pub fn build_with_size<F>(&mut self, size: u32, get_texture: F)
     where
         F: FnOnce(DynamicImage) -> T,
     {
+        if self.atlas.contains_key(&size) {
+            return;
+        }
         // set size to load glyphs as
         self.face.set_pixel_sizes(0, size).unwrap();
 
@@ -59,7 +77,7 @@ impl<T> Font<T> {
         let mut max_height = 0;
 
         let mut chars = Vec::new();
-        chars.extend(33..128usize);
+        chars.extend(32..128usize);
         chars.extend(160..255usize);
 
         for c in chars {
@@ -70,9 +88,6 @@ impl<T> Font<T> {
 
             let bitmap = self.face.glyph().bitmap();
             let bytes = bitmap.buffer();
-            if bytes.len() == 0 {
-                continue;
-            }
 
             let (width, height) = (bitmap.width(), bitmap.rows());
 
@@ -126,32 +141,63 @@ impl<T> Font<T> {
                 *px = Rgba([255, 255, 255, *b as u8]);
             }
         }
+
+        // image.save("debug_font_atlas.png").unwrap();
         let texture = get_texture(DynamicImage::ImageRgba8(image));
+
+        let metrics = self.face.size_metrics().unwrap();
 
         let font_atlas = FontAtlas::<T> {
             texture,
             characters,
+            line_spacing: metrics.height as u32,
         };
 
-        self.atlas.insert(size.to_string(), font_atlas);
+        self.atlas.insert(size, font_atlas);
     }
 
-    pub fn draw<F>(&self, text: &str, position: glam::Vec2, size: f32, mut render: F)
+    pub fn draw<F>(&self, text: &str, size: u32, mut render: F)
     where
         F: FnMut(&T, glam::Vec2, Rect),
     {
-        let atlas = self.atlas.values().next().unwrap();
-        // let mut x_pos = x;
+        if !self.atlas.contains_key(&size) {
+            warn!("Font should be build before");
+            return;
+        }
+
+        let atlas = &self.atlas[&size];
+        let scale = 1.0;
+        let mut x_pos = 0.0;
+        let mut y_pos = 0.0;
+
+        let h_bearing_y = &atlas.characters[&'H'].bearing.y;
+
         for c in text.chars() {
             if c.is_control() {
-                if c == '\n' {}
+                if c == '\n' {
+                    x_pos = 0.0;
+                    y_pos += (atlas.line_spacing >> 6) as f32;
+                    continue;
+                }
             }
 
             if c.is_whitespace() {}
 
             let character = &atlas.characters[&c];
 
-            render(&atlas.texture, glam::Vec2::ZERO, Rect::default());
+            // TODO: Should it bearing the first caractar?
+            let xpos = x_pos + character.bearing.x as f32 * scale;
+            let ypos = y_pos + (h_bearing_y - character.bearing.y) as f32 * scale;
+
+            render(
+                &atlas.texture,
+                glam::vec2(xpos, ypos),
+                Rect::from_position_size(
+                    character.position.as_vec2().into(),
+                    character.size.as_vec2().into(),
+                ),
+            );
+            x_pos += (character.advance >> 6) as f32 * scale;
         }
     }
 }

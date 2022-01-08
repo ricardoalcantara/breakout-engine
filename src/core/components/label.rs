@@ -3,7 +3,7 @@ use crate::{core::asset_manager::FontId, render::texture::Texture};
 pub struct Label {
     pub text: String,
     pub font_id: Option<FontId>,
-    pub size: f32,
+    pub size: u32,
     pub width: f32,
     pub height: f32,
     pub color: Option<glam::Vec4>,
@@ -16,7 +16,7 @@ impl Default for Label {
         Label {
             text: String::from(""),
             font_id: None,
-            size: 0.0,
+            size: 0,
             width: 0.0,
             height: 0.0,
             color: None,
@@ -27,7 +27,7 @@ impl Default for Label {
 }
 
 impl Label {
-    pub fn new(text: String, size: f32) -> Label {
+    pub fn new(text: String, size: u32) -> Label {
         Label {
             text,
             size,
@@ -35,7 +35,7 @@ impl Label {
         }
     }
 
-    pub fn new_with_font(text: String, font_id: FontId, size: f32) -> Label {
+    pub fn new_with_font(text: String, font_id: FontId, size: u32) -> Label {
         Label {
             text,
             font_id: Some(font_id),

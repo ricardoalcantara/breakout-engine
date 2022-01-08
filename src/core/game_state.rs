@@ -53,13 +53,8 @@ impl GameState {
 
         let input = Input::new();
         let music_player = AudioPlayer::new();
-        // TODO: return default_font_byte
-        // let default_font_byte = include_bytes!("../../assets/Roboto-Regular.ttf");
-        let mut default_font = Font::<Texture>::new("assets/Roboto-Regular.ttf");
-        default_font.build_with_size(100, |image| {
-            renderer.borrow().generate_texture(image).unwrap()
-        });
-
+        let default_font_byte = include_bytes!("../../assets/Roboto-Regular.ttf");
+        let default_font = Font::<Texture>::new_from_memory(default_font_byte);
         let size = window.window().inner_size();
         let window_size = glam::uvec2(size.width, size.height);
 
@@ -162,7 +157,7 @@ impl GameState {
         Ok(())
     }
 
-    fn system_render_sprite(&self) {
+    fn system_render_sprite(&mut self) {
         let world = &self.context.world;
 
         let mut renderer = self.renderer.borrow_mut();
@@ -216,10 +211,15 @@ impl GameState {
             if !label.visible {
                 continue;
             }
+
+            self.default_font.build_with_size(label.size, |image| {
+                renderer.generate_texture(image).unwrap()
+            });
+
             renderer.draw_text(RenderText {
                 text: &label.text,
                 font: &self.default_font,
-                size: 40.0,
+                size: label.size,
                 position: _transform.position,
                 scale: _transform.scale,
                 color: label.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),

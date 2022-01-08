@@ -51,9 +51,17 @@ impl Scene for MainState {
         ));
 
         world.spawn((
-            Label::new(String::from("Hello World"), 48.0),
+            Label::new(String::from("Hello World"), 60),
             Transform2D {
                 position: math::vec2(10.0, 60.0),
+                ..Default::default()
+            },
+        ));
+
+        world.spawn((
+            Label::new(String::from("Hello\nWorld"), 48),
+            Transform2D {
+                position: math::vec2(10.0, 160.0),
                 ..Default::default()
             },
         ));
