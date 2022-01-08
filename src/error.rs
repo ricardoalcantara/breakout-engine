@@ -1,4 +1,3 @@
-use ab_glyph::InvalidFont;
 use image::ImageError;
 
 pub type BreakoutResult<T = ()> = Result<T, BreakoutError>;
@@ -9,5 +8,5 @@ pub enum BreakoutError {
     GenericError(&'static str),
     ImageError(ImageError),
     IOError(std::io::Error),
-    InvalidFont(InvalidFont),
+    // InvalidFont(InvalidFont),
 }

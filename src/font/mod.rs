@@ -1,26 +1,22 @@
-use crate::shapes::rectangle::Rect;
-use ab_glyph::{Font as ABFont, FontVec, Glyph, PxScale, ScaleFont};
 use image::{DynamicImage, Rgba};
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
+
+use crate::shapes::rectangle::Rect;
+extern crate freetype;
 
 struct GlyphImage {
-    glyph: Glyph,
-    size: (u32, u32),
+    size: glam::IVec2,
+    bearing: glam::IVec2,
+    advance: u32,
     character: char,
-    pixels: Vec<GlyphPixel>,
-}
-
-struct GlyphPixel {
-    x: u32,
-    y: u32,
-    // from 0.0 to 1.0
-    p: f32,
+    buffer: Vec<u8>,
 }
 
 pub struct Character {
-    glyph: Glyph,
-    bounds: Rect,
-    size: glam::Vec2,
+    position: glam::IVec2,
+    size: glam::IVec2,
+    bearing: glam::IVec2,
+    advance: u32,
 }
 
 pub struct FontAtlas<T> {
@@ -29,104 +25,107 @@ pub struct FontAtlas<T> {
 }
 
 pub struct Font<T> {
-    font: FontVec,
+    face: freetype::Face,
     atlas: HashMap<String, FontAtlas<T>>,
 }
 
 impl<T> Font<T> {
+    // TODO: return BreakoutResult
     pub fn new(path: &str) -> Font<T> {
-        let buf = std::fs::read(path).unwrap();
-        let font = FontVec::try_from_vec(buf).unwrap();
+        let lib =
+            freetype::Library::init().expect("ERROR::FREETYPE: Could not init FreeType Library");
+        let font_name = Path::new(path);
+        if !font_name.exists() {
+            panic!("ERROR::FREETYPE: Failed to load font_name");
+        }
+        let face = lib
+            .new_face(font_name, 0)
+            .expect("ERROR::FREETYPE: Failed to load font");
 
         let atlas = HashMap::new();
-
-        Font { font, atlas }
+        Font { face, atlas }
     }
 
-    pub fn build_with_size<F>(&mut self, size: f32, get_texture: F)
+    // TODO: return BreakoutResult
+    pub fn build_with_size<F>(&mut self, size: u32, get_texture: F)
     where
         F: FnOnce(DynamicImage) -> T,
     {
-        let scale = PxScale::from(size);
-        let scaled_font = self.font.as_scaled(scale);
+        // set size to load glyphs as
+        self.face.set_pixel_sizes(0, size).unwrap();
 
         let mut glyph_images = Vec::new();
         let mut max_width = 0;
         let mut max_height = 0;
 
         let mut chars = Vec::new();
-        chars.extend(32..128u8);
-        chars.extend(160..255u8);
+        chars.extend(33..128usize);
+        chars.extend(160..255usize);
 
-        for character in chars.iter().map(|c| *c as char) {
-            let glyph: Glyph = scaled_font.scaled_glyph(character);
-            if let Some(outlined) = scaled_font.outline_glyph(glyph.clone()) {
-                let mut pixels_color = Vec::new();
+        for c in chars {
+            // Load character glyph
+            self.face
+                .load_char(c, freetype::face::LoadFlag::RENDER)
+                .expect("ERROR::FREETYTPE: Failed to load Glyph");
 
-                outlined.draw(|x, y, p| {
-                    pixels_color.push(GlyphPixel { x, y, p });
-                });
-
-                let bounds = outlined.px_bounds();
-                let (width, height) = (bounds.width() as u32, bounds.height() as u32);
-
-                glyph_images.push(GlyphImage {
-                    glyph,
-                    size: (width, height),
-                    character,
-                    pixels: pixels_color,
-                });
-
-                max_width = width.max(max_width);
-                max_height = height.max(max_height);
+            let bitmap = self.face.glyph().bitmap();
+            let bytes = bitmap.buffer();
+            if bytes.len() == 0 {
+                continue;
             }
+
+            let (width, height) = (bitmap.width(), bitmap.rows());
+
+            glyph_images.push(GlyphImage {
+                character: c as u8 as char,
+                buffer: bytes.to_vec(),
+                size: glam::ivec2(width, height),
+                bearing: glam::ivec2(
+                    self.face.glyph().bitmap_left(),
+                    self.face.glyph().bitmap_top(),
+                ),
+                advance: self.face.glyph().advance().x as u32,
+            });
+
+            max_width = width.max(max_width);
+            max_height = height.max(max_height);
         }
 
         let spacing = 4;
         println!("Tile: {}, {}", max_width, max_height);
-        let columns = 512 / (max_width + spacing);
-        let rows = (glyph_images.len() as u32 / columns) + 1;
+        let columns = 10; // 512 / (max_width + spacing);
+        let rows = (glyph_images.len() as i32 / columns) + 1;
         let image_width = columns * max_width + spacing * columns;
         let image_height = rows * max_height + spacing * rows;
         println!("Image: {}, {}", image_width, image_height);
 
-        let mut image = DynamicImage::new_rgba8(image_width, image_height).to_rgba8();
+        let mut image = DynamicImage::new_rgba8(image_width as u32, image_height as u32).to_rgba8();
         let mut characters = HashMap::new();
 
         for (index, glyph_image) in glyph_images.iter().enumerate() {
-            let x = index as u32 % columns;
-            let y = index as u32 / columns;
+            let x = index as i32 % columns;
+            let y = index as i32 / columns;
 
             let x_offset = x * (max_width + spacing);
             let y_offset = y * (max_height + spacing);
 
-            let (width, height) = glyph_image.size;
             characters.insert(
                 glyph_image.character,
                 Character {
-                    glyph: glyph_image.glyph.clone(),
-                    bounds: Rect::new(
-                        x_offset as f32,
-                        y_offset as f32,
-                        width as f32,
-                        height as f32,
-                    ),
-                    size: glam::vec2(glyph_image.size.0 as f32, glyph_image.size.1 as f32),
+                    size: glyph_image.size,
+                    advance: glyph_image.advance,
+                    bearing: glyph_image.bearing,
+                    position: glam::ivec2(x_offset, y_offset),
                 },
             );
-
-            for pixels in &glyph_image.pixels {
-                let px = image.get_pixel_mut(x_offset + pixels.x, y_offset + pixels.y);
-                // Turn the coverage into an alpha value (blended with any previous)
-                *px = Rgba([
-                    255,
-                    255,
-                    255,
-                    px.0[3].saturating_add((pixels.p * 255.0) as u8),
-                ]);
+            let width = glyph_image.size.x;
+            for (i, b) in glyph_image.buffer.iter().enumerate() {
+                let x = i as u32 % width as u32;
+                let y = i as u32 / width as u32;
+                let px = image.get_pixel_mut(x_offset as u32 + x, y_offset as u32 + y);
+                *px = Rgba([255, 255, 255, *b as u8]);
             }
         }
-
         let texture = get_texture(DynamicImage::ImageRgba8(image));
 
         let font_atlas = FontAtlas::<T> {
@@ -141,51 +140,18 @@ impl<T> Font<T> {
     where
         F: FnMut(&T, glam::Vec2, Rect),
     {
-        let font = self.font.as_scaled(100.0);
         let atlas = self.atlas.values().next().unwrap();
-
-        let v_advance = font.height() + font.line_gap();
-        let mut cursor_position = glam::vec2(0.0, 0.0);
-
-        let mut last_glyph: Option<Glyph> = None;
-
+        // let mut x_pos = x;
         for c in text.chars() {
             if c.is_control() {
-                if c == '\n' {
-                    cursor_position = glam::vec2(0.0, v_advance);
-                    continue;
-                }
+                if c == '\n' {}
             }
 
-            if c.is_whitespace() {
-                let glyph_id = self.font.glyph_id(c);
-
-                cursor_position.x += font.h_advance(glyph_id);
-
-                if let Some(previous) = last_glyph.take() {
-                    cursor_position.x += font.kern(previous.id, glyph_id);
-                }
-
-                last_glyph = Some(font.scaled_glyph(c));
-
-                continue;
-            }
+            if c.is_whitespace() {}
 
             let character = &atlas.characters[&c];
-            let glyph = &character.glyph;
 
-            if let Some(previous) = last_glyph.take() {
-                cursor_position.x += font.kern(previous.id, glyph.id);
-            }
-
-            last_glyph = Some(glyph.clone());
-
-            let mut glyph_position = cursor_position.clone();
-            cursor_position.x += font.h_advance(glyph.id);
-
-            glyph_position.y += v_advance - character.size.y;
-
-            render(&atlas.texture, glyph_position, character.bounds);
+            render(&atlas.texture, glam::Vec2::ZERO, Rect::default());
         }
     }
 }

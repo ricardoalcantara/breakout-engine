@@ -56,7 +56,7 @@ impl GameState {
         // TODO: return default_font_byte
         // let default_font_byte = include_bytes!("../../assets/Roboto-Regular.ttf");
         let mut default_font = Font::<Texture>::new("assets/Roboto-Regular.ttf");
-        default_font.build_with_size(100.0, |image| {
+        default_font.build_with_size(100, |image| {
             renderer.borrow().generate_texture(image).unwrap()
         });
 

@@ -11,7 +11,7 @@ members = [
 ]
 
 [dependencies]
-ab_glyph = "0.2.12"
+freetype-rs = "0.29.0"
 anyhow = "1.0"
 gl = "0.14.0"
 glam = "0.20.1"
