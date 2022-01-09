@@ -2,7 +2,7 @@ use crate::{
     error::BreakoutResult,
     render::{
         opengl::render2d_pipeline::Render2dPipeline,
-        renderer::{RenderQuad, RenderText, RenderTexture, Renderer2D},
+        renderer::{RenderQuad, RenderText, RenderTexture, RenderVertices, Renderer2D},
         texture::Texture,
     },
 };
@@ -101,5 +101,14 @@ impl Renderer2D for OpenGLRenderer2D {
                     color: _text.color,
                 })
             });
+    }
+
+    fn draw_vertices(&mut self, _vertices: RenderVertices) {
+        self.render2d_pipeline.draw_vertices(
+            _vertices.vertices,
+            _vertices.color,
+            _vertices.texture_coords,
+            _vertices.texture,
+        )
     }
 }

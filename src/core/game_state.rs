@@ -15,7 +15,7 @@ use crate::{
     error::BreakoutResult,
     font::Font,
     render::{
-        renderer::{RenderQuad, RenderText, RenderTexture, Renderer2D},
+        renderer::{RenderText, RenderVertices, Renderer2D},
         texture::Texture,
         window::MyWindow,
     },
@@ -172,7 +172,7 @@ impl GameState {
         };
 
         renderer.begin_draw(camera_projection);
-        for (_id, (sprite, transform)) in world.query::<(&Sprite, &Transform2D)>().iter() {
+        for (_id, (sprite, transform)) in world.query::<(&mut Sprite, &mut Transform2D)>().iter() {
             if !sprite.visible {
                 continue;
             }
@@ -186,24 +186,64 @@ impl GameState {
             };
             if let Some(texture_id) = &sprite.texture_id {
                 let texture = self.asset_manager.get_texture(&texture_id);
-                renderer.draw_texture(RenderTexture {
-                    texture: texture,
-                    rect: sprite.rect,
-                    position: position,
-                    scale: transform.scale,
-                    rotate: transform.rotate,
-                    center_origin: sprite.center_origin,
+                if transform.dirt {
+                    sprite.update_vertices(
+                        position,
+                        transform.rotate,
+                        transform.scale,
+                        texture.size().as_vec2(),
+                    );
+                    transform.dirt = false;
+                }
+                renderer.draw_vertices(RenderVertices {
+                    texture: Some(texture),
+                    vertices: sprite.get_vertices(),
                     color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
+                    texture_coords: &[
+                        glam::vec2(1.0, 1.0),
+                        glam::vec2(1.0, 0.0),
+                        glam::vec2(0.0, 0.0),
+                        glam::vec2(0.0, 1.0),
+                    ],
                 });
+                // renderer.draw_texture(RenderTexture {
+                //     texture: texture,
+                //     rect: sprite.rect,
+                //     position: position,
+                //     scale: transform.scale,
+                //     rotate: transform.rotate,
+                //     center_origin: sprite.center_origin,
+                //     color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
+                // });
             } else {
-                renderer.draw_quad(RenderQuad {
-                    size: glam::Vec2::ONE,
-                    position: position,
-                    scale: transform.scale,
-                    rotate: transform.rotate,
-                    center_origin: sprite.center_origin,
+                if transform.dirt {
+                    sprite.update_vertices(
+                        position,
+                        transform.rotate,
+                        transform.scale,
+                        glam::Vec2::ONE,
+                    );
+                    transform.dirt = false;
+                }
+                renderer.draw_vertices(RenderVertices {
+                    texture: None,
+                    vertices: sprite.get_vertices(),
                     color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
+                    texture_coords: &[
+                        glam::vec2(1.0, 1.0),
+                        glam::vec2(1.0, 0.0),
+                        glam::vec2(0.0, 0.0),
+                        glam::vec2(0.0, 1.0),
+                    ],
                 });
+                // renderer.draw_quad(RenderQuad {
+                //     size: glam::Vec2::ONE,
+                //     position: position,
+                //     scale: transform.scale,
+                //     rotate: transform.rotate,
+                //     center_origin: sprite.center_origin,
+                //     color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
+                // });
             };
         }
 

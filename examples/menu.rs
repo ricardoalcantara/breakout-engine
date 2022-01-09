@@ -43,38 +43,29 @@ impl Scene for MainState {
                 color: Some(math::vec4(0.0, 1.0, 0.0, 0.5)),
                 ..Default::default()
             },
-            Transform2D {
-                position: math::vec2(10.0, 60.0),
-                scale: math::vec2(10.0, 10.0),
-                ..Default::default()
-            },
+            Transform2D::from_position_rotation_scale(
+                math::vec2(10.0, 60.0),
+                0.0,
+                math::vec2(10.0, 10.0),
+            ),
         ));
 
         world.spawn((
             Label::new(String::from("Hello World"), 60),
-            Transform2D {
-                position: math::vec2(10.0, 60.0),
-                ..Default::default()
-            },
+            Transform2D::from_position(math::vec2(10.0, 60.0)),
         ));
 
         world.spawn((
             Label::new(String::from("Breakout\nEngine"), 48),
-            Transform2D {
-                position: math::vec2(10.0, 160.0),
-                ..Default::default()
-            },
+            Transform2D::from_position(math::vec2(10.0, 160.0)),
         ));
 
-        // world.spawn((
-        //     Label {
-        //         ..Default::default()
-        //     },
-        //     Transform2D {
-        //         position: math::vec2(0.0, 60.0),
-        //         ..Default::default()
-        //     },
-        // ));
+        world.spawn((
+            Label {
+                ..Default::default()
+            },
+            Transform2D::from_position(math::vec2(0.0, 60.0)),
+        ));
 
         Ok(())
     }

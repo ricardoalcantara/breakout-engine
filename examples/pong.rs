@@ -73,10 +73,7 @@ impl Scene for MainState {
                 color: Some(math::vec4(1.0, 0.0, 0.0, 1.0)),
                 ..Default::default()
             },
-            Transform2D {
-                position: math::vec2(400.0, 300.0),
-                ..Default::default()
-            },
+            Transform2D::from_position(math::vec2(400.0, 300.0)),
             Ball {
                 direction: math::vec2(1.0, 1.0).normalize(),
                 speed,
@@ -91,10 +88,7 @@ impl Scene for MainState {
                 texture_id: Some(paddles_texture.clone()),
                 ..Default::default()
             },
-            Transform2D {
-                position: math::vec2(0.0, 100.0),
-                ..Default::default()
-            },
+            Transform2D::from_position(math::vec2(0.0, 100.0)),
             Rect::new_with_size(32.0, 128.0),
         ));
 
@@ -109,10 +103,7 @@ impl Scene for MainState {
                 texture_id: Some(paddles_texture),
                 ..Default::default()
             },
-            Transform2D {
-                position: math::vec2(800.0 - 32.0, 100.0),
-                ..Default::default()
-            },
+            Transform2D::from_position(math::vec2(800.0 - 32.0, 100.0)),
             Rect::new_with_size(32.0, 128.0),
         ));
 
@@ -164,7 +155,7 @@ impl Scene for MainState {
                 direction.y = 1.0;
             }
 
-            transform.position += direction * paddles.speed * self.level * _dt;
+            transform.translate(direction * paddles.speed * self.level * _dt);
         }
 
         {
@@ -173,7 +164,7 @@ impl Scene for MainState {
                 .iter()
                 .next()
             {
-                (transform.position, collider.clone())
+                (transform.position(), collider.clone())
             } else {
                 error!("Where's the ball?");
                 return Ok(Transition::None);
@@ -187,16 +178,16 @@ impl Scene for MainState {
                 if ai.cooldown > ai.response_time {
                     ai.cooldown = 0.0;
                     ai.response_time = rng.gen_range(1.0..5.0);
-                    if transform.position.y > ball_position.y + ball_size.height / 2.0 {
+                    let position = transform.position();
+                    if position.y > ball_position.y + ball_size.height / 2.0 {
                         ai.direction.y = -1.0;
-                    } else if transform.position.y + collider.width
-                        < ball_position.y + ball_size.height / 2.0
+                    } else if position.y + collider.width < ball_position.y + ball_size.height / 2.0
                     {
                         ai.direction.y = 1.0;
                     }
                 }
 
-                transform.position += ai.direction * paddles.speed * self.level * _dt;
+                transform.translate(ai.direction * paddles.speed * self.level * _dt);
             }
         }
 
@@ -204,31 +195,31 @@ impl Scene for MainState {
         for (_id, (transform, collider)) in
             world.query_mut::<With<Paddles, (&Transform2D, &Rect)>>()
         {
-            paddles_collider.push(collider.moved_to(transform.position.into()));
+            paddles_collider.push(collider.moved_to(transform.position().into()));
         }
 
         'ball: for (_id, (ball, transform, collider)) in
             world.query_mut::<(&mut Ball, &mut Transform2D, &Rect)>()
         {
-            transform.position += ball.direction * ball.speed * self.level * _dt;
-
-            if transform.position.y < 0.0 || transform.position.y > (600.0 - 32.0) {
+            transform.translate(ball.direction * ball.speed * self.level * _dt);
+            let position = transform.position();
+            if position.y < 0.0 || position.y > (600.0 - 32.0) {
                 ball.direction.y *= -1.0;
             }
 
-            let ball_collider = collider.moved_to(transform.position.into());
+            let ball_collider = collider.moved_to(position.into());
 
             for paddles in &paddles_collider {
                 if paddles.intersects(&ball_collider) {
                     ball.direction.x *= -1.0;
 
-                    if transform.position.x > paddles.x {
-                        transform.position.x = paddles.x + collider.width;
+                    if position.x > paddles.x {
+                        transform.set_position(glam::vec2(paddles.x + collider.width, position.y));
                     } else {
-                        transform.position.x = paddles.x - collider.width;
+                        transform.set_position(glam::vec2(paddles.x - collider.width, position.y));
                     }
 
-                    if transform.position.y + collider.height / 2.0 > paddles.center().y {
+                    if position.y + collider.height / 2.0 > paddles.center().y {
                         ball.direction.y = 1.0;
                     } else {
                         ball.direction.y = -1.0;
@@ -237,9 +228,9 @@ impl Scene for MainState {
                 }
             }
 
-            if transform.position.x < 0.0 || transform.position.x > (800.0 - 32.0) {
-                transform.position.x = 416.0;
-                transform.position.y = 316.0;
+            let position = transform.position();
+            if position.x < 0.0 || position.x > (800.0 - 32.0) {
+                transform.set_position(glam::vec2(416.0, 316.0));
                 let direction =
                     math::vec2(rng.gen_range(0.0..1.0), rng.gen_range(0.0..1.0)).normalize();
                 ball.direction = direction;
