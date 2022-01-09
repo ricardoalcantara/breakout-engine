@@ -1,7 +1,10 @@
+use image::DynamicImage;
+
 use crate::{
     audio::{Audio, AudioSettings},
     error::{BreakoutError, BreakoutResult},
-    render::{font::Font, renderer::Renderer2D, texture::Texture},
+    font::Font,
+    render::{renderer::Renderer2D, texture::Texture},
 };
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
@@ -42,7 +45,7 @@ pub struct AssetManager {
     auto_increment_id: AutoIncrementId,
     textures: HashMap<TextureId, Texture>,
     audios: HashMap<AudioId, Audio>,
-    fonts: HashMap<FontId, Font>,
+    fonts: HashMap<FontId, Font<Texture>>,
     renderer: Rc<RefCell<dyn Renderer2D>>,
 }
 
@@ -107,7 +110,25 @@ impl AssetManager {
         Ok(id)
     }
 
-    pub fn get_font(&self, id: &FontId) -> &Font {
+    pub fn get_font(&self, id: &FontId) -> &Font<Texture> {
         &self.fonts[id]
+    }
+
+    pub fn get_font_with_size<F>(
+        &mut self,
+        id: &FontId,
+        size: u32,
+        get_texture: F,
+    ) -> BreakoutResult<&Font<Texture>>
+    where
+        F: FnOnce(DynamicImage) -> BreakoutResult<Texture>,
+    {
+        if !self.fonts[&id].has_size(size) {
+            let mut font = self.fonts.remove(id).unwrap();
+            font.build_with_size(size, get_texture)?;
+            self.fonts.insert(id.clone(), font);
+        }
+
+        Ok(&self.fonts[id])
     }
 }

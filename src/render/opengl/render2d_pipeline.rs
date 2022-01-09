@@ -361,6 +361,8 @@ impl Render2dPipeline {
 
     pub fn flush(&mut self) {
         unsafe {
+            self.shader.use_program();
+
             self.render_data.bind_textures();
 
             gl::BindVertexArray(self.render_data.quad_vao);
@@ -376,8 +378,6 @@ impl Render2dPipeline {
     }
 
     pub fn draw_quad(&mut self, quad: RenderQuad) {
-        self.shader.use_program();
-
         if !self.render_data.can_add_quad() {
             self.end_batch();
             self.flush();
@@ -402,8 +402,6 @@ impl Render2dPipeline {
 
     pub fn draw_texture(&mut self, render_texture: RenderTexture) {
         let texture = render_texture.texture;
-
-        self.shader.use_program();
 
         let tex_id = if let TextureType::OpenGL(opengl_texture) = &texture.texture_type {
             opengl_texture.id

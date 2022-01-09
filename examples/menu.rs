@@ -1,7 +1,7 @@
 use breakout_engine::{
     core::{
         asset_manager::AssetManager,
-        components::{Label, Transform2D},
+        components::{Label, Sprite, Transform2D},
         engine::{EngineBuilder, EngineSettings},
         engine_context::EngineContext,
         game_context::GameContext,
@@ -34,27 +34,47 @@ impl Scene for MainState {
         let world = &mut _context.get_world();
 
         world.spawn((
-            Label::new_with_font(String::from("Hello world"), font, 48.0),
+            Label::new_with_font(String::from("First Word"), font, 20),
             Transform2D::default(),
         ));
 
         world.spawn((
-            Label::new(String::from("Hello world"), 48.0),
+            Sprite {
+                color: Some(math::vec4(0.0, 1.0, 0.0, 0.5)),
+                ..Default::default()
+            },
             Transform2D {
-                position: math::vec2(0.0, 60.0),
+                position: math::vec2(10.0, 60.0),
+                scale: math::vec2(10.0, 10.0),
                 ..Default::default()
             },
         ));
 
         world.spawn((
-            Label {
-                ..Default::default()
-            },
+            Label::new(String::from("Hello World"), 60),
             Transform2D {
-                position: math::vec2(0.0, 60.0),
+                position: math::vec2(10.0, 60.0),
                 ..Default::default()
             },
         ));
+
+        world.spawn((
+            Label::new(String::from("Breakout\nEngine"), 48),
+            Transform2D {
+                position: math::vec2(10.0, 160.0),
+                ..Default::default()
+            },
+        ));
+
+        // world.spawn((
+        //     Label {
+        //         ..Default::default()
+        //     },
+        //     Transform2D {
+        //         position: math::vec2(0.0, 60.0),
+        //         ..Default::default()
+        //     },
+        // ));
 
         Ok(())
     }

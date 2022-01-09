@@ -3,7 +3,6 @@ use window::MyWindow;
 
 pub mod opengl;
 
-pub mod font;
 pub mod renderer;
 pub mod texture;
 pub mod window;

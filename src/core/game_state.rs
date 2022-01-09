@@ -13,14 +13,14 @@ use crate::{
         game_context::GameContext,
     },
     error::BreakoutResult,
+    font::Font,
     render::{
-        font::Font,
-        renderer::{RenderQuad, RenderTexture, Renderer2D},
+        renderer::{RenderQuad, RenderText, RenderTexture, Renderer2D},
+        texture::Texture,
         window::MyWindow,
     },
 };
 
-use image::GenericImageView;
 use std::{cell::RefCell, rc::Rc};
 
 pub struct GameState {
@@ -31,7 +31,7 @@ pub struct GameState {
     asset_manager: AssetManager,
     input: Input,
     music_player: AudioPlayer,
-    default_font: Font,
+    default_font: Font<Texture>,
     window_size: glam::UVec2,
 }
 
@@ -54,7 +54,7 @@ impl GameState {
         let input = Input::new();
         let music_player = AudioPlayer::new();
         let default_font_byte = include_bytes!("../../assets/Roboto-Regular.ttf");
-        let default_font = Font::new_from_bytes(default_font_byte)?;
+        let default_font = Font::<Texture>::new_from_memory(default_font_byte)?;
         let size = window.window().inner_size();
         let window_size = glam::uvec2(size.width, size.height);
 
@@ -151,13 +151,13 @@ impl GameState {
     }
 
     pub fn render(&mut self, window: &MyWindow) -> BreakoutResult {
-        self.system_render_sprite();
+        self.system_render_sprite()?;
 
         window.swap_buffers();
         Ok(())
     }
 
-    fn system_render_sprite(&self) {
+    fn system_render_sprite(&mut self) -> BreakoutResult {
         let world = &self.context.world;
 
         let mut renderer = self.renderer.borrow_mut();
@@ -211,34 +211,29 @@ impl GameState {
             if !label.visible {
                 continue;
             }
-            if label.texture.is_none() {
-                let font = if let Some(font_id) = &label.font_id {
-                    self.asset_manager.get_font(font_id)
-                } else {
-                    &self.default_font
-                };
-                let image = font.get_texture_from_text(&label.text, label.size);
-                let (width, height) = image.dimensions();
-                let texture = renderer.generate_texture(image).unwrap();
 
-                // TODO: Load it before this stage, end user will only get width and height after the first render
-                label.texture = Some(texture);
-                label.width = width as f32;
-                label.height = height as f32;
-            }
+            let font = if let Some(font_id) = &label.font_id {
+                self.asset_manager
+                    .get_font_with_size(&font_id, label.size, |image| {
+                        Ok(renderer.generate_texture(image)?)
+                    })
+            } else {
+                self.default_font
+                    .build_with_size(label.size, |image| Ok(renderer.generate_texture(image)?))?;
+                Ok(&self.default_font)
+            }?;
 
-            // TODO: Render Text is broken!
-            // renderer.draw_texture(
-            //     // TODO: Error Prone
-            //     label.texture.as_ref().unwrap(),
-            //     None,
-            //     transform.position,
-            //     transform.scale,
-            //     transform.rotate,
-            //     false,
-            //     label.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
-            // );
+            renderer.draw_text(RenderText {
+                text: &label.text,
+                font,
+                size: label.size,
+                position: _transform.position,
+                scale: _transform.scale,
+                color: label.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
+            });
         }
         renderer.end_draw();
+
+        Ok(())
     }
 }
