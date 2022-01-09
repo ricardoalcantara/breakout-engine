@@ -54,7 +54,7 @@ impl GameState {
         let input = Input::new();
         let music_player = AudioPlayer::new();
         let default_font_byte = include_bytes!("../../assets/Roboto-Regular.ttf");
-        let default_font = Font::<Texture>::new_from_memory(default_font_byte);
+        let default_font = Font::<Texture>::new_from_memory(default_font_byte)?;
         let size = window.window().inner_size();
         let window_size = glam::uvec2(size.width, size.height);
 
@@ -151,13 +151,13 @@ impl GameState {
     }
 
     pub fn render(&mut self, window: &MyWindow) -> BreakoutResult {
-        self.system_render_sprite();
+        self.system_render_sprite()?;
 
         window.swap_buffers();
         Ok(())
     }
 
-    fn system_render_sprite(&mut self) {
+    fn system_render_sprite(&mut self) -> BreakoutResult {
         let world = &self.context.world;
 
         let mut renderer = self.renderer.borrow_mut();
@@ -212,13 +212,20 @@ impl GameState {
                 continue;
             }
 
-            self.default_font.build_with_size(label.size, |image| {
-                renderer.generate_texture(image).unwrap()
-            });
+            let font = if let Some(font_id) = &label.font_id {
+                self.asset_manager
+                    .get_font_with_size(&font_id, label.size, |image| {
+                        Ok(renderer.generate_texture(image)?)
+                    })
+            } else {
+                self.default_font
+                    .build_with_size(label.size, |image| Ok(renderer.generate_texture(image)?))?;
+                Ok(&self.default_font)
+            }?;
 
             renderer.draw_text(RenderText {
                 text: &label.text,
-                font: &self.default_font,
+                font,
                 size: label.size,
                 position: _transform.position,
                 scale: _transform.scale,
@@ -226,5 +233,7 @@ impl GameState {
             });
         }
         renderer.end_draw();
+
+        Ok(())
     }
 }

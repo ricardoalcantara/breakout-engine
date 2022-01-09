@@ -29,14 +29,14 @@ impl Scene for MainState {
         _asset_manager: &mut AssetManager,
         _engine: &mut EngineContext,
     ) -> BreakoutResult {
-        // let font = _asset_manager.load_font("assets/Roboto-Regular.ttf")?;
+        let font = _asset_manager.load_font("assets/Roboto-Regular.ttf")?;
 
         let world = &mut _context.get_world();
 
-        // world.spawn((
-        //     Label::new_with_font(String::from("Hello world"), font, 48.0),
-        //     Transform2D::default(),
-        // ));
+        world.spawn((
+            Label::new_with_font(String::from("First Word"), font, 20),
+            Transform2D::default(),
+        ));
 
         world.spawn((
             Sprite {
@@ -59,7 +59,7 @@ impl Scene for MainState {
         ));
 
         world.spawn((
-            Label::new(String::from("Hello\nWorld"), 48),
+            Label::new(String::from("Breakout\nEngine"), 48),
             Transform2D {
                 position: math::vec2(10.0, 160.0),
                 ..Default::default()

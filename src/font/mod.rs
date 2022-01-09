@@ -2,7 +2,10 @@ use image::{DynamicImage, Rgba};
 use log::warn;
 use std::{collections::HashMap, path::Path};
 
-use crate::shapes::rectangle::Rect;
+use crate::{
+    error::{BreakoutError, BreakoutResult},
+    shapes::rectangle::Rect,
+};
 extern crate freetype;
 
 struct GlyphImage {
@@ -32,45 +35,45 @@ pub struct Font<T> {
 }
 
 impl<T> Font<T> {
-    // TODO: return BreakoutResult
-    pub fn new(path: &str) -> Font<T> {
-        let lib =
-            freetype::Library::init().expect("ERROR::FREETYPE: Could not init FreeType Library");
+    pub fn new(path: &str) -> BreakoutResult<Font<T>> {
+        let lib = freetype::Library::init().map_err(BreakoutError::FontError)?;
         let font_name = Path::new(path);
         if !font_name.exists() {
             panic!("ERROR::FREETYPE: Failed to load font_name");
         }
         let face = lib
             .new_face(font_name, 0)
-            .expect("ERROR::FREETYPE: Failed to load font");
+            .map_err(BreakoutError::FontError)?;
 
         let atlas = HashMap::new();
-        Font { face, atlas }
+        Ok(Font { face, atlas })
     }
 
-    // TODO: return BreakoutResult
-    pub fn new_from_memory(buffer: &[u8]) -> Font<T> {
-        let lib =
-            freetype::Library::init().expect("ERROR::FREETYPE: Could not init FreeType Library");
-
+    pub fn new_from_memory(buffer: &[u8]) -> BreakoutResult<Font<T>> {
+        let lib = freetype::Library::init().map_err(BreakoutError::FontError)?;
         let face = lib
             .new_memory_face(buffer.to_vec(), 0)
-            .expect("ERROR::FREETYPE: Failed to load font");
+            .map_err(BreakoutError::FontError)?;
 
         let atlas = HashMap::new();
-        Font { face, atlas }
+        Ok(Font { face, atlas })
     }
 
-    // TODO: return BreakoutResult
-    pub fn build_with_size<F>(&mut self, size: u32, get_texture: F)
+    pub fn has_size(&self, size: u32) -> bool {
+        self.atlas.contains_key(&size)
+    }
+
+    pub fn build_with_size<F>(&mut self, size: u32, get_texture: F) -> BreakoutResult
     where
-        F: FnOnce(DynamicImage) -> T,
+        F: FnOnce(DynamicImage) -> BreakoutResult<T>,
     {
-        if self.atlas.contains_key(&size) {
-            return;
+        if self.has_size(size) {
+            return Ok(());
         }
         // set size to load glyphs as
-        self.face.set_pixel_sizes(0, size).unwrap();
+        self.face
+            .set_pixel_sizes(0, size)
+            .map_err(BreakoutError::FontError)?;
 
         let mut glyph_images = Vec::new();
         let mut max_width = 0;
@@ -81,10 +84,9 @@ impl<T> Font<T> {
         chars.extend(160..255usize);
 
         for c in chars {
-            // Load character glyph
             self.face
                 .load_char(c, freetype::face::LoadFlag::RENDER)
-                .expect("ERROR::FREETYTPE: Failed to load Glyph");
+                .map_err(BreakoutError::FontError)?;
 
             let bitmap = self.face.glyph().bitmap();
             let bytes = bitmap.buffer();
@@ -143,17 +145,24 @@ impl<T> Font<T> {
         }
 
         // image.save("debug_font_atlas.png").unwrap();
-        let texture = get_texture(DynamicImage::ImageRgba8(image));
+        let texture = get_texture(DynamicImage::ImageRgba8(image))?;
 
-        let metrics = self.face.size_metrics().unwrap();
+        let line_spacing = if let Some(metrics) = self.face.size_metrics() {
+            metrics.height as u32
+        } else {
+            warn!("It whould have the size_metrics");
+            self.face.height() as u32
+        };
 
         let font_atlas = FontAtlas::<T> {
             texture,
             characters,
-            line_spacing: metrics.height as u32,
+            line_spacing,
         };
 
         self.atlas.insert(size, font_atlas);
+
+        Ok(())
     }
 
     pub fn draw<F>(&self, text: &str, size: u32, mut render: F)
