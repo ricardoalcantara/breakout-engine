@@ -1,12 +1,12 @@
+pub use crate::render::texture::SubTexture;
 use crate::{
     core::asset_manager::TextureId,
     render::vertex::{CENTER_QUAD, TOP_LEFT_QUAD},
-    shapes::rectangle::Rect,
 };
 
 pub struct Sprite {
     pub texture_id: Option<TextureId>,
-    pub rect: Option<Rect>,
+    pub sub_texture: Option<SubTexture>,
     pub color: Option<glam::Vec4>,
     pub visible: bool,
     pub center_origin: bool,
@@ -18,7 +18,7 @@ impl Default for Sprite {
         Sprite {
             texture_id: None,
             color: None,
-            rect: None,
+            sub_texture: None,
             visible: true,
             center_origin: false,
             vertices: [glam::Vec3::ZERO; 4],
@@ -40,8 +40,8 @@ impl Sprite {
             &TOP_LEFT_QUAD
         };
 
-        let render_rect_size = if let Some(r) = self.rect {
-            r.size().into()
+        let render_rect_size = if let Some(sub_texture) = &self.sub_texture {
+            sub_texture.region.size().into()
         } else {
             texture_size
         };

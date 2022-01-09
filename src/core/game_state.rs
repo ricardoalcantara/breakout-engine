@@ -17,6 +17,7 @@ use crate::{
     render::{
         renderer::{RenderText, RenderVertices, Renderer2D},
         texture::Texture,
+        vertex::TEXTURE_COORDS,
         window::MyWindow,
     },
 };
@@ -195,16 +196,24 @@ impl GameState {
                     );
                     transform.dirt = false;
                 }
+
+                if let Some(sub_texture) = &mut sprite.sub_texture {
+                    if sub_texture.texture_coords.is_none() {
+                        sub_texture.update_texture_coords(texture)
+                    }
+                }
+
+                let texture_coords = if let Some(sub_texture) = &sprite.sub_texture {
+                    sub_texture.texture_coords.as_ref()
+                } else {
+                    None
+                };
+
                 renderer.draw_vertices(RenderVertices {
                     texture: Some(texture),
                     vertices: sprite.get_vertices(),
                     color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
-                    texture_coords: &[
-                        glam::vec2(1.0, 1.0),
-                        glam::vec2(1.0, 0.0),
-                        glam::vec2(0.0, 0.0),
-                        glam::vec2(0.0, 1.0),
-                    ],
+                    texture_coords: texture_coords.unwrap_or(&TEXTURE_COORDS),
                 });
                 // renderer.draw_texture(RenderTexture {
                 //     texture: texture,
@@ -229,12 +238,7 @@ impl GameState {
                     texture: None,
                     vertices: sprite.get_vertices(),
                     color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
-                    texture_coords: &[
-                        glam::vec2(1.0, 1.0),
-                        glam::vec2(1.0, 0.0),
-                        glam::vec2(0.0, 0.0),
-                        glam::vec2(0.0, 1.0),
-                    ],
+                    texture_coords: &TEXTURE_COORDS,
                 });
                 // renderer.draw_quad(RenderQuad {
                 //     size: glam::Vec2::ONE,
