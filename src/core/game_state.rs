@@ -16,7 +16,6 @@ use crate::{
     font::Font,
     render::{
         renderer::{RenderText, RenderVertices, Renderer2D},
-        texture::Texture,
         vertex::TEXTURE_COORDS,
         window::MyWindow,
     },
