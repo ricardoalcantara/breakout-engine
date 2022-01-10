@@ -45,7 +45,7 @@ pub struct AssetManager {
     auto_increment_id: AutoIncrementId,
     textures: HashMap<TextureId, Texture>,
     audios: HashMap<AudioId, Audio>,
-    fonts: HashMap<FontId, Font<Texture>>,
+    fonts: HashMap<FontId, Font>,
     renderer: Rc<RefCell<dyn Renderer2D>>,
 }
 
@@ -110,7 +110,7 @@ impl AssetManager {
         Ok(id)
     }
 
-    pub fn get_font(&self, id: &FontId) -> &Font<Texture> {
+    pub fn get_font(&self, id: &FontId) -> &Font {
         &self.fonts[id]
     }
 
@@ -119,7 +119,7 @@ impl AssetManager {
         id: &FontId,
         size: u32,
         get_texture: F,
-    ) -> BreakoutResult<&Font<Texture>>
+    ) -> BreakoutResult<&Font>
     where
         F: FnOnce(DynamicImage) -> BreakoutResult<Texture>,
     {

@@ -32,7 +32,7 @@ pub struct GameState {
     asset_manager: AssetManager,
     input: Input,
     music_player: AudioPlayer,
-    default_font: Font<Texture>,
+    default_font: Font,
     window_size: glam::UVec2,
 }
 
@@ -55,7 +55,7 @@ impl GameState {
         let input = Input::new();
         let music_player = AudioPlayer::new();
         let default_font_byte = include_bytes!("../../assets/Roboto-Regular.ttf");
-        let default_font = Font::<Texture>::new_from_memory(default_font_byte)?;
+        let default_font = Font::new_from_memory(default_font_byte)?;
         let size = window.window().inner_size();
         let window_size = glam::uvec2(size.width, size.height);
 
@@ -199,7 +199,7 @@ impl GameState {
 
                 if let Some(sub_texture) = &mut sprite.sub_texture {
                     if sub_texture.texture_coords.is_none() {
-                        sub_texture.update_texture_coords(texture)
+                        sub_texture.update_texture_coords_with_texture(texture)
                     }
                 }
 
@@ -215,15 +215,6 @@ impl GameState {
                     color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
                     texture_coords: texture_coords.unwrap_or(&TEXTURE_COORDS),
                 });
-                // renderer.draw_texture(RenderTexture {
-                //     texture: texture,
-                //     rect: sprite.rect,
-                //     position: position,
-                //     scale: transform.scale,
-                //     rotate: transform.rotate,
-                //     center_origin: sprite.center_origin,
-                //     color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
-                // });
             } else {
                 if transform.dirt {
                     sprite.update_vertices(
@@ -240,14 +231,6 @@ impl GameState {
                     color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
                     texture_coords: &TEXTURE_COORDS,
                 });
-                // renderer.draw_quad(RenderQuad {
-                //     size: glam::Vec2::ONE,
-                //     position: position,
-                //     scale: transform.scale,
-                //     rotate: transform.rotate,
-                //     center_origin: sprite.center_origin,
-                //     color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
-                // });
             };
         }
 

@@ -32,16 +32,27 @@ impl SubTexture {
         }
     }
 
-    pub fn from_texture(region: Rect, texture: &Texture) -> SubTexture {
+    pub fn new_with_texture_size(region: Rect, width: f32, height: f32) -> SubTexture {
         let mut sub_texture = SubTexture::new(region);
-        sub_texture.update_texture_coords(texture);
+        sub_texture.update_texture_coords(width, height);
 
         sub_texture
     }
 
-    pub(crate) fn update_texture_coords(&mut self, texture: &Texture) {
+    pub fn from_texture(region: Rect, texture: &Texture) -> SubTexture {
+        let mut sub_texture = SubTexture::new(region);
+        sub_texture.update_texture_coords_with_texture(texture);
+
+        sub_texture
+    }
+
+    pub(crate) fn update_texture_coords_with_texture(&mut self, texture: &Texture) {
         let width = texture.width as f32;
         let height = texture.height as f32;
+        self.update_texture_coords(width, height)
+    }
+
+    pub(crate) fn update_texture_coords(&mut self, width: f32, height: f32) {
         let mut texture_coords = [glam::Vec2::ZERO; 4];
 
         texture_coords[0] = glam::vec2(

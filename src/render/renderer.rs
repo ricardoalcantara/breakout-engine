@@ -1,5 +1,5 @@
 use super::texture::Texture;
-use crate::{error::BreakoutResult, shapes::rectangle::Rect};
+use crate::{error::BreakoutResult, font::Font, shapes::rectangle::Rect};
 use image::DynamicImage;
 
 pub enum RenderAPI {
@@ -18,7 +18,7 @@ pub struct RenderQuad {
 
 pub struct RenderText<'a> {
     pub text: &'a str,
-    pub font: &'a crate::font::Font<Texture>,
+    pub font: &'a Font,
     pub size: u32,
     pub position: glam::Vec2,
     pub scale: glam::Vec2,
