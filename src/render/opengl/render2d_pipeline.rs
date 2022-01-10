@@ -1,11 +1,10 @@
 use super::check_gl_ok;
 use super::shader::Shader;
-use super::vertex::Vertex;
 use crate::render::renderer::{RenderQuad, RenderTexture};
-use crate::render::texture::TextureType;
+use crate::render::texture::{Texture, TextureType};
+use crate::render::vertex::{QuadOrigin, Vertex, CENTER_QUAD, TOP_LEFT_QUAD};
 use crate::shapes::rectangle::Rect;
 use gl::types::*;
-
 use log::warn;
 use memoffset::offset_of;
 use std::ffi::c_void;
@@ -16,25 +15,6 @@ const MAX_QUAD_COUNT: usize = 10000;
 const MAX_VERTEX_COUNT: usize = MAX_QUAD_COUNT * 4;
 const MAX_INDEX_COUNT: usize = MAX_QUAD_COUNT * 6;
 const MAX_TEXTURE_COUNT: usize = 32;
-
-const TOP_LEFT_QUAD: [glam::Vec4; 4] = [
-    glam::const_vec4!([1.0, 1.0, 0.0, 1.0]),
-    glam::const_vec4!([1.0, 0.0, 0.0, 1.0]),
-    glam::const_vec4!([0.0, 0.0, 0.0, 1.0]),
-    glam::const_vec4!([0.0, 1.0, 0.0, 1.0]),
-];
-
-const CENTER_QUAD: [glam::Vec4; 4] = [
-    glam::const_vec4!([0.5, 0.5, 0.0, 1.0]),
-    glam::const_vec4!([0.5, -0.5, 0.0, 1.0]),
-    glam::const_vec4!([-0.5, -0.5, 0.0, 1.0]),
-    glam::const_vec4!([-0.5, 0.5, 0.0, 1.0]),
-];
-
-pub enum QuadOrigin {
-    TopLeft,
-    Center,
-}
 
 struct Render2dData {
     quad_vao: u32,
@@ -122,6 +102,38 @@ impl Render2dData {
         self.texture_slot_index += 1;
 
         texture_index as f32
+    }
+
+    fn add_vertices(
+        &mut self,
+        vertices: &[glam::Vec3; 4],
+        color: glam::Vec4,
+        texture_coords: &[glam::Vec2; 4],
+        tex_index: f32,
+    ) {
+        let offset = self.quad_count as usize * 4;
+
+        self.vertices[offset].position = vertices[0];
+        self.vertices[offset + 1].position = vertices[1];
+        self.vertices[offset + 2].position = vertices[2];
+        self.vertices[offset + 3].position = vertices[3];
+
+        self.vertices[offset].color = color;
+        self.vertices[offset + 1].color = color;
+        self.vertices[offset + 2].color = color;
+        self.vertices[offset + 3].color = color;
+
+        self.vertices[offset].texture_coords = texture_coords[0];
+        self.vertices[offset + 1].texture_coords = texture_coords[1];
+        self.vertices[offset + 2].texture_coords = texture_coords[2];
+        self.vertices[offset + 3].texture_coords = texture_coords[3];
+
+        self.vertices[offset].tex_index = tex_index;
+        self.vertices[offset + 1].tex_index = tex_index;
+        self.vertices[offset + 2].tex_index = tex_index;
+        self.vertices[offset + 3].tex_index = tex_index;
+
+        self.quad_count += 1;
     }
 
     fn add_quad(
@@ -375,6 +387,28 @@ impl Render2dPipeline {
             gl::BindVertexArray(0);
         }
         self.render_data.reset()
+    }
+
+    pub fn draw_vertices(
+        &mut self,
+        vertices: &[glam::Vec3; 4],
+        color: glam::Vec4,
+        texture_coords: &[glam::Vec2; 4],
+        texture: Option<&Texture>,
+    ) {
+        let tex_id = if let Some(texture) = texture {
+            if let TextureType::OpenGL(opengl_texture) = &texture.texture_type {
+                opengl_texture.id
+            } else {
+                warn!("It would have a TextureType::OpenGL texture_type");
+                self.render_data.texture_slots[0]
+            }
+        } else {
+            self.render_data.texture_slots[0]
+        };
+        let tex_index = self.render_data.append_texture(tex_id);
+        self.render_data
+            .add_vertices(vertices, color, texture_coords, tex_index)
     }
 
     pub fn draw_quad(&mut self, quad: RenderQuad) {

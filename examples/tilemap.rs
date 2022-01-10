@@ -60,23 +60,16 @@ impl Scene for MainState {
                         center_origin: true,
                         ..Default::default()
                     },
-                    Transform2D {
-                        position: math::vec2((x * TILE_SIZE) as f32, (y * TILE_SIZE) as f32),
-                        scale: math::vec2((TILE_SIZE - 1) as f32, (TILE_SIZE - 1) as f32),
-                        rotate: 0.0,
-                        ..Default::default()
-                    },
+                    Transform2D::from_position_rotation_scale(
+                        math::vec2((x * TILE_SIZE) as f32, (y * TILE_SIZE) as f32),
+                        0.0,
+                        math::vec2((TILE_SIZE - 1) as f32, (TILE_SIZE - 1) as f32),
+                    ),
                 ));
             }
         }
 
-        world.spawn((
-            InputTag,
-            Camera2D::keep_width(400),
-            Transform2D {
-                ..Default::default()
-            },
-        ));
+        world.spawn((InputTag, Camera2D::keep_width(400), Transform2D::new()));
         Ok(())
     }
 
@@ -102,7 +95,7 @@ impl Scene for MainState {
             self.rotation = std::f32::consts::TAU - self.rotation;
         }
         for (_id, _transform) in &mut world.query::<&mut Transform2D>() {
-            // transform.rotate = self.rotation;
+            _transform.set_rotate(self.rotation);
         }
         Ok(Transition::None)
     }

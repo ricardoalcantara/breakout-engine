@@ -1,7 +1,7 @@
 use breakout_engine::{
     core::{
         asset_manager::AssetManager,
-        components::{Label, Sprite, Transform2D},
+        components::{Sprite, SubTexture, Transform2D},
         engine::{EngineBuilder, EngineSettings},
         engine_context::EngineContext,
         game_context::GameContext,
@@ -10,6 +10,7 @@ use breakout_engine::{
     },
     error::BreakoutResult,
     math,
+    shapes::rectangle::Rect,
 };
 
 extern crate log;
@@ -29,44 +30,17 @@ impl Scene for MainState {
         _asset_manager: &mut AssetManager,
         _engine: &mut EngineContext,
     ) -> BreakoutResult {
-        let font = _asset_manager.load_font("assets/Roboto-Regular.ttf")?;
+        let texture = _asset_manager.load_texture("assets/awesomeface.png")?;
 
         let world = &mut _context.get_world();
-
-        world.spawn((
-            Label::new_with_font(String::from("First Word"), font, 20),
-            Transform2D::default(),
-        ));
-
         world.spawn((
             Sprite {
-                color: Some(math::vec4(0.0, 1.0, 0.0, 0.5)),
+                texture_id: Some(texture),
+                sub_texture: Some(SubTexture::new(Rect::new(0.0, 0.0, 256.0, 256.0))),
                 ..Default::default()
             },
-            Transform2D::from_position_rotation_scale(
-                math::vec2(10.0, 60.0),
-                0.0,
-                math::vec2(10.0, 10.0),
-            ),
+            Transform2D::from_position(math::vec2(10.0, 10.0)),
         ));
-
-        world.spawn((
-            Label::new(String::from("Hello World"), 60),
-            Transform2D::from_position(math::vec2(10.0, 60.0)),
-        ));
-
-        world.spawn((
-            Label::new(String::from("Breakout\nEngine"), 48),
-            Transform2D::from_position(math::vec2(10.0, 160.0)),
-        ));
-
-        world.spawn((
-            Label {
-                ..Default::default()
-            },
-            Transform2D::from_position(math::vec2(0.0, 60.0)),
-        ));
-
         Ok(())
     }
 
@@ -94,7 +68,7 @@ fn main() -> BreakoutResult {
     pretty_env_logger::init();
 
     EngineBuilder::new()
-        .with_settings(EngineSettings::Title(String::from("Menu")))
+        .with_settings(EngineSettings::Title(String::from("Texture Atlas")))
         .with_settings(EngineSettings::WindowSize((800, 600)))
         .build()?
         .run(MainState::new())

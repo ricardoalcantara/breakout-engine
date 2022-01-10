@@ -1,5 +1,5 @@
 use super::texture::Texture;
-use crate::{error::BreakoutResult, shapes::rectangle::Rect};
+use crate::{error::BreakoutResult, font::Font, shapes::rectangle::Rect};
 use image::DynamicImage;
 
 pub enum RenderAPI {
@@ -18,7 +18,7 @@ pub struct RenderQuad {
 
 pub struct RenderText<'a> {
     pub text: &'a str,
-    pub font: &'a crate::font::Font<Texture>,
+    pub font: &'a Font,
     pub size: u32,
     pub position: glam::Vec2,
     pub scale: glam::Vec2,
@@ -35,6 +35,13 @@ pub struct RenderTexture<'a> {
     pub color: glam::Vec4,
 }
 
+pub struct RenderVertices<'a> {
+    pub texture: Option<&'a Texture>,
+    pub vertices: &'a [glam::Vec3; 4],
+    pub color: glam::Vec4,
+    pub texture_coords: &'a [glam::Vec2; 4],
+}
+
 pub trait Renderer2D {
     fn resize(&mut self, _new_size: winit::dpi::PhysicalSize<u32>);
     fn generate_texture(&self, img: DynamicImage) -> BreakoutResult<Texture>;
@@ -44,4 +51,5 @@ pub trait Renderer2D {
     fn draw_quad(&mut self, _quad: RenderQuad);
     fn draw_texture(&mut self, _texture: RenderTexture);
     fn draw_text(&mut self, _text: RenderText);
+    fn draw_vertices(&mut self, _text: RenderVertices);
 }

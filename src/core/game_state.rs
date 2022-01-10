@@ -15,8 +15,9 @@ use crate::{
     error::BreakoutResult,
     font::Font,
     render::{
-        renderer::{RenderQuad, RenderText, RenderTexture, Renderer2D},
+        renderer::{RenderText, RenderVertices, Renderer2D},
         texture::Texture,
+        vertex::TEXTURE_COORDS,
         window::MyWindow,
     },
 };
@@ -31,7 +32,7 @@ pub struct GameState {
     asset_manager: AssetManager,
     input: Input,
     music_player: AudioPlayer,
-    default_font: Font<Texture>,
+    default_font: Font,
     window_size: glam::UVec2,
 }
 
@@ -54,7 +55,7 @@ impl GameState {
         let input = Input::new();
         let music_player = AudioPlayer::new();
         let default_font_byte = include_bytes!("../../assets/Roboto-Regular.ttf");
-        let default_font = Font::<Texture>::new_from_memory(default_font_byte)?;
+        let default_font = Font::new_from_memory(default_font_byte)?;
         let size = window.window().inner_size();
         let window_size = glam::uvec2(size.width, size.height);
 
@@ -172,7 +173,7 @@ impl GameState {
         };
 
         renderer.begin_draw(camera_projection);
-        for (_id, (sprite, transform)) in world.query::<(&Sprite, &Transform2D)>().iter() {
+        for (_id, (sprite, transform)) in world.query::<(&mut Sprite, &mut Transform2D)>().iter() {
             if !sprite.visible {
                 continue;
             }
@@ -186,23 +187,49 @@ impl GameState {
             };
             if let Some(texture_id) = &sprite.texture_id {
                 let texture = self.asset_manager.get_texture(&texture_id);
-                renderer.draw_texture(RenderTexture {
-                    texture: texture,
-                    rect: sprite.rect,
-                    position: position,
-                    scale: transform.scale,
-                    rotate: transform.rotate,
-                    center_origin: sprite.center_origin,
+                if transform.dirt {
+                    sprite.update_vertices(
+                        position,
+                        transform.rotate,
+                        transform.scale,
+                        texture.size().as_vec2(),
+                    );
+                    transform.dirt = false;
+                }
+
+                if let Some(sub_texture) = &mut sprite.sub_texture {
+                    if sub_texture.texture_coords.is_none() {
+                        sub_texture.update_texture_coords_with_texture(texture)
+                    }
+                }
+
+                let texture_coords = if let Some(sub_texture) = &sprite.sub_texture {
+                    sub_texture.texture_coords.as_ref()
+                } else {
+                    None
+                };
+
+                renderer.draw_vertices(RenderVertices {
+                    texture: Some(texture),
+                    vertices: sprite.get_vertices(),
                     color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
+                    texture_coords: texture_coords.unwrap_or(&TEXTURE_COORDS),
                 });
             } else {
-                renderer.draw_quad(RenderQuad {
-                    size: glam::Vec2::ONE,
-                    position: position,
-                    scale: transform.scale,
-                    rotate: transform.rotate,
-                    center_origin: sprite.center_origin,
+                if transform.dirt {
+                    sprite.update_vertices(
+                        position,
+                        transform.rotate,
+                        transform.scale,
+                        glam::Vec2::ONE,
+                    );
+                    transform.dirt = false;
+                }
+                renderer.draw_vertices(RenderVertices {
+                    texture: None,
+                    vertices: sprite.get_vertices(),
                     color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
+                    texture_coords: &TEXTURE_COORDS,
                 });
             };
         }

@@ -32,6 +32,8 @@ name = "pong"
 name = "snake"
 [[example]]
 name = "tilemap"
+[[example]]
+name = "texture_atlas"
 
 [profile.dev_shader]
 inherits = "dev"

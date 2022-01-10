@@ -3,7 +3,9 @@ use log::warn;
 use std::{collections::HashMap, path::Path};
 
 use crate::{
+    core::components::SubTexture,
     error::{BreakoutError, BreakoutResult},
+    render::texture::Texture,
     shapes::rectangle::Rect,
 };
 extern crate freetype;
@@ -17,25 +19,25 @@ struct GlyphImage {
 }
 
 pub struct Character {
-    position: glam::IVec2,
+    sub_texture: SubTexture,
     size: glam::IVec2,
     bearing: glam::IVec2,
     advance: u32,
 }
 
-pub struct FontAtlas<T> {
-    texture: T,
+pub struct FontAtlas {
+    texture: Texture,
     characters: HashMap<char, Character>,
     line_spacing: u32,
 }
 
-pub struct Font<T> {
+pub struct Font {
     face: freetype::Face,
-    atlas: HashMap<u32, FontAtlas<T>>,
+    atlas: HashMap<u32, FontAtlas>,
 }
 
-impl<T> Font<T> {
-    pub fn new(path: &str) -> BreakoutResult<Font<T>> {
+impl Font {
+    pub fn new(path: &str) -> BreakoutResult<Font> {
         let lib = freetype::Library::init().map_err(BreakoutError::FontError)?;
         let font_name = Path::new(path);
         if !font_name.exists() {
@@ -49,7 +51,7 @@ impl<T> Font<T> {
         Ok(Font { face, atlas })
     }
 
-    pub fn new_from_memory(buffer: &[u8]) -> BreakoutResult<Font<T>> {
+    pub fn new_from_memory(buffer: &[u8]) -> BreakoutResult<Font> {
         let lib = freetype::Library::init().map_err(BreakoutError::FontError)?;
         let face = lib
             .new_memory_face(buffer.to_vec(), 0)
@@ -65,7 +67,7 @@ impl<T> Font<T> {
 
     pub fn build_with_size<F>(&mut self, size: u32, get_texture: F) -> BreakoutResult
     where
-        F: FnOnce(DynamicImage) -> BreakoutResult<T>,
+        F: FnOnce(DynamicImage) -> BreakoutResult<Texture>,
     {
         if self.has_size(size) {
             return Ok(());
@@ -126,13 +128,20 @@ impl<T> Font<T> {
             let x_offset = x * (max_width + spacing);
             let y_offset = y * (max_height + spacing);
 
+            let rect = Rect::from_position_size(
+                glam::ivec2(x_offset, y_offset).as_vec2().into(),
+                glyph_image.size.as_vec2().into(),
+            );
+            let sub_texture =
+                SubTexture::new_with_texture_size(rect, image_width as f32, image_height as f32);
+
             characters.insert(
                 glyph_image.character,
                 Character {
+                    sub_texture,
                     size: glyph_image.size,
                     advance: glyph_image.advance,
                     bearing: glyph_image.bearing,
-                    position: glam::ivec2(x_offset, y_offset),
                 },
             );
             let width = glyph_image.size.x;
@@ -154,7 +163,7 @@ impl<T> Font<T> {
             self.face.height() as u32
         };
 
-        let font_atlas = FontAtlas::<T> {
+        let font_atlas = FontAtlas {
             texture,
             characters,
             line_spacing,
@@ -167,7 +176,7 @@ impl<T> Font<T> {
 
     pub fn draw<F>(&self, text: &str, size: u32, mut render: F)
     where
-        F: FnMut(&T, glam::Vec2, Rect),
+        F: FnMut(&Texture, glam::Vec2, Rect),
     {
         if !self.atlas.contains_key(&size) {
             warn!("Font should be build before");
@@ -201,10 +210,64 @@ impl<T> Font<T> {
             render(
                 &atlas.texture,
                 glam::vec2(xpos, ypos),
-                Rect::from_position_size(
-                    character.position.as_vec2().into(),
-                    character.size.as_vec2().into(),
-                ),
+                character.sub_texture.region,
+            );
+            x_pos += (character.advance >> 6) as f32 * scale;
+        }
+    }
+
+    pub fn draw_vertices<F>(&self, text: &str, position: glam::Vec2, size: u32, mut render: F)
+    where
+        F: FnMut(&Texture, [glam::Vec3; 4], &[glam::Vec2; 4]),
+    {
+        if !self.atlas.contains_key(&size) {
+            warn!("Font should be build before");
+            return;
+        }
+
+        let atlas = &self.atlas[&size];
+        let scale = 1.0;
+        let mut x_pos = position.x;
+        let mut y_pos = position.y;
+
+        let h_bearing_y = &atlas.characters[&'H'].bearing.y;
+
+        for c in text.chars() {
+            if c.is_control() {
+                if c == '\n' {
+                    x_pos = position.x;
+                    y_pos += (atlas.line_spacing >> 6) as f32;
+                    continue;
+                }
+            }
+
+            if c.is_whitespace() {}
+
+            let character = &atlas.characters[&c];
+
+            // TODO: Should it bearing the first caractar?
+            let xpos = x_pos + character.bearing.x as f32 * scale;
+            let ypos = y_pos + (h_bearing_y - character.bearing.y) as f32 * scale;
+
+            let w = character.size.x as f32 * scale;
+            let h = character.size.y as f32 * scale;
+
+            // TODO: This could also be cached someday!
+            #[rustfmt::skip]
+            let vertices: [glam::Vec3; 4] = [
+                glam::vec3(xpos + w , ypos + h  , 0.0),
+                glam::vec3(xpos + w , ypos      , 0.0),
+                glam::vec3(xpos     , ypos      , 0.0),
+                glam::vec3(xpos     , ypos + h  , 0.0),
+            ];
+
+            render(
+                &atlas.texture,
+                vertices,
+                &character
+                    .sub_texture
+                    .texture_coords
+                    .unwrap_or(crate::render::vertex::TEXTURE_COORDS),
             );
             x_pos += (character.advance >> 6) as f32 * scale;
         }

@@ -88,12 +88,11 @@ impl MainState {
             Sprite {
                 ..Default::default()
             },
-            Transform2D {
+            Transform2D::from_position_rotation_scale(
                 position,
-                scale: math::vec2(TILE_SIZE as f32, TILE_SIZE as f32),
-                rotate: 0.0,
-                ..Default::default()
-            },
+                0.0,
+                math::vec2(TILE_SIZE as f32, TILE_SIZE as f32),
+            ),
             Snake,
         ));
     }
@@ -156,15 +155,14 @@ impl Scene for MainState {
                 color: Some(math::vec4(1.0, 0.0, 0.0, 1.0)),
                 ..Default::default()
             },
-            Transform2D {
-                position: math::vec2(
+            Transform2D::from_position_rotation_scale(
+                math::vec2(
                     (self.frute.x as u32 * TILE_SIZE) as f32,
                     (self.frute.y as u32 * TILE_SIZE) as f32,
                 ),
-                scale: math::vec2(TILE_SIZE as f32, TILE_SIZE as f32),
-                rotate: 0.0,
-                ..Default::default()
-            },
+                0.0,
+                math::vec2(TILE_SIZE as f32, TILE_SIZE as f32),
+            ),
             Frute,
         ));
 
@@ -297,7 +295,7 @@ impl Scene for MainState {
 
         for (_id, transform) in &mut world.query::<With<Snake, &mut Transform2D>>() {
             if let Some(snake) = snake_copy.pop() {
-                transform.position = snake * TILE_SIZE as f32;
+                transform.set_position(snake * TILE_SIZE as f32);
             } else {
                 despawn.push(_id);
             }
@@ -314,7 +312,7 @@ impl Scene for MainState {
         }
 
         for (_id, transform) in &mut world.query::<With<Frute, &mut Transform2D>>() {
-            transform.position = self.frute * TILE_SIZE as f32;
+            transform.set_position(self.frute * TILE_SIZE as f32);
         }
 
         Ok(Transition::None)

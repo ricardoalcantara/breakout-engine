@@ -2,7 +2,7 @@ use crate::{
     error::BreakoutResult,
     render::{
         opengl::render2d_pipeline::Render2dPipeline,
-        renderer::{RenderQuad, RenderText, RenderTexture, Renderer2D},
+        renderer::{RenderQuad, RenderText, RenderTexture, RenderVertices, Renderer2D},
         texture::Texture,
     },
 };
@@ -88,18 +88,27 @@ impl Renderer2D for OpenGLRenderer2D {
     }
 
     fn draw_text(&mut self, _text: RenderText) {
-        _text
-            .font
-            .draw(_text.text, _text.size, |texture, position, rect| {
-                self.draw_texture(RenderTexture {
-                    texture,
-                    rect: Some(rect),
-                    position: _text.position + position,
-                    scale: _text.scale,
-                    rotate: 0.0,
-                    center_origin: false,
+        _text.font.draw_vertices(
+            _text.text,
+            _text.position,
+            _text.size,
+            |texture, vertices, texture_coords| {
+                self.draw_vertices(RenderVertices {
+                    texture: Some(texture),
+                    vertices: &vertices,
+                    texture_coords,
                     color: _text.color,
                 })
-            });
+            },
+        )
+    }
+
+    fn draw_vertices(&mut self, _vertices: RenderVertices) {
+        self.render2d_pipeline.draw_vertices(
+            _vertices.vertices,
+            _vertices.color,
+            _vertices.texture_coords,
+            _vertices.texture,
+        )
     }
 }
