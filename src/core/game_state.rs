@@ -3,6 +3,7 @@ use super::{
     engine::EngineSettings,
     input::Input,
     scene::{InputHandled, Scene, Transition},
+    ui_context::UIContext,
 };
 use crate::{
     audio::AudioPlayer,
@@ -28,6 +29,7 @@ pub struct GameState {
     renderer: Rc<RefCell<dyn Renderer2D>>,
     context: GameContext,
     engine: EngineContext,
+    ui_context: UIContext,
     asset_manager: AssetManager,
     input: Input,
     music_player: AudioPlayer,
@@ -42,6 +44,7 @@ impl GameState {
         R: Renderer2D + 'static,
     {
         let renderer = Rc::new(RefCell::new(renderer));
+        let ui_context = UIContext::new(&window)?;
         let mut engine = EngineContext::new(&window);
         let mut context = GameContext::new(&window);
         let mut asset_manager = AssetManager::new(Rc::clone(&renderer));
@@ -63,6 +66,7 @@ impl GameState {
             renderer,
             context,
             engine,
+            ui_context,
             asset_manager,
             input,
             music_player,
@@ -79,10 +83,15 @@ impl GameState {
         self.window_size = glam::uvec2(new_size.width, new_size.height);
         self.engine.window_size = glam::uvec2(new_size.width, new_size.height);
         self.context.window_size = glam::uvec2(new_size.width, new_size.height);
+        self.ui_context.window_size = glam::uvec2(new_size.width, new_size.height);
         self.renderer.as_ref().borrow_mut().resize(new_size);
     }
 
     pub fn input(&mut self, event: &winit::event::WindowEvent) -> BreakoutResult<bool> {
+        if self.ui_context.on_event(event) {
+            return Ok(true);
+        }
+
         if let Some(on_event) = self.input.on_event(event) {
             match self.scenes.last_mut() {
                 Some(active_scene) => {
@@ -124,7 +133,9 @@ impl GameState {
                     &mut self.context,
                     &mut self.engine,
                 )? {
-                    Transition::None => {}
+                    Transition::None => {
+                        active_scene.ui(&mut self.ui_context);
+                    }
                     Transition::Push(s) => {
                         self.scenes.push(s);
                     }
@@ -152,6 +163,8 @@ impl GameState {
 
     pub fn render(&mut self, window: &MyWindow) -> BreakoutResult {
         self.system_render_sprite()?;
+
+        self.ui_context.render(Rc::clone(&self.renderer));
 
         window.swap_buffers();
         Ok(())

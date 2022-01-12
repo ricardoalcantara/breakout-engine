@@ -3,7 +3,10 @@ use crate::{
     error::BreakoutResult,
 };
 
-use super::input::{Event, Input};
+use super::{
+    input::{Event, Input},
+    ui_context::UIContext,
+};
 
 pub enum Transition {
     None,
@@ -27,6 +30,8 @@ pub trait Scene {
     ) -> BreakoutResult {
         Ok(())
     }
+
+    fn ui(&mut self, _ui: &mut UIContext) {}
 
     fn input(
         &mut self,
