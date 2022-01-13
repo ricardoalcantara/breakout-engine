@@ -406,6 +406,13 @@ impl Render2dPipeline {
         } else {
             self.render_data.texture_slots[0]
         };
+
+        if !self.render_data.can_add_quad_with_texture(&tex_id) {
+            self.end_batch();
+            self.flush();
+            self.begin_batch()
+        }
+
         let tex_index = self.render_data.append_texture(tex_id);
         self.render_data
             .add_vertices(vertices, color, texture_coords, tex_index)
