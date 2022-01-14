@@ -174,6 +174,43 @@ impl Font {
         Ok(())
     }
 
+    pub fn measure(&self, text: &str, size: u32) -> glam::Vec2 {
+        if !self.atlas.contains_key(&size) {
+            warn!("Font should be build before");
+            return glam::Vec2::ZERO;
+        }
+
+        let atlas = &self.atlas[&size];
+        let scale = 1.0;
+
+        let mut max_x_pos = 0.0;
+        let h_bearing_y = &atlas.characters[&'H'].bearing.y;
+
+        let mut x_pos = 0.0;
+        let mut y_pos = *h_bearing_y as f32;
+
+        for c in text.chars() {
+            if c.is_control() {
+                if c == '\n' {
+                    x_pos = 0.0;
+                    y_pos += (atlas.line_spacing >> 6) as f32;
+                    continue;
+                }
+            }
+
+            if c.is_whitespace() {}
+
+            let character = &atlas.characters[&c];
+
+            x_pos += (character.advance >> 6) as f32 * scale;
+            if x_pos > max_x_pos {
+                max_x_pos = x_pos;
+            }
+        }
+
+        glam::vec2(max_x_pos, y_pos)
+    }
+
     pub fn draw<F>(&self, text: &str, size: u32, mut render: F)
     where
         F: FnMut(&Texture, glam::Vec2, Rect),

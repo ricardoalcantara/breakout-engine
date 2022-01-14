@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::render::renderer::Renderer2D;
 
-use super::Elements;
+use super::{Button, ButtonType, Elements, Label};
 
 #[derive(Default)]
 pub struct Screen {
@@ -17,24 +17,16 @@ impl Screen {
     }
 
     pub fn label(&mut self, _value: &str, position: glam::IVec2) {
-        self.elements.push(Elements::Label(_value.to_string()));
+        let label = Label::new(_value.to_string(), glam::vec4(1.0, 1.0, 1.0, 1.0));
+        self.elements.push(Elements::Label(label));
     }
     pub fn button(&mut self, _value: &str, position: glam::IVec2) -> bool {
-        self.elements.push(Elements::Button(_value.to_string()));
+        let label = Label::new(_value.to_string(), glam::vec4(1.0, 1.0, 1.0, 1.0));
+        let button = Button::new(ButtonType::Text(label), glam::vec4(0.01, 0.01, 0.01, 1.0));
+        self.elements.push(Elements::Button(button));
         false
     }
 
     pub(crate) fn update(&self, screen: &Screen) {}
-    pub(crate) fn render(&self, renderer: Rc<RefCell<dyn Renderer2D>>) {
-        // let mut r = renderer.borrow_mut();
-
-        // r.draw_quad(RenderQuad {
-        //     size: glam::vec2(20.0, 20.0),
-        //     position: glam::vec2(100.0, 100.0),
-        //     scale: glam::Vec2::ONE,
-        //     rotate: 0.0,
-        //     center_origin: false,
-        //     color: glam::vec4(1.0, 1.0, 1.0, 1.0),
-        // });
-    }
+    pub(crate) fn render(&self, renderer: &RefCell<dyn Renderer2D>) {}
 }

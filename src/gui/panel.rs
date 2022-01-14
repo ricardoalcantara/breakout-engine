@@ -3,9 +3,10 @@ use std::{cell::RefCell, rc::Rc};
 use crate::{
     font::Font,
     render::renderer::{RenderQuad, RenderText, Renderer2D},
+    shapes::rectangle::Rect,
 };
 
-use super::{Constraints, Elements};
+use super::{Button, ButtonType, Constraints, Elements, Label};
 
 pub struct Panel {
     x: Constraints,
@@ -39,16 +40,18 @@ impl Panel {
     }
 
     pub fn label(&mut self, _value: &str) {
-        self.elements.push(Elements::Label(_value.to_string()));
+        let label = Label::new(_value.to_string(), glam::vec4(1.0, 1.0, 1.0, 1.0));
+        self.elements.push(Elements::Label(label));
     }
     pub fn button(&mut self, _value: &str) -> bool {
-        self.elements.push(Elements::Button(_value.to_string()));
+        let label = Label::new(_value.to_string(), glam::vec4(1.0, 1.0, 1.0, 1.0));
+        let button = Button::new(ButtonType::Text(label), glam::vec4(0.01, 0.01, 0.01, 1.0));
+        self.elements.push(Elements::Button(button));
         false
     }
 
     pub(crate) fn update(&self, panel: &Panel) {}
-    pub(crate) fn render(&self, renderer: Rc<RefCell<dyn Renderer2D>>, font: &Font) {
-        let mut r = renderer.borrow_mut();
+    pub(crate) fn render(&self, renderer: &RefCell<dyn Renderer2D>, font: &Font) {
         let element_height = 30;
 
         let x = match self.x {
@@ -72,7 +75,7 @@ impl Panel {
             _ => 0,
         };
 
-        r.draw_quad(RenderQuad {
+        renderer.borrow_mut().draw_quad(RenderQuad {
             size: glam::ivec2(width, height).as_vec2(),
             position: glam::ivec2(x, y).as_vec2(),
             scale: glam::Vec2::ONE,
@@ -80,40 +83,33 @@ impl Panel {
             center_origin: false,
             color: glam::vec4(0.01, 0.01, 0.01, 0.8),
         });
-        let element_x = x + 10;
-        let mut element_y = y + 10;
+
+        let mut element_position = glam::vec2(x as f32 + 10.0, y as f32 + 10.0);
         for element in &self.elements {
-            match element {
-                Elements::Label(text) => {
-                    r.draw_text(RenderText {
-                        text,
+            match &element {
+                Elements::Label(label) => {
+                    label.draw(
+                        renderer,
+                        Rect::from_position_size(
+                            element_position.into(),
+                            glam::vec2(width as f32 - 25.0, element_height as f32).into(),
+                        ),
                         font,
-                        size: 25,
-                        position: glam::ivec2(element_x, element_y).as_vec2(),
-                        scale: glam::Vec2::ONE,
-                        color: glam::vec4(1.0, 1.0, 1.0, 1.0),
-                    });
-                    element_y += element_height + 10;
+                    );
+                    element_position.y += element_height as f32 + 10.0;
                 }
-                Elements::Button(text) => {
-                    r.draw_quad(RenderQuad {
-                        size: glam::ivec2(width - 25, element_height).as_vec2(),
-                        position: glam::ivec2(element_x, element_y).as_vec2(),
-                        scale: glam::Vec2::ONE,
-                        rotate: 0.0,
-                        center_origin: false,
-                        color: glam::vec4(0.01, 0.01, 0.01, 1.0),
-                    });
-                    r.draw_text(RenderText {
-                        text,
+                Elements::Button(button) => {
+                    button.draw(
+                        renderer,
+                        Rect::from_position_size(
+                            element_position.into(),
+                            glam::vec2(width as f32 - 25.0, element_height as f32 + 10.0).into(),
+                        ),
                         font,
-                        size: 25,
-                        position: glam::ivec2(element_x + 5, element_y + 5).as_vec2(),
-                        scale: glam::Vec2::ONE,
-                        color: glam::vec4(1.0, 1.0, 1.0, 1.0),
-                    });
-                    element_y += element_height + 10;
+                    );
+                    element_position.y += element_height as f32 + 20.0;
                 }
+                &Elements::Texture(_texture) => todo!(),
             }
         }
     }

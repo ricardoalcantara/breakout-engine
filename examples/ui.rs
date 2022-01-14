@@ -60,10 +60,10 @@ impl Scene for MainState {
         });
 
         ui.begin_panel("My Panel", |ui_panel| {
-            // ui_panel.set_x(Constraints::Pixel(20));
-            // ui_panel.set_y(Constraints::Pixel(20));
-            // ui_panel.set_width(Constraints::Pixel(400));
-            // ui_panel.set_height(Constraints::Pixel(300));
+            ui_panel.set_x(Constraints::Pixel(20));
+            ui_panel.set_y(Constraints::Pixel(20));
+            ui_panel.set_width(Constraints::Pixel(400));
+            ui_panel.set_height(Constraints::Pixel(300));
 
             ui_panel.label("Hello World");
             // ui_panel.texture()

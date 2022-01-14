@@ -164,7 +164,7 @@ impl GameState {
     pub fn render(&mut self, window: &MyWindow) -> BreakoutResult {
         self.system_render_sprite()?;
 
-        self.ui_context.render(Rc::clone(&self.renderer));
+        self.ui_context.render(&self.renderer);
 
         window.swap_buffers();
         Ok(())
