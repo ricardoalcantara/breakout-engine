@@ -51,26 +51,39 @@ impl Scene for MainState {
     }
 
     fn ui(&mut self, ui: &mut UIContext) {
-        ui.begin_screen(|ui_screen| {
-            ui_screen.label("Hello World", math::ivec2(10, 10));
-            // ui_screen.texture()
-            if ui_screen.button("Click me", math::ivec2(10, 20)) {
+        ui.begin("screen", |group| {
+            group.panel(
+                Constraints::Pixel(50),
+                Constraints::Pixel(50),
+                Constraints::Auto,
+                Constraints::Auto,
+            );
+
+            group.label("Hello World");
+            // group.texture();
+            if group.button("Click me") {
                 info!("Clicked");
             }
         });
 
-        ui.begin_panel("My Panel", |ui_panel| {
-            ui_panel.set_x(Constraints::Pixel(20));
-            ui_panel.set_y(Constraints::Pixel(20));
-            ui_panel.set_width(Constraints::Pixel(400));
-            ui_panel.set_height(Constraints::Pixel(300));
+        ui.begin("screen2", |group| {
+            group.screen(Constraints::Pixel(0), Constraints::Pixel(250));
 
-            ui_panel.label("Hello World");
-            // ui_panel.texture()
-            if ui_panel.button("Click me") {
-                info!("Clicked");
-            }
+            group.label("Hello World");
         });
+
+        // ui.begin_panel("My Panel", |ui_panel| {
+        //     ui_panel.set_x(Constraints::Pixel(20));
+        //     ui_panel.set_y(Constraints::Pixel(20));
+        //     ui_panel.set_width(Constraints::Pixel(400));
+        //     ui_panel.set_height(Constraints::Pixel(300));
+
+        //     ui_panel.label("Hello World");
+        //     // ui_panel.texture()
+        //     if ui_panel.button("Click me") {
+        //         info!("Clicked");
+        //     }
+        // });
     }
 }
 

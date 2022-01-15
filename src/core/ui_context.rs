@@ -4,7 +4,7 @@ use std::{cell::RefCell, collections::HashMap, rc::Rc};
 use crate::{
     error::BreakoutResult,
     font::Font,
-    gui::{panel::Panel, screen::Screen, DrawableType},
+    gui::group::Group,
     render::{
         renderer::{RenderQuad, RenderText, Renderer2D},
         window::MyWindow,
@@ -12,8 +12,7 @@ use crate::{
 };
 
 pub struct UIContext {
-    build: HashMap<String, DrawableType>,
-    // state: HashMap<String, DrawableType>,
+    build: HashMap<String, Group>,
     pub(crate) window_size: glam::UVec2,
     default_font: Font,
 }
@@ -21,13 +20,11 @@ pub struct UIContext {
 impl UIContext {
     pub(crate) fn new(window: &MyWindow) -> BreakoutResult<UIContext> {
         let build = HashMap::new();
-        // let state = HashMap::new();
         let default_font_byte = include_bytes!("../../assets/Roboto-Regular.ttf");
         let default_font = Font::new_from_memory(default_font_byte)?;
 
         Ok(UIContext {
             build,
-            // state,
             default_font,
             window_size: {
                 let size = window.window().inner_size();
@@ -41,7 +38,6 @@ impl UIContext {
     }
 
     pub(crate) fn render(&mut self, _renderer: &RefCell<dyn Renderer2D>) {
-        // self.end_frame();
         {
             let mut r = _renderer.borrow_mut();
             self.default_font
@@ -50,11 +46,8 @@ impl UIContext {
             r.begin_draw(None);
         }
 
-        for (_, state) in &self.build {
-            match &state {
-                DrawableType::Panel(panel) => panel.render(_renderer, &self.default_font),
-                DrawableType::Screen(screen) => screen.render(_renderer),
-            }
+        for (_, build) in &self.build {
+            build.render(_renderer, &self.default_font);
         }
 
         {
@@ -65,77 +58,21 @@ impl UIContext {
         self.build.clear();
     }
 
-    pub fn begin_panel<F>(&mut self, title: &str, mut f: F)
+    pub fn begin<F>(&mut self, title: &str, mut f: F)
     where
-        F: FnMut(&mut Panel),
+        F: FnMut(&mut Group),
     {
-        let mut panel = if self.build.contains_key(title) {
-            if let Some(screen) = self.build.remove(title) {
-                if let DrawableType::Panel(screen) = screen {
-                    screen
-                } else {
-                    panic!("That's not right")
-                }
+        let mut group = if self.build.contains_key(title) {
+            if let Some(group) = self.build.remove(title) {
+                group
             } else {
                 panic!("That's not right")
             }
         } else {
-            Panel::new()
+            Group::new()
         };
 
-        f(&mut panel);
-        self.build
-            .insert(String::from(title), DrawableType::Panel(panel));
+        f(&mut group);
+        self.build.insert(String::from(title), group);
     }
-
-    pub fn begin_screen<F>(&mut self, mut f: F)
-    where
-        F: FnMut(&mut Screen),
-    {
-        let mut screen = if self.build.contains_key("screen") {
-            if let Some(screen) = self.build.remove("screen") {
-                if let DrawableType::Screen(screen) = screen {
-                    screen
-                } else {
-                    panic!("That's not right")
-                }
-            } else {
-                panic!("That's not right")
-            }
-        } else {
-            Screen::new()
-        };
-
-        f(&mut screen);
-        self.build
-            .insert(String::from("screen"), DrawableType::Screen(screen));
-    }
-
-    // fn end_frame(&mut self) {
-    //     let mut old_state = HashMap::new();
-    //     for (key, value) in self.state.drain() {
-    //         if self.build.contains_key(&key) {
-    //             old_state.insert(key, value);
-    //         }
-    //     }
-
-    //     for (key, value) in self.build.drain() {
-    //         if old_state.contains_key(&key) {
-    //             match &value {
-    //                 DrawableType::Panel(panel) => {
-    //                     if let DrawableType::Panel(old_panel) = &old_state[&key] {
-    //                         panel.update(old_panel);
-    //                     }
-    //                 }
-    //                 DrawableType::Screen(screen) => {
-    //                     if let DrawableType::Screen(old_screen) = &old_state[&key] {
-    //                         screen.update(old_screen);
-    //                     }
-    //                 }
-    //             };
-    //         }
-
-    //         self.state.insert(key, value);
-    //     }
-    // }
 }
