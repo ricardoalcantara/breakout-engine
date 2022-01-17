@@ -1,7 +1,7 @@
 use breakout_engine::{
     core::{
         asset_manager::AssetManager,
-        engine::{EngineBuilder, EngineSettings},
+        engine::{EngineBuilder, WindowSettings},
         engine_context::EngineContext,
         game_context::GameContext,
         input::{Event, Input},
@@ -54,8 +54,8 @@ fn main() -> BreakoutResult {
     pretty_env_logger::init();
 
     EngineBuilder::new()
-        .with_settings(EngineSettings::Title(String::from("Empty")))
-        .with_settings(EngineSettings::WindowSize((800, 600)))
+        .with_window_settings(WindowSettings::Title(String::from("Empty")))
+        .with_window_settings(WindowSettings::WindowSize((800, 600)))
         .build()?
         .run(MainState::new())
 }

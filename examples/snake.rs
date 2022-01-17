@@ -7,7 +7,7 @@ use breakout_engine::{
     core::{
         asset_manager::{AssetManager, AudioId},
         components::{Sprite, Transform2D},
-        engine::{EngineBuilder, EngineSettings},
+        engine::{EngineBuilder, WindowSettings},
         engine_context::EngineContext,
         game_context::GameContext,
         input::{Event, Input, VirtualKeyCode},
@@ -323,8 +323,8 @@ fn main() -> BreakoutResult {
     pretty_env_logger::init();
 
     EngineBuilder::new()
-        .with_settings(EngineSettings::Title(String::from("Snake")))
-        .with_settings(EngineSettings::WindowSize((WIDTH, HEIGHT)))
+        .with_window_settings(WindowSettings::Title(String::from("Snake")))
+        .with_window_settings(WindowSettings::WindowSize((WIDTH, HEIGHT)))
         .build()?
         .run(MainState::new())
 }

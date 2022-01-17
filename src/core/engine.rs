@@ -1,10 +1,11 @@
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use super::scene::Scene;
-use crate::render::renderer::RenderAPI;
+use crate::render::renderer::{RenderAPI, Renderer2D};
 use crate::render::window::MyWindow;
-use crate::{
-    core::game_state::GameState,
-    error::{BreakoutResult},
-};
+use crate::{core::game_state::GameState, error::BreakoutResult};
+use hecs::Ref;
 use log::{error, info};
 use winit::{
     dpi::PhysicalSize,
@@ -95,28 +96,44 @@ Frame_time_avg:  {:}",
     }
 }
 
-pub enum EngineSettings {
+pub enum RenderSettings {
+    DisplaySize((u32, u32)),
+}
+
+impl RenderSettings {
+    pub(crate) fn apply_window(window: &mut MyWindow, render_settings: Vec<RenderSettings>) {
+        for settings in render_settings {
+            match settings {
+                RenderSettings::DisplaySize((width, height)) => {
+                    window.render_size = Some(glam::uvec2(width, height))
+                }
+            }
+        }
+    }
+}
+
+pub enum WindowSettings {
     Title(String),
     WindowSize((u32, u32)),
     Fullscreen(bool),
 }
 
-impl EngineSettings {
+impl WindowSettings {
     pub(crate) fn apply_builder(
         window_builder: winit::window::WindowBuilder,
-        engine_settings: Vec<EngineSettings>,
+        engine_settings: Vec<WindowSettings>,
     ) -> winit::window::WindowBuilder {
         let mut window_builder = window_builder;
         for settings in engine_settings {
             match settings {
-                EngineSettings::Title(title) => {
+                WindowSettings::Title(title) => {
                     window_builder = window_builder.with_title(title);
                 }
-                EngineSettings::WindowSize((width, height)) => {
+                WindowSettings::WindowSize((width, height)) => {
                     window_builder =
                         window_builder.with_inner_size(PhysicalSize::new(width, height));
                 }
-                EngineSettings::Fullscreen(set) => {
+                WindowSettings::Fullscreen(set) => {
                     if set {
                         window_builder = window_builder
                             .with_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
@@ -128,18 +145,18 @@ impl EngineSettings {
         window_builder
     }
 
-    pub(crate) fn apply_window(window: &mut MyWindow, engine_settings: Vec<EngineSettings>) {
+    pub(crate) fn apply_window(window: &mut MyWindow, engine_settings: Vec<WindowSettings>) {
         for settings in engine_settings {
             match settings {
-                EngineSettings::Title(title) => {
+                WindowSettings::Title(title) => {
                     window.window().set_title(&title);
                 }
-                EngineSettings::WindowSize((width, height)) => {
+                WindowSettings::WindowSize((width, height)) => {
                     window
                         .window()
                         .set_inner_size(PhysicalSize::new(width, height));
                 }
-                EngineSettings::Fullscreen(set) => {
+                WindowSettings::Fullscreen(set) => {
                     if set {
                         window
                             .window()
@@ -154,13 +171,15 @@ impl EngineSettings {
 }
 
 pub struct EngineBuilder {
-    engine_settings: Vec<EngineSettings>,
+    window_settings: Vec<WindowSettings>,
+    render_settings: Vec<RenderSettings>,
 }
 
 impl Default for EngineBuilder {
     fn default() -> Self {
         Self {
-            engine_settings: Vec::new(),
+            window_settings: Vec::new(),
+            render_settings: Vec::new(),
         }
     }
 }
@@ -169,22 +188,32 @@ impl EngineBuilder {
         EngineBuilder::default()
     }
 
-    pub fn with_settings(mut self, engine_settings: EngineSettings) -> Self {
-        self.engine_settings.push(engine_settings);
+    pub fn with_window_settings(mut self, window_settings: WindowSettings) -> Self {
+        self.window_settings.push(window_settings);
+        self
+    }
+
+    pub fn with_render_settings(mut self, engine_settings: RenderSettings) -> Self {
+        self.render_settings.push(engine_settings);
         self
     }
 
     pub fn build(self) -> BreakoutResult<Engine> {
         let mut window_builder = winit::window::WindowBuilder::new();
-        window_builder = EngineSettings::apply_builder(window_builder, self.engine_settings);
+        window_builder = WindowSettings::apply_builder(window_builder, self.window_settings);
 
-        let my_window = crate::render::build_window(window_builder, RenderAPI::OpenGL);
-        Ok(Engine { window: my_window })
+        let mut my_window = crate::render::build_window(window_builder, RenderAPI::OpenGL);
+        RenderSettings::apply_window(&mut my_window, self.render_settings);
+
+        let engine = Engine {
+            window: Rc::new(RefCell::new(my_window)),
+        };
+        Ok(engine)
     }
 }
 
 pub struct Engine {
-    window: MyWindow,
+    window: Rc<RefCell<MyWindow>>,
 }
 
 impl Engine {
@@ -192,9 +221,10 @@ impl Engine {
     where
         S: Scene + 'static,
     {
-        let render = self.window.create_renderer_2d()?;
-        let event_loop = self.window.event_loop.take().unwrap();
-        let mut game_state = GameState::new(state, render, &self.window)?;
+        let render = self.window.borrow().create_renderer_2d()?;
+
+        let event_loop = self.window.borrow_mut().event_loop.take().unwrap();
+        let mut game_state = GameState::new(state, render, Rc::clone(&self.window))?;
 
         let mut engine_timer = EngineTimer::new();
 
@@ -240,16 +270,16 @@ impl Engine {
                         }
                     }
                     let settings = game_state.take_settings();
-                    EngineSettings::apply_window(&mut self.window, settings);
+                    WindowSettings::apply_window(&mut self.window.borrow_mut(), settings);
 
-                    match game_state.render(&self.window) {
+                    match game_state.render() {
                         Ok(_) => {}
                         Err(e) => error!("Render Broken {:?}", e),
                     }
                 }
                 Event::RedrawRequested(_) => {
                     // windows_id is not required for the engine
-                    self.window.window().request_redraw();
+                    self.window.borrow().window().request_redraw();
                 }
                 Event::RedrawEventsCleared => {
                     // RedrawRequested will only trigger once, unless we manually

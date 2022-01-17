@@ -70,10 +70,11 @@ impl Camera2D {
 
     pub(crate) fn get_view_matrix(
         &self,
+        render_size: &glam::UVec2,
         window_size: &glam::UVec2,
         position: &glam::Vec2,
     ) -> glam::Mat4 {
-        let rect = self.get_view_rect(window_size, position);
+        let rect = self.get_view_rect(render_size, window_size, position);
         glam::Mat4::orthographic_rh_gl(
             rect.x,
             rect.width + rect.x,
@@ -84,7 +85,12 @@ impl Camera2D {
         )
     }
 
-    pub fn get_view_rect(&self, window_size: &glam::UVec2, position: &glam::Vec2) -> Rect {
+    pub fn get_view_rect(
+        &self,
+        render_size: &glam::UVec2,
+        window_size: &glam::UVec2,
+        position: &glam::Vec2,
+    ) -> Rect {
         let (x, y) = (
             position.x as i32 + self.offset.x,
             position.y as i32 + self.offset.y,
@@ -94,7 +100,7 @@ impl Camera2D {
                 Rect::new(x as f32, y as f32, self.scale_x as f32, self.scale_y as f32)
             }
             ScaleMode::KeepWidth => {
-                let width = self.scale_x * window_size.x as f32;
+                let width = self.scale_x * render_size.x as f32;
                 Rect::new(
                     x as f32,
                     y as f32,
@@ -103,7 +109,7 @@ impl Camera2D {
                 )
             }
             ScaleMode::KeepHeight => {
-                let height = self.scale_y * window_size.y as f32;
+                let height = self.scale_y * render_size.y as f32;
                 Rect::new(
                     x as f32,
                     y as f32,

@@ -1,41 +1,41 @@
-use super::engine::EngineSettings;
+use std::{cell::RefCell, rc::Rc};
+
+use super::engine::{RenderSettings, WindowSettings};
 use crate::render::window::MyWindow;
 
 pub struct EngineContext {
-    #[warn(dead_code)]
-    engine_settings: Vec<EngineSettings>,
-    is_fullscreen: bool,
-    pub(crate) window_size: glam::UVec2,
+    engine_settings: Vec<WindowSettings>,
+    render_settings: Vec<RenderSettings>,
+    window: Rc<RefCell<MyWindow>>,
 }
 
 impl EngineContext {
-    pub fn new(window: &MyWindow) -> EngineContext {
+    pub fn new(window: Rc<RefCell<MyWindow>>) -> EngineContext {
         EngineContext {
             engine_settings: Vec::new(),
-            is_fullscreen: window.window().fullscreen().is_some(),
-            window_size: {
-                let size = window.window().inner_size();
-                glam::uvec2(size.width, size.height)
-            },
+            render_settings: Vec::new(),
+            window,
         }
     }
 
-    pub fn update_settings(&mut self, engine_settings: EngineSettings) {
-        if let EngineSettings::Fullscreen(set) = engine_settings {
-            self.is_fullscreen = set;
-        }
+    pub fn update_window_settings(&mut self, engine_settings: WindowSettings) {
         self.engine_settings.push(engine_settings);
     }
 
-    pub fn take_settings(&mut self) -> Vec<EngineSettings> {
+    pub fn update_render_settings(&mut self, render_settings: RenderSettings) {
+        self.render_settings.push(render_settings);
+    }
+
+    pub fn take_window_settings(&mut self) -> Vec<WindowSettings> {
         self.engine_settings.drain(..).collect()
     }
 
     pub fn fullscreen(&self) -> bool {
-        self.is_fullscreen
+        self.window.borrow().window().fullscreen().is_some()
     }
 
     pub fn window_size(&self) -> glam::UVec2 {
-        self.window_size
+        let size = self.window.borrow().window().inner_size();
+        glam::uvec2(size.width, size.height)
     }
 }

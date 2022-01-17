@@ -4,7 +4,7 @@ use breakout_engine::{
     core::{
         asset_manager::AssetManager,
         components::{Camera2D, Sprite, Transform2D},
-        engine::{EngineBuilder, EngineSettings},
+        engine::{EngineBuilder, RenderSettings, WindowSettings},
         engine_context::EngineContext,
         game_context::GameContext,
         input::{Event, Input},
@@ -69,7 +69,7 @@ impl Scene for MainState {
             }
         }
 
-        world.spawn((InputTag, Camera2D::keep_width(400), Transform2D::new()));
+        world.spawn((InputTag, Camera2D::keep_width(0.5), Transform2D::new()));
         Ok(())
     }
 
@@ -105,8 +105,9 @@ fn main() -> BreakoutResult {
     pretty_env_logger::init();
 
     EngineBuilder::new()
-        .with_settings(EngineSettings::Title(String::from("Tilemap")))
-        .with_settings(EngineSettings::WindowSize((800, 600)))
+        .with_window_settings(WindowSettings::Title(String::from("Tilemap")))
+        .with_window_settings(WindowSettings::WindowSize((800, 600)))
+        .with_render_settings(RenderSettings::DisplaySize((800, 600)))
         .build()?
         .run(MainState::new())
 }

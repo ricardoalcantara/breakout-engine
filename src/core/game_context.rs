@@ -1,3 +1,5 @@
+use std::{cell::RefCell, rc::Rc};
+
 use hecs::World;
 
 use crate::{render::window::MyWindow, shapes::rectangle::Rect};
@@ -11,19 +13,16 @@ pub struct GameContext {
     pub(crate) clear_color: glam::Vec3,
     pub(crate) world: World,
     audio_queue: Vec<AudioId>,
-    pub(crate) window_size: glam::UVec2,
+    window: Rc<RefCell<MyWindow>>,
 }
 
 impl GameContext {
-    pub(crate) fn new(window: &MyWindow) -> Self {
+    pub(crate) fn new(window: Rc<RefCell<MyWindow>>) -> Self {
         Self {
             world: World::new(),
             clear_color: glam::Vec3::ZERO,
             audio_queue: Vec::new(),
-            window_size: {
-                let size = window.window().inner_size();
-                glam::uvec2(size.width, size.height)
-            },
+            window,
         }
     }
 
@@ -38,7 +37,24 @@ impl GameContext {
             .iter()
             .next()
         {
-            Some(camera.get_view_rect(&self.window_size, &transform.position))
+            // TODO: It's wrong
+
+            let window_size = {
+                let size = self.window.borrow().window().inner_size();
+                glam::uvec2(size.width, size.height)
+            };
+
+            Some(
+                camera.get_view_rect(
+                    self.window
+                        .borrow()
+                        .render_size
+                        .as_ref()
+                        .unwrap_or(&window_size),
+                    &window_size,
+                    &transform.position,
+                ),
+            )
         } else {
             None
         }

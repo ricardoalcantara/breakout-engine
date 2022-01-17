@@ -13,12 +13,12 @@ use crate::{
 
 pub struct UIContext {
     build: HashMap<String, Group>,
-    pub(crate) window_size: glam::UVec2,
+    window: Rc<RefCell<MyWindow>>,
     default_font: Font,
 }
 
 impl UIContext {
-    pub(crate) fn new(window: &MyWindow) -> BreakoutResult<UIContext> {
+    pub(crate) fn new(window: Rc<RefCell<MyWindow>>) -> BreakoutResult<UIContext> {
         let build = HashMap::new();
         let default_font_byte = include_bytes!("../../assets/Roboto-Regular.ttf");
         let default_font = Font::new_from_memory(default_font_byte)?;
@@ -26,10 +26,7 @@ impl UIContext {
         Ok(UIContext {
             build,
             default_font,
-            window_size: {
-                let size = window.window().inner_size();
-                glam::uvec2(size.width, size.height)
-            },
+            window,
         })
     }
 

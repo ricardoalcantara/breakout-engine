@@ -7,7 +7,7 @@ use breakout_engine::{
     core::{
         asset_manager::AssetManager,
         components::{Sprite, Transform2D},
-        engine::{EngineBuilder, EngineSettings},
+        engine::{EngineBuilder, WindowSettings},
         engine_context::EngineContext,
         game_context::GameContext,
         input::{Event, Input, VirtualKeyCode},
@@ -137,11 +137,11 @@ impl Scene for MainState {
         }
 
         if input.is_key_pressed(VirtualKeyCode::F) {
-            _engine.update_settings(EngineSettings::Fullscreen(true));
+            _engine.update_window_settings(WindowSettings::Fullscreen(true));
         }
 
         if input.is_key_pressed(VirtualKeyCode::G) {
-            _engine.update_settings(EngineSettings::Fullscreen(false));
+            _engine.update_window_settings(WindowSettings::Fullscreen(false));
         }
 
         for (_id, (transform, paddles)) in world.query_mut::<(&mut Transform2D, &Paddles)>() {
@@ -245,8 +245,8 @@ fn main() -> BreakoutResult {
     pretty_env_logger::init();
 
     EngineBuilder::new()
-        .with_settings(EngineSettings::Title(String::from("Pong")))
-        .with_settings(EngineSettings::WindowSize((800, 600)))
+        .with_window_settings(WindowSettings::Title(String::from("Pong")))
+        .with_window_settings(WindowSettings::WindowSize((800, 600)))
         .build()?
         .run(MainState::new())
 }

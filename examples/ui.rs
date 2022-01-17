@@ -2,7 +2,7 @@ use breakout_engine::{
     core::{
         asset_manager::AssetManager,
         components::{Sprite, Transform2D},
-        engine::{EngineBuilder, EngineSettings},
+        engine::{EngineBuilder, WindowSettings},
         engine_context::EngineContext,
         game_context::GameContext,
         scene::Scene,
@@ -91,8 +91,8 @@ fn main() -> BreakoutResult {
     pretty_env_logger::init();
 
     EngineBuilder::new()
-        .with_settings(EngineSettings::Title(String::from("UI")))
-        .with_settings(EngineSettings::WindowSize((800, 600)))
+        .with_window_settings(WindowSettings::Title(String::from("UI")))
+        .with_window_settings(WindowSettings::WindowSize((800, 600)))
         .build()?
         .run(MainState::new())
 }

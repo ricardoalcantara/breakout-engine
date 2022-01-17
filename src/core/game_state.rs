@@ -1,6 +1,6 @@
 use super::{
     components::{Camera2D, Label},
-    engine::EngineSettings,
+    engine::{Engine, WindowSettings},
     input::Input,
     scene::{InputHandled, Scene, Transition},
     ui_context::UIContext,
@@ -34,19 +34,19 @@ pub struct GameState {
     input: Input,
     music_player: AudioPlayer,
     default_font: Font,
-    window_size: glam::UVec2,
+    window: Rc<RefCell<MyWindow>>,
 }
 
 impl GameState {
-    pub fn new<S, R>(state: S, renderer: R, window: &MyWindow) -> BreakoutResult<Self>
+    pub fn new<S, R>(state: S, renderer: R, window: Rc<RefCell<MyWindow>>) -> BreakoutResult<Self>
     where
         S: Scene + 'static,
         R: Renderer2D + 'static,
     {
         let renderer = Rc::new(RefCell::new(renderer));
-        let ui_context = UIContext::new(&window)?;
-        let mut engine = EngineContext::new(&window);
-        let mut context = GameContext::new(&window);
+        let ui_context = UIContext::new(Rc::clone(&window))?;
+        let mut engine = EngineContext::new(Rc::clone(&window));
+        let mut context = GameContext::new(Rc::clone(&window));
         let mut asset_manager = AssetManager::new(Rc::clone(&renderer));
 
         let mut state = state;
@@ -58,8 +58,6 @@ impl GameState {
         let music_player = AudioPlayer::new();
         let default_font_byte = include_bytes!("../../assets/Roboto-Regular.ttf");
         let default_font = Font::new_from_memory(default_font_byte)?;
-        let size = window.window().inner_size();
-        let window_size = glam::uvec2(size.width, size.height);
 
         Ok(Self {
             scenes: vec![Box::new(state)],
@@ -71,19 +69,15 @@ impl GameState {
             input,
             music_player,
             default_font,
-            window_size,
+            window,
         })
     }
 
-    pub fn take_settings(&mut self) -> Vec<EngineSettings> {
-        self.engine.take_settings()
+    pub fn take_settings(&mut self) -> Vec<WindowSettings> {
+        self.engine.take_window_settings()
     }
 
     pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
-        self.window_size = glam::uvec2(new_size.width, new_size.height);
-        self.engine.window_size = glam::uvec2(new_size.width, new_size.height);
-        self.context.window_size = glam::uvec2(new_size.width, new_size.height);
-        self.ui_context.window_size = glam::uvec2(new_size.width, new_size.height);
         self.renderer.as_ref().borrow_mut().resize(new_size);
     }
 
@@ -161,12 +155,12 @@ impl GameState {
         result
     }
 
-    pub fn render(&mut self, window: &MyWindow) -> BreakoutResult {
+    pub fn render(&mut self) -> BreakoutResult {
         self.system_render_sprite()?;
 
         self.ui_context.render(&self.renderer);
 
-        window.swap_buffers();
+        self.window.borrow().swap_buffers();
         Ok(())
     }
 
@@ -179,7 +173,22 @@ impl GameState {
         let camera_projection = if let Some((_id, (camera, transform))) =
             world.query::<(&Camera2D, &Transform2D)>().iter().next()
         {
-            Some(camera.get_view_matrix(&self.window_size, &transform.position))
+            let window_size = {
+                let size = self.window.borrow().window().inner_size();
+                glam::uvec2(size.width, size.height)
+            };
+
+            Some(
+                camera.get_view_matrix(
+                    self.window
+                        .borrow()
+                        .render_size
+                        .as_ref()
+                        .unwrap_or(&window_size),
+                    &window_size,
+                    &transform.position,
+                ),
+            )
         } else {
             None
         };

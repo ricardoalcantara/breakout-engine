@@ -14,6 +14,7 @@ use super::texture::OpenGLTexture;
 
 pub struct OpenGLRenderer2D {
     render2d_pipeline: Render2dPipeline,
+    render_size: Option<glam::UVec2>,
 }
 
 impl OpenGLRenderer2D {
@@ -41,16 +42,26 @@ impl OpenGLRenderer2D {
         let s = window.window().inner_size();
         let render2d_pipeline = Render2dPipeline::new(s.width, s.height, max_texture_image_units);
 
-        Ok(Self { render2d_pipeline })
+        Ok(Self {
+            render2d_pipeline,
+            render_size: None,
+        })
     }
 }
 
 impl Renderer2D for OpenGLRenderer2D {
+    fn set_render_size(&mut self, render_size: glam::UVec2) {
+        self.render_size = Some(render_size);
+        self.render2d_pipeline.resize(render_size.x, render_size.y);
+    }
+
     fn resize(&mut self, _new_size: winit::dpi::PhysicalSize<u32>) {
         unsafe {
             gl::Viewport(0, 0, _new_size.width as _, _new_size.height as _);
-            self.render2d_pipeline
-                .resize(_new_size.width, _new_size.height)
+            if self.render_size.is_none() {
+                self.render2d_pipeline
+                    .resize(_new_size.width, _new_size.height);
+            }
         }
     }
 

@@ -14,6 +14,7 @@ pub struct MyWindow {
     window_provider: WindowProvider,
     pub event_loop: Option<winit::event_loop::EventLoop<()>>,
     render_api: RenderAPI,
+    pub render_size: Option<glam::UVec2>,
 }
 
 impl MyWindow {
@@ -31,6 +32,7 @@ impl MyWindow {
             window_provider,
             event_loop: Some(event_loop),
             render_api,
+            render_size: None,
         }
     }
 
