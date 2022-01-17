@@ -4,6 +4,7 @@ pub enum ScaleMode {
     Keep,
     KeepWidth,
     KeepHeight,
+    Expand,
 }
 
 impl Default for ScaleMode {
@@ -25,35 +26,44 @@ impl Default for AnchorMode {
 
 #[derive(Default)]
 pub struct Camera2D {
-    pub width: i32,
-    pub height: i32,
+    pub scale_x: f32,
+    pub scale_y: f32,
     pub offset: glam::IVec2,
     pub scale_mode: ScaleMode,
     pub anchor_mode: AnchorMode,
 }
 
 impl Camera2D {
-    pub fn new(width: i32, height: i32) -> Camera2D {
+    pub fn new(scale_x: f32, scale_y: f32) -> Camera2D {
         Camera2D {
-            width,
-            height,
+            scale_x,
+            scale_y,
             ..Default::default()
         }
     }
-    pub fn keep_width(width: i32) -> Camera2D {
+    pub fn keep_width(scale_x: f32) -> Camera2D {
         Camera2D {
-            width,
-            height: 0,
+            scale_x,
+            scale_y: 0.0,
             scale_mode: ScaleMode::KeepWidth,
             ..Default::default()
         }
     }
 
-    pub fn keep_height(height: i32) -> Camera2D {
+    pub fn keep_height(scale_y: f32) -> Camera2D {
         Camera2D {
-            width: 0,
-            height,
+            scale_x: 0.0,
+            scale_y,
             scale_mode: ScaleMode::KeepHeight,
+            ..Default::default()
+        }
+    }
+
+    pub fn new_expand(width: f32, height: f32) -> Camera2D {
+        Camera2D {
+            scale_x: width,
+            scale_y: height,
+            scale_mode: ScaleMode::Expand,
             ..Default::default()
         }
     }
@@ -80,18 +90,32 @@ impl Camera2D {
             position.y as i32 + self.offset.y,
         );
         let mut rect = match self.scale_mode {
-            ScaleMode::Keep => Rect::new(x as f32, y as f32, self.width as f32, self.height as f32),
-            ScaleMode::KeepWidth => Rect::new(
+            ScaleMode::Keep => {
+                Rect::new(x as f32, y as f32, self.scale_x as f32, self.scale_y as f32)
+            }
+            ScaleMode::KeepWidth => {
+                let width = self.scale_x * window_size.x as f32;
+                Rect::new(
+                    x as f32,
+                    y as f32,
+                    width,
+                    window_size.y as f32 * (width as f32 / window_size.x as f32),
+                )
+            }
+            ScaleMode::KeepHeight => {
+                let height = self.scale_y * window_size.y as f32;
+                Rect::new(
+                    x as f32,
+                    y as f32,
+                    window_size.x as f32 * (height as f32 / window_size.y as f32),
+                    height as f32,
+                )
+            }
+            ScaleMode::Expand => Rect::new(
                 x as f32,
                 y as f32,
-                self.width as f32,
-                window_size.y as f32 * (self.width as f32 / window_size.x as f32),
-            ),
-            ScaleMode::KeepHeight => Rect::new(
-                x as f32,
-                y as f32,
-                window_size.x as f32 * (self.height as f32 / window_size.y as f32),
-                self.height as f32,
+                self.scale_x * window_size.x as f32,
+                self.scale_y * window_size.y as f32,
             ),
         };
 
