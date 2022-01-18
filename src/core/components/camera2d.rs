@@ -28,7 +28,7 @@ impl Default for AnchorMode {
 pub struct Camera2D {
     pub scale_x: f32,
     pub scale_y: f32,
-    pub offset: glam::IVec2,
+    pub offset: glam::Vec2,
     pub scale_mode: ScaleMode,
     pub anchor_mode: AnchorMode,
 }
@@ -91,35 +91,30 @@ impl Camera2D {
         window_size: &glam::UVec2,
         position: &glam::Vec2,
     ) -> Rect {
-        let (x, y) = (
-            position.x as i32 + self.offset.x,
-            position.y as i32 + self.offset.y,
-        );
+        let (x, y) = (position.x + self.offset.x, position.y + self.offset.y);
         let mut rect = match self.scale_mode {
-            ScaleMode::Keep => {
-                Rect::new(x as f32, y as f32, self.scale_x as f32, self.scale_y as f32)
-            }
+            ScaleMode::Keep => Rect::new(x, y, self.scale_x, self.scale_y),
             ScaleMode::KeepWidth => {
                 let width = self.scale_x * render_size.x as f32;
                 Rect::new(
-                    x as f32,
-                    y as f32,
+                    x,
+                    y,
                     width,
-                    window_size.y as f32 * (width as f32 / window_size.x as f32),
+                    window_size.y as f32 * (width / window_size.x as f32),
                 )
             }
             ScaleMode::KeepHeight => {
                 let height = self.scale_y * render_size.y as f32;
                 Rect::new(
-                    x as f32,
-                    y as f32,
-                    window_size.x as f32 * (height as f32 / window_size.y as f32),
-                    height as f32,
+                    x,
+                    y,
+                    window_size.x as f32 * (height / window_size.y as f32),
+                    height,
                 )
             }
             ScaleMode::Expand => Rect::new(
-                x as f32,
-                y as f32,
+                x,
+                y,
                 self.scale_x * window_size.x as f32,
                 self.scale_y * window_size.y as f32,
             ),

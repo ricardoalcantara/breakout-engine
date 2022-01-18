@@ -2,7 +2,6 @@ pub struct Transform2D {
     pub(crate) position: glam::Vec2,
     pub(crate) rotate: f32,
     pub(crate) scale: glam::Vec2,
-    pub(crate) pixel_snap: bool,
     pub(crate) dirt: bool,
 }
 
@@ -12,7 +11,6 @@ impl Default for Transform2D {
             position: glam::Vec2::ZERO,
             rotate: 0.0,
             scale: glam::Vec2::ONE,
-            pixel_snap: false,
             dirt: true,
         }
     }
@@ -61,7 +59,6 @@ impl Transform2D {
             position,
             rotate,
             scale,
-            pixel_snap,
             ..Default::default()
         }
     }
@@ -86,13 +83,6 @@ impl Transform2D {
     pub fn set_scale(&mut self, scale: glam::Vec2) {
         self.dirt = true;
         self.scale = scale;
-    }
-    pub fn pixel_snap(&self) -> bool {
-        self.pixel_snap
-    }
-    pub fn set_pixel_snap(&mut self, pixel_snap: bool) {
-        self.dirt = true;
-        self.pixel_snap = pixel_snap
     }
 
     pub fn translate(&mut self, position: glam::Vec2) {

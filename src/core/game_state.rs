@@ -198,19 +198,11 @@ impl GameState {
             if !sprite.visible {
                 continue;
             }
-            let position = if transform.pixel_snap {
-                glam::vec2(
-                    transform.position.x as i32 as f32,
-                    transform.position.y as i32 as f32,
-                )
-            } else {
-                transform.position
-            };
             if let Some(texture_id) = &sprite.texture_id {
                 let texture = self.asset_manager.get_texture(&texture_id);
                 if transform.dirt {
                     sprite.update_vertices(
-                        position,
+                        transform.position,
                         transform.rotate,
                         transform.scale,
                         texture.size().as_vec2(),
@@ -239,7 +231,7 @@ impl GameState {
             } else {
                 if transform.dirt {
                     sprite.update_vertices(
-                        position,
+                        transform.position,
                         transform.rotate,
                         transform.scale,
                         glam::Vec2::ONE,
