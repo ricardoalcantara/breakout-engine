@@ -13,12 +13,21 @@ use winit::{
     event_loop::ControlFlow,
 };
 
+pub struct EngineTimerView {
+    pub delta: f32,
+    pub fps: u32,
+    pub frame_time_avg: f32,
+    pub frame_time_spike_per_seconds: f32,
+}
+
 struct EngineTimer {
+    delta: f32,
     fps: u32,
     fps_count: u32,
     fps_time: f32,
     frame_time_count: f32,
     frame_time_avg: f32,
+    frame_time_spike: f32,
     frame_time_spike_per_seconds: f32,
     delta_target: Option<f32>,
     time: std::time::Instant,
@@ -39,23 +48,34 @@ impl EngineTimer {
 
         let time = std::time::Instant::now();
         EngineTimer {
+            delta: 0.0,
             fps: 0,
             fps_count: 0,
             fps_time: 0.0,
             frame_time_count: 0.0,
             frame_time_avg: 0.0,
+            frame_time_spike: 0.0,
             frame_time_spike_per_seconds: 0.0,
             delta_target,
             time,
         }
     }
 
+    fn view_time(&self) -> EngineTimerView {
+        EngineTimerView {
+            delta: self.delta,
+            fps: self.fps,
+            frame_time_avg: self.frame_time_avg,
+            frame_time_spike_per_seconds: self.frame_time_spike_per_seconds,
+        }
+    }
+
     fn update(&mut self) -> f32 {
-        let delta = self.time.elapsed().as_secs_f32();
+        self.delta = self.time.elapsed().as_secs_f32();
         self.time = std::time::Instant::now();
 
         self.fps_count += 1;
-        self.fps_time += delta;
+        self.fps_time += self.delta;
 
         if self.fps_time >= 1.0 {
             self.fps = self.fps_count;
@@ -64,7 +84,7 @@ impl EngineTimer {
 
             self.frame_time_avg = self.frame_time_count / self.fps as f32;
             self.frame_time_count = 0.0;
-
+            self.frame_time_spike_per_seconds = self.frame_time_spike;
             info!(
                 "
 Fps:             {:}
@@ -72,18 +92,18 @@ Frame_time_high: {:}
 Frame_time_avg:  {:}",
                 self.fps, self.frame_time_spike_per_seconds, self.frame_time_avg
             );
-            self.frame_time_spike_per_seconds = 0.0;
+            self.frame_time_spike = 0.0;
         }
 
-        delta
+        self.delta
     }
 
     fn wait(&mut self) {
         let frame_time = self.time.elapsed().as_secs_f32();
         self.frame_time_count += frame_time;
 
-        if frame_time > self.frame_time_spike_per_seconds {
-            self.frame_time_spike_per_seconds = frame_time;
+        if frame_time > self.frame_time_spike {
+            self.frame_time_spike = frame_time;
         }
 
         if let Some(delta_target) = self.delta_target {
@@ -217,7 +237,7 @@ pub struct Engine {
 }
 
 impl Engine {
-    pub fn run<S>(mut self, state: S) -> BreakoutResult<()>
+    pub fn run<S>(self, state: S) -> BreakoutResult<()>
     where
         S: Scene + 'static,
     {
@@ -272,7 +292,7 @@ impl Engine {
                     let settings = game_state.take_settings();
                     WindowSettings::apply_window(&mut self.window.borrow_mut(), settings);
 
-                    match game_state.render() {
+                    match game_state.render(engine_timer.view_time()) {
                         Ok(_) => {}
                         Err(e) => error!("Render Broken {:?}", e),
                     }

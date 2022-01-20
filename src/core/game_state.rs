@@ -1,8 +1,12 @@
 use super::{
     components::{Camera2D, Label},
-    engine::{Engine, WindowSettings},
+    engine::{Engine, EngineTimerView, WindowSettings},
     input::Input,
     scene::{InputHandled, Scene, Transition},
+    systems::{
+        animated_sprite::system_update_animated_sprite, font::system_font_update,
+        sprite::system_render_sprite,
+    },
     ui_context::UIContext,
 };
 use crate::{
@@ -128,7 +132,7 @@ impl GameState {
                     &mut self.engine,
                 )? {
                     Transition::None => {
-                        active_scene.ui(&mut self.ui_context);
+                        active_scene.ui(&mut self.context, &mut self.ui_context);
                     }
                     Transition::Push(s) => {
                         self.scenes.push(s);
@@ -147,133 +151,35 @@ impl GameState {
         };
         self.input.end_frame();
 
+        // TODO system_update_audio
         for audio_queue in self.context.take_audio_queue() {
             let audio = self.asset_manager.get_audio(&audio_queue);
             self.music_player.play(audio);
         }
 
+        system_font_update(
+            &self.context,
+            &mut self.asset_manager,
+            Rc::clone(&self.renderer),
+            &mut self.default_font,
+        )?;
+        system_update_animated_sprite(&self.context, delta);
+
         result
     }
 
-    pub fn render(&mut self) -> BreakoutResult {
-        self.system_render_sprite()?;
+    pub fn render(&mut self, view_time: EngineTimerView) -> BreakoutResult {
+        system_render_sprite(
+            &self.context,
+            &self.asset_manager,
+            Rc::clone(&self.renderer),
+            Rc::clone(&self.window),
+            &self.default_font,
+        )?;
 
-        self.ui_context.render(&self.renderer);
+        self.ui_context.render(&self.renderer, &view_time);
 
         self.window.borrow().swap_buffers();
-        Ok(())
-    }
-
-    fn system_render_sprite(&mut self) -> BreakoutResult {
-        let world = &self.context.world;
-
-        let mut renderer = self.renderer.borrow_mut();
-        renderer.clear_color(self.context.clear_color);
-
-        let camera_projection = if let Some((_id, (camera, transform))) =
-            world.query::<(&Camera2D, &Transform2D)>().iter().next()
-        {
-            let window_size = {
-                let size = self.window.borrow().window().inner_size();
-                glam::uvec2(size.width, size.height)
-            };
-
-            Some(
-                camera.get_view_matrix(
-                    self.window
-                        .borrow()
-                        .render_size
-                        .as_ref()
-                        .unwrap_or(&window_size),
-                    &window_size,
-                    &transform.position,
-                ),
-            )
-        } else {
-            None
-        };
-
-        renderer.begin_draw(camera_projection);
-        for (_id, (sprite, transform)) in world.query::<(&mut Sprite, &mut Transform2D)>().iter() {
-            if !sprite.visible {
-                continue;
-            }
-            if let Some(texture_id) = &sprite.texture_id {
-                let texture = self.asset_manager.get_texture(&texture_id);
-                if transform.dirt {
-                    sprite.update_vertices(
-                        transform.position,
-                        transform.rotate,
-                        transform.scale,
-                        texture.size().as_vec2(),
-                    );
-                    transform.dirt = false;
-                }
-
-                if let Some(sub_texture) = &mut sprite.sub_texture {
-                    if sub_texture.texture_coords.is_none() {
-                        sub_texture.update_texture_coords_with_texture(texture)
-                    }
-                }
-
-                let texture_coords = if let Some(sub_texture) = &sprite.sub_texture {
-                    sub_texture.texture_coords.as_ref()
-                } else {
-                    None
-                };
-
-                renderer.draw_vertices(RenderVertices {
-                    texture: Some(texture),
-                    vertices: sprite.get_vertices(),
-                    color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
-                    texture_coords: texture_coords.unwrap_or(&TEXTURE_COORDS),
-                });
-            } else {
-                if transform.dirt {
-                    sprite.update_vertices(
-                        transform.position,
-                        transform.rotate,
-                        transform.scale,
-                        glam::Vec2::ONE,
-                    );
-                    transform.dirt = false;
-                }
-                renderer.draw_vertices(RenderVertices {
-                    texture: None,
-                    vertices: sprite.get_vertices(),
-                    color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
-                    texture_coords: &TEXTURE_COORDS,
-                });
-            };
-        }
-
-        for (_id, (label, _transform)) in world.query::<(&mut Label, &Transform2D)>().iter() {
-            if !label.visible {
-                continue;
-            }
-
-            let font = if let Some(font_id) = &label.font_id {
-                self.asset_manager
-                    .get_font_with_size(&font_id, label.size, |image| {
-                        Ok(renderer.generate_texture(image)?)
-                    })
-            } else {
-                self.default_font
-                    .build_with_size(label.size, |image| Ok(renderer.generate_texture(image)?))?;
-                Ok(&self.default_font)
-            }?;
-
-            renderer.draw_text(RenderText {
-                text: &label.text,
-                font,
-                size: label.size,
-                position: _transform.position,
-                scale: _transform.scale,
-                color: label.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
-            });
-        }
-        renderer.end_draw();
-
         Ok(())
     }
 }

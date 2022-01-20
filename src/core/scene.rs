@@ -31,7 +31,7 @@ pub trait Scene {
         Ok(())
     }
 
-    fn ui(&mut self, _ui: &mut UIContext) {}
+    fn ui(&mut self, _context: &mut GameContext, _ui: &mut UIContext) {}
 
     fn input(
         &mut self,

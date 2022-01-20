@@ -11,6 +11,8 @@ use crate::{
     },
 };
 
+use super::engine::EngineTimerView;
+
 pub struct UIContext {
     build: HashMap<String, Group>,
     window: Rc<RefCell<MyWindow>>,
@@ -34,9 +36,13 @@ impl UIContext {
         false
     }
 
-    pub(crate) fn render(&mut self, _renderer: &RefCell<dyn Renderer2D>) {
+    pub(crate) fn render(
+        &mut self,
+        renderer: &RefCell<dyn Renderer2D>,
+        view_time: &EngineTimerView,
+    ) {
         {
-            let mut r = _renderer.borrow_mut();
+            let mut r = renderer.borrow_mut();
             self.default_font
                 .build_with_size(25, |image| Ok(r.generate_texture(image)?))
                 .unwrap();
@@ -44,11 +50,11 @@ impl UIContext {
         }
 
         for (_, build) in &self.build {
-            build.render(_renderer, &self.default_font);
+            build.render(renderer, view_time, &self.default_font);
         }
 
         {
-            let mut r = _renderer.borrow_mut();
+            let mut r = renderer.borrow_mut();
             r.end_draw();
         }
 

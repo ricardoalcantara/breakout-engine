@@ -19,8 +19,10 @@ impl Texture {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct SubTexture {
     pub region: Rect,
+    pub texture_size: glam::Vec2,
     pub(crate) texture_coords: Option<[glam::Vec2; 4]>,
 }
 
@@ -28,31 +30,42 @@ impl SubTexture {
     pub fn new(region: Rect) -> SubTexture {
         SubTexture {
             region,
+            texture_size: glam::Vec2::ZERO,
             texture_coords: None,
         }
     }
 
     pub fn new_with_texture_size(region: Rect, width: f32, height: f32) -> SubTexture {
         let mut sub_texture = SubTexture::new(region);
-        sub_texture.update_texture_coords(width, height);
+        sub_texture.texture_size.x = width;
+        sub_texture.texture_size.y = height;
+        sub_texture.update_texture_coords();
 
         sub_texture
     }
 
     pub fn from_texture(region: Rect, texture: &Texture) -> SubTexture {
         let mut sub_texture = SubTexture::new(region);
-        sub_texture.update_texture_coords_with_texture(texture);
+        sub_texture.texture_size.x = texture.width as f32;
+        sub_texture.texture_size.y = texture.height as f32;
+        sub_texture.update_texture_coords();
 
         sub_texture
     }
 
-    pub(crate) fn update_texture_coords_with_texture(&mut self, texture: &Texture) {
-        let width = texture.width as f32;
-        let height = texture.height as f32;
-        self.update_texture_coords(width, height)
+    pub(crate) fn update_texture_coords_with_region(&mut self, region: Rect) {
+        self.region = region;
+        self.update_texture_coords();
     }
 
-    pub(crate) fn update_texture_coords(&mut self, width: f32, height: f32) {
+    pub(crate) fn update_texture_coords_with_texture_size(&mut self, texture_size: glam::Vec2) {
+        self.texture_size = texture_size;
+        self.update_texture_coords();
+    }
+
+    pub(crate) fn update_texture_coords(&mut self) {
+        let width = self.texture_size.x;
+        let height = self.texture_size.y;
         let mut texture_coords = [glam::Vec2::ZERO; 4];
 
         texture_coords[0] = glam::vec2(
