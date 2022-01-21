@@ -10,6 +10,8 @@ pub struct Sprite {
     pub color: Option<glam::Vec4>,
     pub visible: bool,
     pub center_origin: bool,
+    pub flip_x: bool,
+    pub flip_y: bool,
     pub vertices: [glam::Vec3; 4],
 }
 
@@ -21,6 +23,8 @@ impl Default for Sprite {
             sub_texture: None,
             visible: true,
             center_origin: false,
+            flip_x: false,
+            flip_y: false,
             vertices: [glam::Vec3::ZERO; 4],
         }
     }

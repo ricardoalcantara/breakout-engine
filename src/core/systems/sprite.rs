@@ -10,7 +10,10 @@ use crate::{
     font::Font,
     render::{
         renderer::{RenderText, RenderVertices, Renderer2D},
-        vertex::TEXTURE_COORDS,
+        vertex::{
+            TEXTURE_COORDS, TEXTURE_COORDS_FLIPPED_X, TEXTURE_COORDS_FLIPPED_X_Y,
+            TEXTURE_COORDS_FLIPPED_Y,
+        },
         window::MyWindow,
     },
 };
@@ -63,24 +66,28 @@ pub fn system_render_sprite(
 
             if let Some(sub_texture) = &mut sprite.sub_texture {
                 if sub_texture.texture_coords.is_none() {
-                    sub_texture.update_texture_coords_with_texture_size(glam::vec2(
-                        texture.width as f32,
-                        texture.height as f32,
-                    ))
+                    sub_texture.texture_size =
+                        glam::vec2(texture.width as f32, texture.height as f32);
+                    sub_texture.update_texture_coords()
                 }
             }
 
             let texture_coords = if let Some(sub_texture) = &sprite.sub_texture {
-                sub_texture.texture_coords.as_ref()
+                sub_texture.texture_coords.as_ref().unwrap()
             } else {
-                None
+                match (sprite.flip_x, sprite.flip_y) {
+                    (true, false) => &TEXTURE_COORDS_FLIPPED_X,
+                    (false, true) => &TEXTURE_COORDS_FLIPPED_Y,
+                    (true, true) => &TEXTURE_COORDS_FLIPPED_X_Y,
+                    _ => &TEXTURE_COORDS, // (false, false)
+                }
             };
 
             renderer.draw_vertices(RenderVertices {
                 texture: Some(texture),
                 vertices: sprite.get_vertices(),
                 color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
-                texture_coords: texture_coords.unwrap_or(&TEXTURE_COORDS),
+                texture_coords: texture_coords,
             });
         } else {
             if transform.dirt {
