@@ -50,7 +50,7 @@ impl Scene for MainState {
         Ok(())
     }
 
-    fn ui(&mut self, ui: &mut UIContext) {
+    fn ui(&mut self, _context: &mut GameContext, ui: &mut UIContext) {
         ui.begin("screen", |group| {
             group.panel(
                 Constraints::Pixel(50),
@@ -58,6 +58,8 @@ impl Scene for MainState {
                 Constraints::Auto,
                 Constraints::Auto,
             );
+
+            group.print_diagnostics();
 
             group.label("Hello World");
             // group.texture();
