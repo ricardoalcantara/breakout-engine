@@ -111,12 +111,10 @@ impl Font {
         }
 
         let spacing = 4;
-        println!("Tile: {}, {}", max_width, max_height);
         let columns = 10; // 512 / (max_width + spacing);
         let rows = (glyph_images.len() as i32 / columns) + 1;
         let image_width = columns * max_width + spacing * columns;
         let image_height = rows * max_height + spacing * rows;
-        println!("Image: {}, {}", image_width, image_height);
 
         let mut image = DynamicImage::new_rgba8(image_width as u32, image_height as u32).to_rgba8();
         let mut characters = HashMap::new();
