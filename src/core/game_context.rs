@@ -1,23 +1,21 @@
-use std::{cell::RefCell, rc::Rc};
-
-use hecs::World;
-
-use crate::{render::window::MyWindow, shapes::rectangle::Rect};
-
 use super::{
     asset_manager::AudioId,
     components::{Camera2D, Transform2D},
+    game_window::GameWindow,
 };
+use crate::shapes::rectangle::Rect;
+use hecs::World;
+use std::{cell::RefCell, rc::Rc};
 
 pub struct GameContext {
     pub(crate) clear_color: glam::Vec3,
     pub(crate) world: World,
     audio_queue: Vec<AudioId>,
-    window: Rc<RefCell<MyWindow>>,
+    window: Rc<RefCell<GameWindow>>,
 }
 
 impl GameContext {
-    pub(crate) fn new(window: Rc<RefCell<MyWindow>>) -> Self {
+    pub(crate) fn new(window: Rc<RefCell<GameWindow>>) -> Self {
         Self {
             world: World::new(),
             clear_color: glam::Vec3::ZERO,
@@ -40,7 +38,7 @@ impl GameContext {
             // TODO: It's wrong
 
             let window_size = {
-                let size = self.window.borrow().window().inner_size();
+                let size = self.window.borrow().window.window().inner_size();
                 glam::uvec2(size.width, size.height)
             };
 

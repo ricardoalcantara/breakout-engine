@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 use super::game_state::GameState;
-use super::game_window::{GameLoopState, GameState, GameWindow};
+use super::game_window::{GameLoopState, GameWindow};
 use super::scene::Scene;
 use crate::error::BreakoutResult;
 use crate::render::renderer::{RenderAPI, Renderer2D};
@@ -123,11 +123,11 @@ pub enum RenderSettings {
 }
 
 impl RenderSettings {
-    pub(crate) fn apply_window(window: &mut MyWindow, render_settings: Vec<RenderSettings>) {
+    pub(crate) fn apply_window(game_window: &mut GameWindow, render_settings: Vec<RenderSettings>) {
         for settings in render_settings {
             match settings {
                 RenderSettings::DisplaySize((width, height)) => {
-                    window.render_size = Some(glam::uvec2(width, height))
+                    game_window.render_size = Some(glam::uvec2(width, height))
                 }
             }
         }
@@ -167,24 +167,26 @@ impl WindowSettings {
         window_builder
     }
 
-    pub(crate) fn apply_window(window: &mut MyWindow, engine_settings: Vec<WindowSettings>) {
+    pub(crate) fn apply_window(game_window: &mut GameWindow, engine_settings: Vec<WindowSettings>) {
         for settings in engine_settings {
             match settings {
                 WindowSettings::Title(title) => {
-                    window.window().set_title(&title);
+                    game_window.window.window().set_title(&title);
                 }
                 WindowSettings::WindowSize((width, height)) => {
-                    window
+                    game_window
+                        .window
                         .window()
                         .set_inner_size(PhysicalSize::new(width, height));
                 }
                 WindowSettings::Fullscreen(set) => {
                     if set {
-                        window
+                        game_window
+                            .window
                             .window()
                             .set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
                     } else {
-                        window.window().set_fullscreen(None);
+                        game_window.window.window().set_fullscreen(None);
                     }
                 }
             }
@@ -224,15 +226,19 @@ impl EngineBuilder {
         let mut window_builder = winit::window::WindowBuilder::new();
         window_builder = WindowSettings::apply_builder(window_builder, self.window_settings);
 
-        let game_window = GameWindow::build(window_builder);
+        let mut game_window = GameWindow::build(window_builder);
 
-        let engine = Engine { game_window };
+        RenderSettings::apply_window(&mut game_window, self.render_settings);
+
+        let engine = Engine {
+            game_window: Rc::new(RefCell::new(game_window)),
+        };
         Ok(engine)
     }
 }
 
 pub struct Engine {
-    game_window: GameWindow,
+    game_window: Rc<RefCell<GameWindow>>,
 }
 
 impl Engine {
@@ -241,10 +247,10 @@ impl Engine {
         S: Scene + 'static,
     {
         let mut engine_timer = EngineTimer::new();
-        let game_state = GameState::new();
+        let mut game_state = GameState::new(state, Rc::clone(&self.game_window))?;
 
-        self.game_window.run(move |game_state| {
-            match game_state {
+        self.game_window.borrow().run(move |game_loop_state| {
+            match game_loop_state {
                 GameLoopState::Input(event) => println!("Input {:#?}", event),
                 GameLoopState::Update => {
                     let delta = engine_timer.update();
@@ -265,68 +271,6 @@ impl Engine {
                 }
                 GameLoopState::Wait => engine_timer.wait(),
             }
-            // match event {
-            //     Event::WindowEvent { ref event, .. } => {
-            //         // if window_id == self.window.window().id() =>
-            //         match event {
-            //             WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-            //             WindowEvent::Resized(physical_size) => {
-            //                 game_state.resize(*physical_size);
-            //             }
-            //             WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-            //                 // new_inner_size is &&mut so w have to dereference it twice
-            //                 game_state.resize(**new_inner_size);
-            //             }
-            //             _ => match game_state.input(event) {
-            //                 Ok(handled) => {
-            //                     if !handled {
-            //                         if let WindowEvent::KeyboardInput {
-            //                             input:
-            //                                 KeyboardInput {
-            //                                     state: ElementState::Pressed,
-            //                                     virtual_keycode: Some(VirtualKeyCode::Escape),
-            //                                     ..
-            //                                 },
-            //                             ..
-            //                         } = event
-            //                         {
-            //                             *control_flow = ControlFlow::Exit
-            //                         }
-            //                     }
-            //                 }
-            //                 Err(e) => error!("Input Broken: {:?}", e),
-            //             },
-            //         }
-            //     }
-            //     Event::MainEventsCleared => {
-            //         let delta = engine_timer.update();
-            //         if let Ok(updated) = game_state.update(delta) {
-            //             if !updated {
-            //                 *control_flow = ControlFlow::Exit
-            //             }
-            //         }
-            //         let settings = game_state.take_settings();
-            //         WindowSettings::apply_window(&mut self.window.borrow_mut(), settings);
-
-            //         match game_state.render(engine_timer.view_time()) {
-            //             Ok(_) => {}
-            //             Err(e) => error!("Render Broken {:?}", e),
-            //         }
-            //     }
-            //     Event::RedrawRequested(_) => {
-            //         // windows_id is not required for the engine
-            //         self.window.borrow().window().request_redraw();
-            //     }
-            //     Event::RedrawEventsCleared => {
-            //         // RedrawRequested will only trigger once, unless we manually
-            //         // request it.
-
-            //         // https://github.com/rust-windowing/winit/blob/master/examples/control_flow.rs
-            //         engine_timer.wait();
-            //         *control_flow = ControlFlow::Poll;
-            //     }
-            //     _ => {}
-            // }
         });
 
         Ok(())

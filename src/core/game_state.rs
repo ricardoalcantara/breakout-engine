@@ -1,6 +1,7 @@
 use super::{
     components::{Camera2D, Label},
     engine::{Engine, EngineTimerView, WindowSettings},
+    game_window::GameWindow,
     input::Input,
     scene::{InputHandled, Scene, Transition},
     systems::{
@@ -37,14 +38,13 @@ pub struct GameState {
     input: Input,
     music_player: AudioPlayer,
     default_font: Font,
-    window: Rc<RefCell<MyWindow>>,
+    window: Rc<RefCell<GameWindow>>,
 }
 
 impl GameState {
-    pub fn new<S, R>(state: S, window: Rc<RefCell<MyWindow>>) -> BreakoutResult<Self>
+    pub fn new<S>(state: S, window: Rc<RefCell<GameWindow>>) -> BreakoutResult<Self>
     where
         S: Scene + 'static,
-        R: Renderer2D + 'static,
     {
         let ui_context = UIContext::new(Rc::clone(&window))?;
         let mut engine = EngineContext::new(Rc::clone(&window));
@@ -168,7 +168,7 @@ impl GameState {
             &self.context,
             &self.asset_manager,
             renderer,
-            Rc::clone(&self.window),
+            self.window.borrow(),
             &self.default_font,
         )?;
 

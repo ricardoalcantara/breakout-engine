@@ -1,10 +1,14 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{
+    cell::{Ref, RefCell},
+    rc::Rc,
+};
 
 use crate::{
     core::{
         asset_manager::AssetManager,
         components::{Camera2D, Label, Sprite, Transform2D},
         game_context::GameContext,
+        game_window::GameWindow,
     },
     error::BreakoutResult,
     font::Font,
@@ -14,7 +18,6 @@ use crate::{
             TEXTURE_COORDS, TEXTURE_COORDS_FLIPPED_X, TEXTURE_COORDS_FLIPPED_X_Y,
             TEXTURE_COORDS_FLIPPED_Y,
         },
-        window::MyWindow,
     },
 };
 
@@ -22,7 +25,7 @@ pub fn system_render_sprite<R>(
     context: &GameContext,
     asset_manager: &AssetManager,
     renderer: &mut R,
-    window: Rc<RefCell<MyWindow>>,
+    window: Ref<GameWindow>,
     default_font: &Font,
 ) -> BreakoutResult
 where
@@ -36,12 +39,12 @@ where
         world.query::<(&Camera2D, &Transform2D)>().iter().next()
     {
         let window_size = {
-            let size = window.borrow().window().inner_size();
+            let size = window.window.window().inner_size();
             glam::uvec2(size.width, size.height)
         };
 
         Some(camera.get_view_matrix(
-            window.borrow().render_size.as_ref().unwrap_or(&window_size),
+            window.render_size.as_ref().unwrap_or(&window_size),
             &window_size,
             &transform.position,
         ))

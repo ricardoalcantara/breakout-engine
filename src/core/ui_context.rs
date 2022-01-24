@@ -1,26 +1,22 @@
 #![allow(dead_code, unused)]
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
+use super::{engine::EngineTimerView, game_window::GameWindow};
 use crate::{
     error::BreakoutResult,
     font::Font,
     gui::group::Group,
-    render::{
-        renderer::{RenderQuad, RenderText, Renderer2D},
-        window::MyWindow,
-    },
+    render::renderer::{RenderQuad, RenderText, Renderer2D},
 };
-
-use super::engine::EngineTimerView;
 
 pub struct UIContext {
     build: HashMap<String, Group>,
-    window: Rc<RefCell<MyWindow>>,
+    window: Rc<RefCell<GameWindow>>,
     default_font: Font,
 }
 
 impl UIContext {
-    pub(crate) fn new(window: Rc<RefCell<MyWindow>>) -> BreakoutResult<UIContext> {
+    pub(crate) fn new(window: Rc<RefCell<GameWindow>>) -> BreakoutResult<UIContext> {
         let build = HashMap::new();
         let default_font_byte = include_bytes!("../../assets/Roboto-Regular.ttf");
         let default_font = Font::new_from_memory(default_font_byte)?;

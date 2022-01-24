@@ -1,3 +1,4 @@
+use glam::{UVec2, Vec2};
 use glutin::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
@@ -17,7 +18,8 @@ pub enum GameLoopState<'a> {
 
 pub struct GameWindow {
     event_loop: EventLoop<()>,
-    window: ContextWrapper<PossiblyCurrent, glutin::window::Window>,
+    pub window: ContextWrapper<PossiblyCurrent, glutin::window::Window>,
+    pub render_size: Option<UVec2>,
 }
 
 impl GameWindow {
@@ -35,7 +37,11 @@ impl GameWindow {
 
         let window = unsafe { window.make_current() }.unwrap();
 
-        GameWindow { window, event_loop }
+        GameWindow {
+            window,
+            event_loop,
+            render_size: None,
+        }
     }
 
     pub fn run<F>(self, mut game_loop: F)
