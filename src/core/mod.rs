@@ -6,5 +6,7 @@ pub mod game_context;
 pub mod game_state;
 pub mod input;
 pub mod scene;
-mod systems;
 pub mod ui_context;
+
+mod game_window;
+mod systems;

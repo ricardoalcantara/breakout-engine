@@ -1,10 +1,12 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
+use super::game_state::GameState;
+use super::game_window::{GameLoopState, GameState, GameWindow};
 use super::scene::Scene;
+use crate::error::BreakoutResult;
 use crate::render::renderer::{RenderAPI, Renderer2D};
 use crate::render::window::MyWindow;
-use crate::{core::game_state::GameState, error::BreakoutResult};
 use hecs::Ref;
 use log::{error, info};
 use winit::{
@@ -222,18 +224,15 @@ impl EngineBuilder {
         let mut window_builder = winit::window::WindowBuilder::new();
         window_builder = WindowSettings::apply_builder(window_builder, self.window_settings);
 
-        let mut my_window = crate::render::build_window(window_builder, RenderAPI::OpenGL);
-        RenderSettings::apply_window(&mut my_window, self.render_settings);
+        let game_window = GameWindow::build(window_builder);
 
-        let engine = Engine {
-            window: Rc::new(RefCell::new(my_window)),
-        };
+        let engine = Engine { game_window };
         Ok(engine)
     }
 }
 
 pub struct Engine {
-    window: Rc<RefCell<MyWindow>>,
+    game_window: GameWindow,
 }
 
 impl Engine {
@@ -241,76 +240,95 @@ impl Engine {
     where
         S: Scene + 'static,
     {
-        let render = self.window.borrow().create_renderer_2d()?;
-
-        let event_loop = self.window.borrow_mut().event_loop.take().unwrap();
-        let mut game_state = GameState::new(state, render, Rc::clone(&self.window))?;
-
         let mut engine_timer = EngineTimer::new();
+        let game_state = GameState::new();
 
-        event_loop.run(move |event, _, control_flow| {
-            match event {
-                Event::WindowEvent { ref event, .. } => {
-                    // if window_id == self.window.window().id() =>
-                    match event {
-                        WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-                        WindowEvent::Resized(physical_size) => {
-                            game_state.resize(*physical_size);
-                        }
-                        WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                            // new_inner_size is &&mut so w have to dereference it twice
-                            game_state.resize(**new_inner_size);
-                        }
-                        _ => match game_state.input(event) {
-                            Ok(handled) => {
-                                if !handled {
-                                    if let WindowEvent::KeyboardInput {
-                                        input:
-                                            KeyboardInput {
-                                                state: ElementState::Pressed,
-                                                virtual_keycode: Some(VirtualKeyCode::Escape),
-                                                ..
-                                            },
-                                        ..
-                                    } = event
-                                    {
-                                        *control_flow = ControlFlow::Exit
-                                    }
-                                }
-                            }
-                            Err(e) => error!("Input Broken: {:?}", e),
-                        },
-                    }
-                }
-                Event::MainEventsCleared => {
+        self.game_window.run(move |game_state| {
+            match game_state {
+                GameLoopState::Input(event) => println!("Input {:#?}", event),
+                GameLoopState::Update => {
                     let delta = engine_timer.update();
                     if let Ok(updated) = game_state.update(delta) {
-                        if !updated {
-                            *control_flow = ControlFlow::Exit
-                        }
+                        // if !updated {
+                        //     *control_flow = ControlFlow::Exit
+                        // }
                     }
-                    let settings = game_state.take_settings();
-                    WindowSettings::apply_window(&mut self.window.borrow_mut(), settings);
+                }
+                GameLoopState::Render(renderer) => {
+                    // let settings = game_state.take_settings();
+                    // WindowSettings::apply_window(&mut self.window.borrow_mut(), settings);
 
-                    match game_state.render(engine_timer.view_time()) {
+                    match game_state.render(renderer, engine_timer.view_time()) {
                         Ok(_) => {}
                         Err(e) => error!("Render Broken {:?}", e),
                     }
                 }
-                Event::RedrawRequested(_) => {
-                    // windows_id is not required for the engine
-                    self.window.borrow().window().request_redraw();
-                }
-                Event::RedrawEventsCleared => {
-                    // RedrawRequested will only trigger once, unless we manually
-                    // request it.
-
-                    // https://github.com/rust-windowing/winit/blob/master/examples/control_flow.rs
-                    engine_timer.wait();
-                    *control_flow = ControlFlow::Poll;
-                }
-                _ => {}
+                GameLoopState::Wait => engine_timer.wait(),
             }
+            // match event {
+            //     Event::WindowEvent { ref event, .. } => {
+            //         // if window_id == self.window.window().id() =>
+            //         match event {
+            //             WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+            //             WindowEvent::Resized(physical_size) => {
+            //                 game_state.resize(*physical_size);
+            //             }
+            //             WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+            //                 // new_inner_size is &&mut so w have to dereference it twice
+            //                 game_state.resize(**new_inner_size);
+            //             }
+            //             _ => match game_state.input(event) {
+            //                 Ok(handled) => {
+            //                     if !handled {
+            //                         if let WindowEvent::KeyboardInput {
+            //                             input:
+            //                                 KeyboardInput {
+            //                                     state: ElementState::Pressed,
+            //                                     virtual_keycode: Some(VirtualKeyCode::Escape),
+            //                                     ..
+            //                                 },
+            //                             ..
+            //                         } = event
+            //                         {
+            //                             *control_flow = ControlFlow::Exit
+            //                         }
+            //                     }
+            //                 }
+            //                 Err(e) => error!("Input Broken: {:?}", e),
+            //             },
+            //         }
+            //     }
+            //     Event::MainEventsCleared => {
+            //         let delta = engine_timer.update();
+            //         if let Ok(updated) = game_state.update(delta) {
+            //             if !updated {
+            //                 *control_flow = ControlFlow::Exit
+            //             }
+            //         }
+            //         let settings = game_state.take_settings();
+            //         WindowSettings::apply_window(&mut self.window.borrow_mut(), settings);
+
+            //         match game_state.render(engine_timer.view_time()) {
+            //             Ok(_) => {}
+            //             Err(e) => error!("Render Broken {:?}", e),
+            //         }
+            //     }
+            //     Event::RedrawRequested(_) => {
+            //         // windows_id is not required for the engine
+            //         self.window.borrow().window().request_redraw();
+            //     }
+            //     Event::RedrawEventsCleared => {
+            //         // RedrawRequested will only trigger once, unless we manually
+            //         // request it.
+
+            //         // https://github.com/rust-windowing/winit/blob/master/examples/control_flow.rs
+            //         engine_timer.wait();
+            //         *control_flow = ControlFlow::Poll;
+            //     }
+            //     _ => {}
+            // }
         });
+
+        Ok(())
     }
 }

@@ -1,4 +1,4 @@
-use std::iter;
+use std::{cell::RefCell, iter, rc::Rc};
 
 use winit::{
     event::*,
@@ -6,7 +6,7 @@ use winit::{
     window::{Window, WindowBuilder},
 };
 
-struct State {
+struct Renderer {
     surface: wgpu::Surface,
     device: wgpu::Device,
     queue: wgpu::Queue,
@@ -14,31 +14,28 @@ struct State {
     size: winit::dpi::PhysicalSize<u32>,
 }
 
-impl State {
+impl Renderer {
     async fn new(window: &Window) -> Self {
         let size = window.inner_size();
 
-        // The instance is a handle to our GPU
-        // BackendBit::PRIMARY => Vulkan + Metal + DX12 + Browser WebGPU
-        let instance = wgpu::Instance::new(wgpu::Backends::all());
+        let backend = wgpu::util::backend_bits_from_env().unwrap_or_else(wgpu::Backends::all);
+        let power_preference = wgpu::util::power_preference_from_env()
+            .unwrap_or(wgpu::PowerPreference::HighPerformance);
+        let force_fallback_adapter = false;
+
+        let instance = wgpu::Instance::new(backend);
         let surface = unsafe { instance.create_surface(window) };
-
-        for adapter in instance.enumerate_adapters(wgpu::Backends::all()) {
-            println!(
-                "{:?}: {:}",
-                adapter,
-                surface.get_preferred_format(&adapter).is_some()
-            );
-        }
-
         let adapter = instance
             .request_adapter(&wgpu::RequestAdapterOptions {
-                power_preference: wgpu::PowerPreference::default(),
+                power_preference,
                 compatible_surface: Some(&surface),
-                force_fallback_adapter: true,
+                force_fallback_adapter,
             })
             .await
             .unwrap();
+
+        let adapter_info = adapter.get_info();
+        println!("Using {} ({:?})", adapter_info.name, adapter_info.backend);
 
         let (device, queue) = adapter
             .request_device(
@@ -52,8 +49,6 @@ impl State {
             )
             .await
             .unwrap();
-
-        println!("{:?}", &device);
 
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -128,62 +123,100 @@ impl State {
     }
 }
 
-fn main() {
-    env_logger::init();
-    let event_loop = EventLoop::new();
-    let window = WindowBuilder::new().build(&event_loop).unwrap();
+#[derive(Debug)]
+pub enum GameLoopState<'a> {
+    Input(&'a winit::event::WindowEvent<'a>),
+    Update,
+    Render,
+}
 
-    // State::new uses async code, so we're going to wait for it to finish
-    let mut state: State = pollster::block_on(State::new(&window));
+pub struct GameWindow {
+    event_loop: EventLoop<()>,
+    window: Window,
+}
 
-    event_loop.run(move |event, _, control_flow| {
-        match event {
-            Event::WindowEvent {
-                ref event,
-                window_id,
-            } if window_id == window.id() => {
-                if !state.input(event) {
-                    // UPDATED!
-                    match event {
-                        WindowEvent::CloseRequested
-                        | WindowEvent::KeyboardInput {
-                            input:
-                                KeyboardInput {
-                                    state: ElementState::Pressed,
-                                    virtual_keycode: Some(VirtualKeyCode::Escape),
-                                    ..
-                                },
-                            ..
-                        } => *control_flow = ControlFlow::Exit,
-                        WindowEvent::Resized(physical_size) => {
-                            state.resize(*physical_size);
+impl GameWindow {
+    pub fn new() -> GameWindow {
+        let event_loop = EventLoop::new();
+        let window = WindowBuilder::new().build(&event_loop).unwrap();
+        GameWindow { event_loop, window }
+    }
+
+    pub fn run<F>(self, mut game_loop: F)
+    where
+        F: FnMut(GameLoopState) + 'static,
+    {
+        let event_loop = self.event_loop;
+        let window = self.window;
+
+        let renderer = Rc::new(RefCell::new(pollster::block_on(Renderer::new(&window))));
+
+        event_loop.run(move |event, _, control_flow| {
+            match event {
+                Event::WindowEvent {
+                    ref event,
+                    window_id,
+                } if window_id == window.id() => {
+                    game_loop(GameLoopState::Input(event));
+
+                    if true {
+                        // UPDATED!
+                        match event {
+                            WindowEvent::CloseRequested
+                            | WindowEvent::KeyboardInput {
+                                input:
+                                    KeyboardInput {
+                                        state: ElementState::Pressed,
+                                        virtual_keycode: Some(VirtualKeyCode::Escape),
+                                        ..
+                                    },
+                                ..
+                            } => *control_flow = ControlFlow::Exit,
+                            WindowEvent::Resized(physical_size) => {
+                                renderer.borrow_mut().resize(*physical_size);
+                            }
+                            WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
+                                // new_inner_size is &&mut so w have to dereference it twice
+                                renderer.borrow_mut().resize(**new_inner_size);
+                            }
+                            _ => {}
                         }
-                        WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                            // new_inner_size is &&mut so w have to dereference it twice
-                            state.resize(**new_inner_size);
-                        }
-                        _ => {}
                     }
                 }
-            }
-            Event::RedrawRequested(window_id) if window_id == window.id() => {
-                state.update();
-                match state.render() {
-                    Ok(_) => {}
-                    // Reconfigure the surface if lost
-                    Err(wgpu::SurfaceError::Lost) => state.resize(state.size),
-                    // The system is out of memory, we should probably quit
-                    Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
-                    // All other errors (Outdated, Timeout) should be resolved by the next frame
-                    Err(e) => eprintln!("{:?}", e),
+                Event::RedrawRequested(window_id) if window_id == window.id() => {
+                    game_loop(GameLoopState::Update);
+                    game_loop(GameLoopState::Render);
+                    renderer.borrow_mut().update();
+                    match renderer.borrow_mut().render() {
+                        Ok(_) => {}
+                        // Reconfigure the surface if lost
+                        Err(wgpu::SurfaceError::Lost) => {
+                            renderer.borrow_mut().resize(renderer.borrow().size)
+                        }
+                        // The system is out of memory, we should probably quit
+                        Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
+                        // All other errors (Outdated, Timeout) should be resolved by the next frame
+                        Err(e) => eprintln!("{:?}", e),
+                    }
                 }
+                Event::RedrawEventsCleared => {
+                    // RedrawRequested will only trigger once, unless we manually
+                    // request it.
+                    window.request_redraw();
+                }
+                _ => {}
             }
-            Event::RedrawEventsCleared => {
-                // RedrawRequested will only trigger once, unless we manually
-                // request it.
-                window.request_redraw();
-            }
-            _ => {}
-        }
-    });
+        });
+    }
+}
+
+fn main() {
+    env_logger::init();
+    let game_window = GameWindow::new();
+
+    game_window.run(move |game_state| match game_state {
+        GameLoopState::Input(event) => println!("Input {:#?}", event),
+        GameLoopState::Update => println!("Update"),
+        GameLoopState::Render => println!("Render"),
+    })
 }

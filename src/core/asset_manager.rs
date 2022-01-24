@@ -46,33 +46,29 @@ pub struct AssetManager {
     textures: HashMap<TextureId, Texture>,
     audios: HashMap<AudioId, Audio>,
     fonts: HashMap<FontId, Font>,
-    renderer: Rc<RefCell<dyn Renderer2D>>,
 }
 
 impl AssetManager {
-    pub(crate) fn new<R>(renderer: Rc<RefCell<R>>) -> Self
-    where
-        R: Renderer2D + 'static,
-    {
+    pub(crate) fn new() -> Self {
         Self {
             auto_increment_id: AutoIncrementId::new(),
             textures: HashMap::new(),
             audios: HashMap::new(),
             fonts: HashMap::new(),
-            renderer,
         }
     }
 }
 
 impl AssetManager {
     pub fn load_texture(&mut self, path: &str) -> BreakoutResult<TextureId> {
-        let image = image::open(path).map_err(BreakoutError::ImageError)?;
-        let texture = self.renderer.borrow().generate_texture(image)?;
+        todo!();
+        // let image = image::open(path).map_err(BreakoutError::ImageError)?;
+        // let texture = self.renderer.borrow().generate_texture(image)?;
 
-        let id = TextureId(self.auto_increment_id.get_id::<TextureId>());
-        self.textures.insert(id.clone(), texture);
+        // let id = TextureId(self.auto_increment_id.get_id::<TextureId>());
+        // self.textures.insert(id.clone(), texture);
 
-        Ok(id)
+        // Ok(id)
     }
 
     pub fn get_texture(&self, id: &TextureId) -> &Texture {

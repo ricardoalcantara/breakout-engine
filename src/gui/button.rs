@@ -29,8 +29,11 @@ impl Button {
         }
     }
 
-    pub(crate) fn draw(&self, renderer: &RefCell<dyn Renderer2D>, rect: Rect, font: &Font) {
-        renderer.borrow_mut().draw_quad(RenderQuad {
+    pub(crate) fn draw<R>(&self, renderer: &mut R, rect: Rect, font: &Font)
+    where
+        R: Renderer2D,
+    {
+        renderer.draw_quad(RenderQuad {
             size: rect.size().into(),
             position: rect.position().into(),
             scale: glam::Vec2::ONE,

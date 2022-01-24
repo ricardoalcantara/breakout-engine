@@ -26,7 +26,10 @@ impl Label {
         }
     }
 
-    pub(crate) fn draw(&self, renderer: &RefCell<dyn Renderer2D>, rect: Rect, font: &Font) {
+    pub(crate) fn draw<R>(&self, renderer: &mut R, rect: Rect, font: &Font)
+    where
+        R: Renderer2D,
+    {
         let size = font.measure(&self.text, 25) / 2.0;
         let rect_size: glam::Vec2 = rect.size().into();
         let rect_size = rect_size / 2.0;
@@ -36,7 +39,7 @@ impl Label {
             Orientation::Left => position,
             Orientation::Right => todo!(),
         };
-        renderer.borrow_mut().draw_text(RenderText {
+        renderer.draw_text(RenderText {
             text: &self.text,
             font,
             size: 25,

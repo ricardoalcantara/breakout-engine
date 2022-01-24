@@ -18,16 +18,18 @@ use crate::{
     },
 };
 
-pub fn system_render_sprite(
+pub fn system_render_sprite<R>(
     context: &GameContext,
     asset_manager: &AssetManager,
-    renderer: Rc<RefCell<dyn Renderer2D>>,
+    renderer: &mut R,
     window: Rc<RefCell<MyWindow>>,
     default_font: &Font,
-) -> BreakoutResult {
+) -> BreakoutResult
+where
+    R: Renderer2D,
+{
     let world = &context.world;
 
-    let mut renderer = renderer.borrow_mut();
     renderer.clear_color(context.clear_color);
 
     let camera_projection = if let Some((_id, (camera, transform))) =

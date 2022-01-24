@@ -56,16 +56,18 @@ impl Panel {
         glam::vec2(width as f32, height as f32)
     }
 
-    pub(crate) fn draw(
+    pub(crate) fn draw<R>(
         &self,
-        renderer: &RefCell<dyn Renderer2D>,
+        renderer: &mut R,
         spacing: i32,
         elements_count: i32,
         // font: &Font,
-    ) {
+    ) where
+        R: Renderer2D,
+    {
         let position = self.position();
         let size = self.size(spacing, elements_count);
-        renderer.borrow_mut().draw_quad(RenderQuad {
+        renderer.draw_quad(RenderQuad {
             size,
             position,
             scale: glam::Vec2::ONE,

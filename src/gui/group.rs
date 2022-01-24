@@ -72,12 +72,10 @@ impl Group {
         false
     }
 
-    pub(crate) fn render(
-        &self,
-        renderer: &RefCell<dyn Renderer2D>,
-        view_time: &EngineTimerView,
-        font: &Font,
-    ) {
+    pub(crate) fn render<R>(&self, renderer: &mut R, view_time: &EngineTimerView, font: &Font)
+    where
+        R: Renderer2D,
+    {
         let spacing = 30;
         let padding = 10;
         let elements_count = self.elements.len() as i32;

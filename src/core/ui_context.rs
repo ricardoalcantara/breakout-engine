@@ -36,27 +36,22 @@ impl UIContext {
         false
     }
 
-    pub(crate) fn render(
-        &mut self,
-        renderer: &RefCell<dyn Renderer2D>,
-        view_time: &EngineTimerView,
-    ) {
+    pub(crate) fn render<R>(&mut self, renderer: &mut R, view_time: &EngineTimerView)
+    where
+        R: Renderer2D,
+    {
         {
-            let mut r = renderer.borrow_mut();
             self.default_font
-                .build_with_size(25, |image| Ok(r.generate_texture(image)?))
+                .build_with_size(25, |image| Ok(renderer.generate_texture(image)?))
                 .unwrap();
-            r.begin_draw(None);
+            renderer.begin_draw(None);
         }
 
         for (_, build) in &self.build {
             build.render(renderer, view_time, &self.default_font);
         }
 
-        {
-            let mut r = renderer.borrow_mut();
-            r.end_draw();
-        }
+        renderer.end_draw();
 
         self.build.clear();
     }
