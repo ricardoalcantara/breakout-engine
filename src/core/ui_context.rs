@@ -15,7 +15,7 @@ use crate::{
     gui::group::Group,
     render::{
         opengl::renderer2d::OpenGLRenderer2D,
-        renderer::{RenderQuad, RenderText, Renderer2D},
+        renderer::{RenderQuad, RenderText},
     },
 };
 

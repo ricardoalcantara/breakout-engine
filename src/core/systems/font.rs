@@ -1,16 +1,10 @@
-use std::{
-    cell::{RefCell, RefMut},
-    rc::Rc,
-};
+use std::cell::RefMut;
 
 use crate::{
-    core::{
-        asset_manager::AssetManager, components::Label, game_context::GameContext,
-        game_window::ReadWriteRc,
-    },
+    core::{asset_manager::AssetManager, components::Label, game_context::GameContext},
     error::BreakoutResult,
     font::Font,
-    render::{opengl::renderer2d::OpenGLRenderer2D, renderer::Renderer2D},
+    render::opengl::renderer2d::OpenGLRenderer2D,
 };
 
 pub fn system_render_font_texture(

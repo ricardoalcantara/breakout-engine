@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{core::asset_manager::TextureId, shapes::rectangle::Rect};
+use crate::{core::asset_manager::TextureId};
 
 use super::SubTexture;
 

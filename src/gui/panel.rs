@@ -1,9 +1,6 @@
-use std::cell::{RefCell, RefMut};
+use std::cell::RefMut;
 
-use crate::render::{
-    opengl::renderer2d::OpenGLRenderer2D,
-    renderer::{RenderQuad, Renderer2D},
-};
+use crate::render::{opengl::renderer2d::OpenGLRenderer2D, renderer::RenderQuad};
 
 use super::Constraints;
 

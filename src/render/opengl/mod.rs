@@ -8,24 +8,6 @@ pub mod texture;
 mod render2d_pipeline;
 mod shader;
 
-pub fn build_window(
-    window_builder: winit::window::WindowBuilder,
-) -> (
-    ContextWrapper<PossiblyCurrent, glutin::window::Window>,
-    winit::event_loop::EventLoop<()>,
-) {
-    let event_loop = glutin::event_loop::EventLoop::new();
-    let window = glutin::ContextBuilder::new()
-        .with_gl(GlRequest::Specific(Api::OpenGl, (3, 3)))
-        .build_windowed(window_builder, &event_loop)
-        .unwrap();
-
-    let window: ContextWrapper<PossiblyCurrent, glutin::window::Window> =
-        unsafe { window.make_current() }.unwrap();
-
-    (window, event_loop)
-}
-
 #[inline]
 pub(crate) fn check_gl_ok() -> BreakoutResult {
     let err = unsafe { gl::GetError() };

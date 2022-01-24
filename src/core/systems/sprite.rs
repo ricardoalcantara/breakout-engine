@@ -1,20 +1,17 @@
-use std::{
-    cell::{Ref, RefCell, RefMut},
-    rc::Rc,
-};
+use std::cell::{Ref, RefMut};
 
 use crate::{
     core::{
         asset_manager::AssetManager,
         components::{Camera2D, Label, Sprite, Transform2D},
         game_context::GameContext,
-        game_window::{GameWindow, GlWindow, ReadWriteRc},
+        game_window::GlWindow,
     },
     error::BreakoutResult,
     font::Font,
     render::{
         opengl::renderer2d::OpenGLRenderer2D,
-        renderer::{RenderText, RenderVertices, Renderer2D},
+        renderer::{RenderText, RenderVertices},
         vertex::{
             TEXTURE_COORDS, TEXTURE_COORDS_FLIPPED_X, TEXTURE_COORDS_FLIPPED_X_Y,
             TEXTURE_COORDS_FLIPPED_Y,

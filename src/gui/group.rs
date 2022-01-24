@@ -1,11 +1,10 @@
-use std::cell::{RefCell, RefMut};
+use std::cell::{RefMut};
 
 use crate::{
     core::engine::EngineTimerView,
     font::Font,
     render::{
         opengl::renderer2d::OpenGLRenderer2D,
-        renderer::{RenderQuad, RenderText, Renderer2D},
     },
     shapes::rectangle::Rect,
 };

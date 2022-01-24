@@ -1,13 +1,10 @@
 use super::label::Label;
 use crate::{
     font::Font,
-    render::{
-        opengl::renderer2d::OpenGLRenderer2D,
-        renderer::{RenderQuad, Renderer2D},
-    },
+    render::{opengl::renderer2d::OpenGLRenderer2D, renderer::RenderQuad},
     shapes::rectangle::Rect,
 };
-use std::cell::{RefCell, RefMut};
+use std::cell::RefMut;
 
 pub(crate) enum ButtonType {
     Text(Label),

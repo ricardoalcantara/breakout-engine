@@ -1,14 +1,10 @@
 use super::{
     asset_manager::AudioId,
     components::{Camera2D, Transform2D},
-    game_window::{GameWindow, GlWindow, ReadOnlyRc},
+    game_window::{GlWindow, ReadOnlyRc},
 };
-use crate::{
-    render::{opengl::renderer2d::OpenGLRenderer2D, renderer::Renderer2D},
-    shapes::rectangle::Rect,
-};
+use crate::{render::opengl::renderer2d::OpenGLRenderer2D, shapes::rectangle::Rect};
 use hecs::World;
-use std::{cell::RefCell, rc::Rc};
 
 pub struct GameContext {
     pub(crate) clear_color: glam::Vec3,

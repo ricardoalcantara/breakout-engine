@@ -4,9 +4,9 @@ use crate::{
     audio::{Audio, AudioSettings},
     error::{BreakoutError, BreakoutResult},
     font::Font,
-    render::{opengl::renderer2d::OpenGLRenderer2D, renderer::Renderer2D, texture::Texture},
+    render::{opengl::renderer2d::OpenGLRenderer2D, texture::Texture},
 };
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 use super::game_window::ReadOnlyRc;
 

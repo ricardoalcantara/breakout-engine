@@ -3,15 +3,14 @@ use std::{
     rc::Rc,
 };
 
-use crate::render::{opengl::renderer2d::OpenGLRenderer2D, renderer::Renderer2D};
-use glam::{UVec2, Vec2};
+use crate::render::opengl::renderer2d::OpenGLRenderer2D;
+use glam::UVec2;
 use glutin::{
-    event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
+    event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
     Api, ContextWrapper, GlRequest, PossiblyCurrent,
 };
-use log::error;
 
 pub struct ReadOnlyRc<T>(Rc<RefCell<T>>);
 pub struct ReadWriteRc<T>(Rc<RefCell<T>>);

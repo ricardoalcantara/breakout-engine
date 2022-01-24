@@ -54,7 +54,7 @@ impl Transform2D {
         position: glam::Vec2,
         rotate: f32,
         scale: glam::Vec2,
-        pixel_snap: bool,
+        _pixel_snap: bool,
     ) -> Transform2D {
         Transform2D {
             position,

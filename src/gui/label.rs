@@ -1,12 +1,9 @@
 use crate::{
     font::Font,
-    render::{
-        opengl::renderer2d::OpenGLRenderer2D,
-        renderer::{RenderText, Renderer2D},
-    },
+    render::{opengl::renderer2d::OpenGLRenderer2D, renderer::RenderText},
     shapes::rectangle::Rect,
 };
-use std::cell::{RefCell, RefMut};
+use std::cell::RefMut;
 
 pub(crate) enum Orientation {
     Center,

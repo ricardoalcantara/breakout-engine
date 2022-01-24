@@ -2,7 +2,7 @@ use crate::{
     error::BreakoutResult,
     render::{
         opengl::render2d_pipeline::Render2dPipeline,
-        renderer::{RenderQuad, RenderText, RenderTexture, RenderVertices, Renderer2D},
+        renderer::{RenderQuad, RenderText, RenderTexture, RenderVertices},
         texture::Texture,
     },
 };
@@ -47,19 +47,17 @@ impl OpenGLRenderer2D {
             render_size: None,
         })
     }
-}
 
-impl Renderer2D for OpenGLRenderer2D {
-    fn set_render_size(&mut self, render_size: glam::UVec2) {
+    pub fn set_render_size(&mut self, render_size: glam::UVec2) {
         self.render_size = Some(render_size);
         self.render2d_pipeline.resize(render_size.x, render_size.y);
     }
 
-    fn render_size(&self) -> Option<glam::UVec2> {
+    pub fn render_size(&self) -> Option<glam::UVec2> {
         self.render_size
     }
 
-    fn resize(&mut self, _new_size: winit::dpi::PhysicalSize<u32>) {
+    pub fn resize(&mut self, _new_size: winit::dpi::PhysicalSize<u32>) {
         unsafe {
             gl::Viewport(0, 0, _new_size.width as _, _new_size.height as _);
             if self.render_size.is_none() {
@@ -69,18 +67,18 @@ impl Renderer2D for OpenGLRenderer2D {
         }
     }
 
-    fn generate_texture(&self, img: image::DynamicImage) -> BreakoutResult<Texture> {
+    pub fn generate_texture(&self, img: image::DynamicImage) -> BreakoutResult<Texture> {
         OpenGLTexture::generate_texture(img)
     }
 
-    fn clear_color(&self, color: glam::Vec3) {
+    pub fn clear_color(&self, color: glam::Vec3) {
         unsafe {
             gl::ClearColor(color.x, color.y, color.z, 1.0);
             gl::Clear(gl::COLOR_BUFFER_BIT);
         }
     }
 
-    fn begin_draw(&mut self, camera: Option<glam::Mat4>) {
+    pub fn begin_draw(&mut self, camera: Option<glam::Mat4>) {
         if let Some(camera) = camera {
             self.render2d_pipeline.set_camera(camera);
         } else {
@@ -89,20 +87,20 @@ impl Renderer2D for OpenGLRenderer2D {
         self.render2d_pipeline.begin_batch();
     }
 
-    fn end_draw(&mut self) {
+    pub fn end_draw(&mut self) {
         self.render2d_pipeline.end_batch();
         self.render2d_pipeline.flush();
     }
 
-    fn draw_quad(&mut self, quad: RenderQuad) {
+    pub fn draw_quad(&mut self, quad: RenderQuad) {
         self.render2d_pipeline.draw_quad(quad);
     }
 
-    fn draw_texture(&mut self, texture: RenderTexture) {
+    pub fn draw_texture(&mut self, texture: RenderTexture) {
         self.render2d_pipeline.draw_texture(texture);
     }
 
-    fn draw_text(&mut self, _text: RenderText) {
+    pub fn draw_text(&mut self, _text: RenderText) {
         _text.font.draw_vertices(
             _text.text,
             _text.position,
@@ -118,7 +116,7 @@ impl Renderer2D for OpenGLRenderer2D {
         )
     }
 
-    fn draw_vertices(&mut self, _vertices: RenderVertices) {
+    pub fn draw_vertices(&mut self, _vertices: RenderVertices) {
         self.render2d_pipeline.draw_vertices(
             _vertices.vertices,
             _vertices.color,

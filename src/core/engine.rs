@@ -1,17 +1,12 @@
-use std::cell::RefCell;
-use std::rc::Rc;
-
 use super::game_state::GameState;
 use super::game_window::{GameLoopState, GameWindow};
 use super::scene::Scene;
 use crate::error::BreakoutResult;
-use crate::render::renderer::{RenderAPI, Renderer2D};
-use crate::render::window::MyWindow;
-use hecs::Ref;
+
 use log::{error, info};
 use winit::{
     dpi::PhysicalSize,
-    event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
+    event::{ElementState, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::ControlFlow,
 };
 

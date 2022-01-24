@@ -1,9 +1,6 @@
-use glam::UVec2;
-
 use super::{
-    components::{Camera2D, Label},
-    engine::{Engine, EngineTimerView, WindowSettings},
-    game_window::{GameWindow, GlWindow, ReadOnlyRc, ReadWriteRc},
+    engine::{EngineTimerView, WindowSettings},
+    game_window::{GlWindow, ReadOnlyRc, ReadWriteRc},
     input::Input,
     scene::{InputHandled, Scene, Transition},
     systems::{
@@ -14,23 +11,11 @@ use super::{
 };
 use crate::{
     audio::AudioPlayer,
-    core::{
-        asset_manager::AssetManager,
-        components::{Sprite, Transform2D},
-        engine_context::EngineContext,
-        game_context::GameContext,
-    },
+    core::{asset_manager::AssetManager, engine_context::EngineContext, game_context::GameContext},
     error::BreakoutResult,
     font::Font,
-    render::{
-        opengl::renderer2d::OpenGLRenderer2D,
-        renderer::{RenderText, RenderVertices, Renderer2D},
-        vertex::TEXTURE_COORDS,
-        window::MyWindow,
-    },
+    render::opengl::renderer2d::OpenGLRenderer2D,
 };
-
-use std::{cell::RefCell, rc::Rc};
 
 pub struct GameState {
     scenes: Vec<Box<dyn Scene>>,
@@ -42,7 +27,6 @@ pub struct GameState {
     music_player: AudioPlayer,
     default_font: Font,
     window: ReadOnlyRc<GlWindow>,
-    renderer: ReadOnlyRc<OpenGLRenderer2D>,
 }
 
 impl GameState {
@@ -57,7 +41,7 @@ impl GameState {
         let ui_context = UIContext::new(window.clone())?;
         let mut engine = EngineContext::new(window.clone());
         let mut context = GameContext::new(window.clone(), renderer.clone());
-        let mut asset_manager = AssetManager::new(renderer.clone());
+        let mut asset_manager = AssetManager::new(renderer);
 
         let mut state = state;
         state
@@ -79,7 +63,6 @@ impl GameState {
             music_player,
             default_font,
             window,
-            renderer,
         })
     }
 
