@@ -1,9 +1,12 @@
 use crate::{
     font::Font,
-    render::renderer::{RenderText, Renderer2D},
+    render::{
+        opengl::renderer2d::OpenGLRenderer2D,
+        renderer::{RenderText, Renderer2D},
+    },
     shapes::rectangle::Rect,
 };
-use std::cell::RefCell;
+use std::cell::{RefCell, RefMut};
 
 pub(crate) enum Orientation {
     Center,
@@ -26,10 +29,7 @@ impl Label {
         }
     }
 
-    pub(crate) fn draw<R>(&self, renderer: &mut R, rect: Rect, font: &Font)
-    where
-        R: Renderer2D,
-    {
+    pub(crate) fn draw(&self, renderer: &mut RefMut<OpenGLRenderer2D>, rect: Rect, font: &Font) {
         let size = font.measure(&self.text, 25) / 2.0;
         let rect_size: glam::Vec2 = rect.size().into();
         let rect_size = rect_size / 2.0;

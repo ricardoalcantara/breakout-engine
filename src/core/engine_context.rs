@@ -1,18 +1,18 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{borrow::BorrowMut, cell::RefCell, rc::Rc};
 
 use super::{
     engine::{RenderSettings, WindowSettings},
-    game_window::GameWindow,
+    game_window::{GameWindow, GlWindow, ReadOnlyRc},
 };
 
 pub struct EngineContext {
     engine_settings: Vec<WindowSettings>,
     render_settings: Vec<RenderSettings>,
-    window: Rc<RefCell<GameWindow>>,
+    window: ReadOnlyRc<GlWindow>,
 }
 
 impl EngineContext {
-    pub fn new(window: Rc<RefCell<GameWindow>>) -> EngineContext {
+    pub fn new(window: ReadOnlyRc<GlWindow>) -> EngineContext {
         EngineContext {
             engine_settings: Vec::new(),
             render_settings: Vec::new(),
@@ -33,11 +33,11 @@ impl EngineContext {
     }
 
     pub fn fullscreen(&self) -> bool {
-        self.window.borrow().window.window().fullscreen().is_some()
+        self.window.borrow().window().fullscreen().is_some()
     }
 
     pub fn window_size(&self) -> glam::UVec2 {
-        let size = self.window.borrow().window.window().inner_size();
+        let size = self.window.borrow().window().inner_size();
         glam::uvec2(size.width, size.height)
     }
 }

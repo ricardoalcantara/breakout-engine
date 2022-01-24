@@ -19,7 +19,7 @@ impl Texture {
     }
 }
 
-#[derive(Clone, Copy)]
+#[derive(Debug, Clone, Copy)]
 pub struct SubTexture {
     pub region: Rect,
     pub texture_size: glam::Vec2,

@@ -55,6 +55,10 @@ impl Renderer2D for OpenGLRenderer2D {
         self.render2d_pipeline.resize(render_size.x, render_size.y);
     }
 
+    fn render_size(&self) -> Option<glam::UVec2> {
+        self.render_size
+    }
+
     fn resize(&mut self, _new_size: winit::dpi::PhysicalSize<u32>) {
         unsafe {
             gl::Viewport(0, 0, _new_size.width as _, _new_size.height as _);

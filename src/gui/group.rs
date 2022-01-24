@@ -1,9 +1,12 @@
-use std::cell::RefCell;
+use std::cell::{RefCell, RefMut};
 
 use crate::{
     core::engine::EngineTimerView,
     font::Font,
-    render::renderer::{RenderQuad, RenderText, Renderer2D},
+    render::{
+        opengl::renderer2d::OpenGLRenderer2D,
+        renderer::{RenderQuad, RenderText, Renderer2D},
+    },
     shapes::rectangle::Rect,
 };
 
@@ -72,10 +75,12 @@ impl Group {
         false
     }
 
-    pub(crate) fn render<R>(&self, renderer: &mut R, view_time: &EngineTimerView, font: &Font)
-    where
-        R: Renderer2D,
-    {
+    pub(crate) fn render(
+        &self,
+        renderer: &mut RefMut<OpenGLRenderer2D>,
+        view_time: &EngineTimerView,
+        font: &Font,
+    ) {
         let spacing = 30;
         let padding = 10;
         let elements_count = self.elements.len() as i32;

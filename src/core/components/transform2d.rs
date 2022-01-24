@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct Transform2D {
     pub(crate) position: glam::Vec2,
     pub(crate) rotate: f32,

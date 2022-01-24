@@ -1,9 +1,12 @@
 use super::{
     asset_manager::AudioId,
     components::{Camera2D, Transform2D},
-    game_window::GameWindow,
+    game_window::{GameWindow, GlWindow, ReadOnlyRc},
 };
-use crate::shapes::rectangle::Rect;
+use crate::{
+    render::{opengl::renderer2d::OpenGLRenderer2D, renderer::Renderer2D},
+    shapes::rectangle::Rect,
+};
 use hecs::World;
 use std::{cell::RefCell, rc::Rc};
 
@@ -11,16 +14,21 @@ pub struct GameContext {
     pub(crate) clear_color: glam::Vec3,
     pub(crate) world: World,
     audio_queue: Vec<AudioId>,
-    window: Rc<RefCell<GameWindow>>,
+    window: ReadOnlyRc<GlWindow>,
+    renderer: ReadOnlyRc<OpenGLRenderer2D>,
 }
 
 impl GameContext {
-    pub(crate) fn new(window: Rc<RefCell<GameWindow>>) -> Self {
+    pub(crate) fn new(
+        window: ReadOnlyRc<GlWindow>,
+        renderer: ReadOnlyRc<OpenGLRenderer2D>,
+    ) -> Self {
         Self {
             world: World::new(),
             clear_color: glam::Vec3::ZERO,
             audio_queue: Vec::new(),
             window,
+            renderer,
         }
     }
 
@@ -38,15 +46,15 @@ impl GameContext {
             // TODO: It's wrong
 
             let window_size = {
-                let size = self.window.borrow().window.window().inner_size();
+                let size = self.window.borrow().window().inner_size();
                 glam::uvec2(size.width, size.height)
             };
 
             Some(
                 camera.get_view_rect(
-                    self.window
+                    self.renderer
                         .borrow()
-                        .render_size
+                        .render_size()
                         .as_ref()
                         .unwrap_or(&window_size),
                     &window_size,

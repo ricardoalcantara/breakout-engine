@@ -44,6 +44,7 @@ pub struct RenderVertices<'a> {
 
 pub trait Renderer2D {
     fn set_render_size(&mut self, _render_size: glam::UVec2);
+    fn render_size(&self) -> Option<glam::UVec2>;
     fn resize(&mut self, _new_size: winit::dpi::PhysicalSize<u32>);
     fn generate_texture(&self, img: DynamicImage) -> BreakoutResult<Texture>;
     fn clear_color(&self, _color: glam::Vec3);

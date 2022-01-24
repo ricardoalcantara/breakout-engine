@@ -4,11 +4,13 @@ use crate::{
     audio::{Audio, AudioSettings},
     error::{BreakoutError, BreakoutResult},
     font::Font,
-    render::{renderer::Renderer2D, texture::Texture},
+    render::{opengl::renderer2d::OpenGLRenderer2D, renderer::Renderer2D, texture::Texture},
 };
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-#[derive(Hash, PartialEq, Eq, Clone)]
+use super::game_window::ReadOnlyRc;
+
+#[derive(Debug, Hash, PartialEq, Eq, Clone)]
 pub struct TextureId(i32);
 
 #[derive(Hash, PartialEq, Eq, Clone)]
@@ -46,29 +48,30 @@ pub struct AssetManager {
     textures: HashMap<TextureId, Texture>,
     audios: HashMap<AudioId, Audio>,
     fonts: HashMap<FontId, Font>,
+    renderer: ReadOnlyRc<OpenGLRenderer2D>,
 }
 
 impl AssetManager {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(renderer: ReadOnlyRc<OpenGLRenderer2D>) -> Self {
         Self {
             auto_increment_id: AutoIncrementId::new(),
             textures: HashMap::new(),
             audios: HashMap::new(),
             fonts: HashMap::new(),
+            renderer,
         }
     }
 }
 
 impl AssetManager {
     pub fn load_texture(&mut self, path: &str) -> BreakoutResult<TextureId> {
-        todo!();
-        // let image = image::open(path).map_err(BreakoutError::ImageError)?;
-        // let texture = self.renderer.borrow().generate_texture(image)?;
+        let image = image::open(path).map_err(BreakoutError::ImageError)?;
+        let texture = self.renderer.borrow().generate_texture(image)?;
 
-        // let id = TextureId(self.auto_increment_id.get_id::<TextureId>());
-        // self.textures.insert(id.clone(), texture);
+        let id = TextureId(self.auto_increment_id.get_id::<TextureId>());
+        self.textures.insert(id.clone(), texture);
 
-        // Ok(id)
+        Ok(id)
     }
 
     pub fn get_texture(&self, id: &TextureId) -> &Texture {

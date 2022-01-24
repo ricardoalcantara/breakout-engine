@@ -1,7 +1,9 @@
+use glam::UVec2;
+
 use super::{
     components::{Camera2D, Label},
     engine::{Engine, EngineTimerView, WindowSettings},
-    game_window::GameWindow,
+    game_window::{GameWindow, GlWindow, ReadOnlyRc, ReadWriteRc},
     input::Input,
     scene::{InputHandled, Scene, Transition},
     systems::{
@@ -21,6 +23,7 @@ use crate::{
     error::BreakoutResult,
     font::Font,
     render::{
+        opengl::renderer2d::OpenGLRenderer2D,
         renderer::{RenderText, RenderVertices, Renderer2D},
         vertex::TEXTURE_COORDS,
         window::MyWindow,
@@ -38,18 +41,23 @@ pub struct GameState {
     input: Input,
     music_player: AudioPlayer,
     default_font: Font,
-    window: Rc<RefCell<GameWindow>>,
+    window: ReadOnlyRc<GlWindow>,
+    renderer: ReadOnlyRc<OpenGLRenderer2D>,
 }
 
 impl GameState {
-    pub fn new<S>(state: S, window: Rc<RefCell<GameWindow>>) -> BreakoutResult<Self>
+    pub fn new<S>(
+        state: S,
+        window: ReadOnlyRc<GlWindow>,
+        renderer: ReadOnlyRc<OpenGLRenderer2D>,
+    ) -> BreakoutResult<Self>
     where
         S: Scene + 'static,
     {
-        let ui_context = UIContext::new(Rc::clone(&window))?;
-        let mut engine = EngineContext::new(Rc::clone(&window));
-        let mut context = GameContext::new(Rc::clone(&window));
-        let mut asset_manager = AssetManager::new();
+        let ui_context = UIContext::new(window.clone())?;
+        let mut engine = EngineContext::new(window.clone());
+        let mut context = GameContext::new(window.clone(), renderer.clone());
+        let mut asset_manager = AssetManager::new(renderer.clone());
 
         let mut state = state;
         state
@@ -71,6 +79,7 @@ impl GameState {
             music_player,
             default_font,
             window,
+            renderer,
         })
     }
 
@@ -154,25 +163,28 @@ impl GameState {
         result
     }
 
-    pub fn render<R>(&mut self, renderer: &mut R, view_time: EngineTimerView) -> BreakoutResult
-    where
-        R: Renderer2D,
-    {
+    pub fn render(
+        &mut self,
+        renderer: ReadWriteRc<OpenGLRenderer2D>,
+        view_time: EngineTimerView,
+    ) -> BreakoutResult {
+        let mut renderer_borrowed_mut = renderer.borrow_mut();
         system_render_font_texture(
             &self.context,
             &mut self.asset_manager,
-            renderer,
+            &renderer_borrowed_mut,
             &mut self.default_font,
         )?;
         system_render_sprite(
             &self.context,
             &self.asset_manager,
-            renderer,
+            &mut renderer_borrowed_mut,
             self.window.borrow(),
             &self.default_font,
         )?;
 
-        self.ui_context.render(renderer, &view_time);
+        self.ui_context
+            .render(&mut renderer_borrowed_mut, &view_time);
         Ok(())
     }
 }

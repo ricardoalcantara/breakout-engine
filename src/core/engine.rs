@@ -168,25 +168,25 @@ impl WindowSettings {
     }
 
     pub(crate) fn apply_window(game_window: &mut GameWindow, engine_settings: Vec<WindowSettings>) {
+        let window = game_window.window();
+        let window = window.borrow();
         for settings in engine_settings {
             match settings {
                 WindowSettings::Title(title) => {
-                    game_window.window.window().set_title(&title);
+                    window.window().set_title(&title);
                 }
                 WindowSettings::WindowSize((width, height)) => {
-                    game_window
-                        .window
+                    window
                         .window()
                         .set_inner_size(PhysicalSize::new(width, height));
                 }
                 WindowSettings::Fullscreen(set) => {
                     if set {
-                        game_window
-                            .window
+                        window
                             .window()
                             .set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
                     } else {
-                        game_window.window.window().set_fullscreen(None);
+                        window.window().set_fullscreen(None);
                     }
                 }
             }
@@ -230,15 +230,13 @@ impl EngineBuilder {
 
         RenderSettings::apply_window(&mut game_window, self.render_settings);
 
-        let engine = Engine {
-            game_window: Rc::new(RefCell::new(game_window)),
-        };
+        let engine = Engine { game_window };
         Ok(engine)
     }
 }
 
 pub struct Engine {
-    game_window: Rc<RefCell<GameWindow>>,
+    game_window: GameWindow,
 }
 
 impl Engine {
@@ -247,17 +245,39 @@ impl Engine {
         S: Scene + 'static,
     {
         let mut engine_timer = EngineTimer::new();
-        let mut game_state = GameState::new(state, Rc::clone(&self.game_window))?;
+        let mut game_state = GameState::new(
+            state,
+            self.game_window.window(),
+            self.game_window.renderer(),
+        )?;
 
-        self.game_window.borrow().run(move |game_loop_state| {
+        self.game_window.run(move |game_loop_state, control_flow| {
             match game_loop_state {
-                GameLoopState::Input(event) => println!("Input {:#?}", event),
+                GameLoopState::Input(event) => match game_state.input(event) {
+                    Ok(handled) => {
+                        if !handled {
+                            if let WindowEvent::KeyboardInput {
+                                input:
+                                    KeyboardInput {
+                                        state: ElementState::Pressed,
+                                        virtual_keycode: Some(VirtualKeyCode::Escape),
+                                        ..
+                                    },
+                                ..
+                            } = event
+                            {
+                                *control_flow = ControlFlow::Exit
+                            }
+                        }
+                    }
+                    Err(e) => error!("Input Broken: {:?}", e),
+                },
                 GameLoopState::Update => {
                     let delta = engine_timer.update();
                     if let Ok(updated) = game_state.update(delta) {
-                        // if !updated {
-                        //     *control_flow = ControlFlow::Exit
-                        // }
+                        if !updated {
+                            *control_flow = ControlFlow::Exit
+                        }
                     }
                 }
                 GameLoopState::Render(renderer) => {

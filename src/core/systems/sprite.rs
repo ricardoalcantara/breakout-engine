@@ -1,5 +1,5 @@
 use std::{
-    cell::{Ref, RefCell},
+    cell::{Ref, RefCell, RefMut},
     rc::Rc,
 };
 
@@ -8,11 +8,12 @@ use crate::{
         asset_manager::AssetManager,
         components::{Camera2D, Label, Sprite, Transform2D},
         game_context::GameContext,
-        game_window::GameWindow,
+        game_window::{GameWindow, GlWindow, ReadWriteRc},
     },
     error::BreakoutResult,
     font::Font,
     render::{
+        opengl::renderer2d::OpenGLRenderer2D,
         renderer::{RenderText, RenderVertices, Renderer2D},
         vertex::{
             TEXTURE_COORDS, TEXTURE_COORDS_FLIPPED_X, TEXTURE_COORDS_FLIPPED_X_Y,
@@ -21,16 +22,13 @@ use crate::{
     },
 };
 
-pub fn system_render_sprite<R>(
+pub fn system_render_sprite(
     context: &GameContext,
     asset_manager: &AssetManager,
-    renderer: &mut R,
-    window: Ref<GameWindow>,
+    renderer: &mut RefMut<OpenGLRenderer2D>,
+    window: Ref<GlWindow>,
     default_font: &Font,
-) -> BreakoutResult
-where
-    R: Renderer2D,
-{
+) -> BreakoutResult {
     let world = &context.world;
 
     renderer.clear_color(context.clear_color);
@@ -39,12 +37,12 @@ where
         world.query::<(&Camera2D, &Transform2D)>().iter().next()
     {
         let window_size = {
-            let size = window.window.window().inner_size();
+            let size = window.window().inner_size();
             glam::uvec2(size.width, size.height)
         };
 
         Some(camera.get_view_matrix(
-            window.render_size.as_ref().unwrap_or(&window_size),
+            renderer.render_size().as_ref().unwrap_or(&window_size),
             &window_size,
             &transform.position,
         ))

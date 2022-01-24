@@ -1,21 +1,24 @@
-use std::{cell::RefCell, rc::Rc};
-
-use crate::{
-    core::{asset_manager::AssetManager, components::Label, game_context::GameContext},
-    error::BreakoutResult,
-    font::Font,
-    render::renderer::Renderer2D,
+use std::{
+    cell::{RefCell, RefMut},
+    rc::Rc,
 };
 
-pub fn system_render_font_texture<R>(
+use crate::{
+    core::{
+        asset_manager::AssetManager, components::Label, game_context::GameContext,
+        game_window::ReadWriteRc,
+    },
+    error::BreakoutResult,
+    font::Font,
+    render::{opengl::renderer2d::OpenGLRenderer2D, renderer::Renderer2D},
+};
+
+pub fn system_render_font_texture(
     context: &GameContext,
     asset_manager: &mut AssetManager,
-    renderer: &R,
+    renderer: &RefMut<OpenGLRenderer2D>,
     default_font: &mut Font,
-) -> BreakoutResult
-where
-    R: Renderer2D,
-{
+) -> BreakoutResult {
     let world = &context.world;
 
     for (_id, label) in world.query::<&Label>().iter() {

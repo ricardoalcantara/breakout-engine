@@ -1,12 +1,13 @@
-use std::cell::RefCell;
-
+use super::label::Label;
 use crate::{
     font::Font,
-    render::renderer::{RenderQuad, Renderer2D},
+    render::{
+        opengl::renderer2d::OpenGLRenderer2D,
+        renderer::{RenderQuad, Renderer2D},
+    },
     shapes::rectangle::Rect,
 };
-
-use super::label::Label;
+use std::cell::{RefCell, RefMut};
 
 pub(crate) enum ButtonType {
     Text(Label),
@@ -29,10 +30,7 @@ impl Button {
         }
     }
 
-    pub(crate) fn draw<R>(&self, renderer: &mut R, rect: Rect, font: &Font)
-    where
-        R: Renderer2D,
-    {
+    pub(crate) fn draw(&self, renderer: &mut RefMut<OpenGLRenderer2D>, rect: Rect, font: &Font) {
         renderer.draw_quad(RenderQuad {
             size: rect.size().into(),
             position: rect.position().into(),
