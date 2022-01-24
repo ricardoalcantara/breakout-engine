@@ -1,5 +1,3 @@
-use glutin::{Api, ContextWrapper, GlRequest, PossiblyCurrent};
-
 use crate::error::{BreakoutError, BreakoutResult};
 
 pub mod renderer2d;

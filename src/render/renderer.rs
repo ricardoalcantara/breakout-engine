@@ -1,6 +1,6 @@
 use super::texture::Texture;
-use crate::{error::BreakoutResult, font::Font, shapes::rectangle::Rect};
-use image::DynamicImage;
+use crate::{font::Font, shapes::rectangle::Rect};
+
 
 pub struct RenderQuad {
     pub size: glam::Vec2,
