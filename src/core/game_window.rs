@@ -52,7 +52,6 @@ pub struct GameWindow {
     event_loop: Option<EventLoop<()>>,
     window: Rc<RefCell<GlWindow>>,
     renderer: Rc<RefCell<OpenGLRenderer2D>>,
-    pub render_size: Option<UVec2>,
 }
 
 impl GameWindow {
@@ -77,8 +76,11 @@ impl GameWindow {
             window,
             event_loop: Some(event_loop),
             renderer,
-            render_size: None,
         }
+    }
+
+    pub fn set_render_size(&mut self, render_size: glam::UVec2) {
+        self.renderer.borrow_mut().set_render_size(render_size)
     }
 
     pub fn window(&self) -> ReadOnlyRc<GlWindow> {

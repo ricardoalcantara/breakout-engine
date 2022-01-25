@@ -108,6 +108,7 @@ pub fn system_render_sprite(
         };
     }
 
+    // TODO label should not be here
     for (_id, (label, _transform)) in world.query::<(&mut Label, &Transform2D)>().iter() {
         if !label.visible {
             continue;

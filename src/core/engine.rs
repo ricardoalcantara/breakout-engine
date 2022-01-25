@@ -122,7 +122,7 @@ impl RenderSettings {
         for settings in render_settings {
             match settings {
                 RenderSettings::DisplaySize((width, height)) => {
-                    game_window.render_size = Some(glam::uvec2(width, height))
+                    game_window.set_render_size(glam::uvec2(width, height));
                 }
             }
         }
@@ -162,6 +162,7 @@ impl WindowSettings {
         window_builder
     }
 
+    // TODO: apply_window isn't working anymore
     pub(crate) fn apply_window(game_window: &mut GameWindow, engine_settings: Vec<WindowSettings>) {
         let window = game_window.window();
         let window = window.borrow();

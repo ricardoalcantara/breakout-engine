@@ -47,12 +47,12 @@ impl UIContext {
         renderer: &mut RefMut<OpenGLRenderer2D>,
         view_time: &EngineTimerView,
     ) {
-        {
-            self.default_font
-                .build_with_size(25, |image| Ok(renderer.generate_texture(image)?))
-                .unwrap();
-            renderer.begin_draw(None);
-        }
+        self.default_font
+            .build_with_size(25, |image| Ok(renderer.generate_texture(image)?))
+            .unwrap();
+
+        // TODO: Set UI Camera later
+        renderer.begin_draw(None);
 
         for (_, build) in &self.build {
             build.render(renderer, view_time, &self.default_font);
