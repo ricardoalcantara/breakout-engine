@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::render::opengl::renderer2d::OpenGLRenderer2D;
-use glam::UVec2;
+
 use glutin::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
