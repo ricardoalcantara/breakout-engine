@@ -1,45 +1,45 @@
-use std::{cell::RefCell, rc::Rc};
+use std::cell::{Ref, RefMut};
 
 use crate::{
     core::{
         asset_manager::AssetManager,
         components::{Camera2D, Label, Sprite, Transform2D},
         game_context::GameContext,
+        game_window::GlWindow,
     },
     error::BreakoutResult,
     font::Font,
     render::{
-        renderer::{RenderText, RenderVertices, Renderer2D},
+        opengl::renderer2d::OpenGLRenderer2D,
+        renderer::{RenderText, RenderVertices},
         vertex::{
             TEXTURE_COORDS, TEXTURE_COORDS_FLIPPED_X, TEXTURE_COORDS_FLIPPED_X_Y,
             TEXTURE_COORDS_FLIPPED_Y,
         },
-        window::MyWindow,
     },
 };
 
 pub fn system_render_sprite(
     context: &GameContext,
     asset_manager: &AssetManager,
-    renderer: Rc<RefCell<dyn Renderer2D>>,
-    window: Rc<RefCell<MyWindow>>,
+    renderer: &mut RefMut<OpenGLRenderer2D>,
+    window: Ref<GlWindow>,
     default_font: &Font,
 ) -> BreakoutResult {
     let world = &context.world;
 
-    let mut renderer = renderer.borrow_mut();
     renderer.clear_color(context.clear_color);
 
     let camera_projection = if let Some((_id, (camera, transform))) =
         world.query::<(&Camera2D, &Transform2D)>().iter().next()
     {
         let window_size = {
-            let size = window.borrow().window().inner_size();
+            let size = window.window().inner_size();
             glam::uvec2(size.width, size.height)
         };
 
         Some(camera.get_view_matrix(
-            window.borrow().render_size.as_ref().unwrap_or(&window_size),
+            renderer.render_size().as_ref().unwrap_or(&window_size),
             &window_size,
             &transform.position,
         ))
@@ -108,6 +108,7 @@ pub fn system_render_sprite(
         };
     }
 
+    // TODO label should not be here
     for (_id, (label, _transform)) in world.query::<(&mut Label, &Transform2D)>().iter() {
         if !label.visible {
             continue;

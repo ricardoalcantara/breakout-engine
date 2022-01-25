@@ -1,6 +1,6 @@
-use std::cell::RefCell;
+use std::cell::RefMut;
 
-use crate::render::renderer::{RenderQuad, Renderer2D};
+use crate::render::{opengl::renderer2d::OpenGLRenderer2D, renderer::RenderQuad};
 
 use super::Constraints;
 
@@ -58,14 +58,14 @@ impl Panel {
 
     pub(crate) fn draw(
         &self,
-        renderer: &RefCell<dyn Renderer2D>,
+        renderer: &mut RefMut<OpenGLRenderer2D>,
         spacing: i32,
         elements_count: i32,
         // font: &Font,
     ) {
         let position = self.position();
         let size = self.size(spacing, elements_count);
-        renderer.borrow_mut().draw_quad(RenderQuad {
+        renderer.draw_quad(RenderQuad {
             size,
             position,
             scale: glam::Vec2::ONE,

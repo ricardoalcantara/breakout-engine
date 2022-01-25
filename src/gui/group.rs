@@ -1,9 +1,11 @@
-use std::cell::RefCell;
+use std::cell::{RefMut};
 
 use crate::{
     core::engine::EngineTimerView,
     font::Font,
-    render::renderer::{RenderQuad, RenderText, Renderer2D},
+    render::{
+        opengl::renderer2d::OpenGLRenderer2D,
+    },
     shapes::rectangle::Rect,
 };
 
@@ -74,7 +76,7 @@ impl Group {
 
     pub(crate) fn render(
         &self,
-        renderer: &RefCell<dyn Renderer2D>,
+        renderer: &mut RefMut<OpenGLRenderer2D>,
         view_time: &EngineTimerView,
         font: &Font,
     ) {

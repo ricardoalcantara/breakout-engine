@@ -1,36 +1,24 @@
 use super::{
-    components::{Camera2D, Label},
-    engine::{Engine, EngineTimerView, WindowSettings},
+    engine::{EngineTimerView, WindowSettings},
+    game_window::{GlWindow, ReadOnlyRc, ReadWriteRc},
     input::Input,
     scene::{InputHandled, Scene, Transition},
     systems::{
-        animated_sprite::system_update_animated_sprite, font::system_font_update,
+        animated_sprite::system_update_animated_sprite, font::system_render_font_texture,
         sprite::system_render_sprite,
     },
     ui_context::UIContext,
 };
 use crate::{
     audio::AudioPlayer,
-    core::{
-        asset_manager::AssetManager,
-        components::{Sprite, Transform2D},
-        engine_context::EngineContext,
-        game_context::GameContext,
-    },
+    core::{asset_manager::AssetManager, engine_context::EngineContext, game_context::GameContext},
     error::BreakoutResult,
     font::Font,
-    render::{
-        renderer::{RenderText, RenderVertices, Renderer2D},
-        vertex::TEXTURE_COORDS,
-        window::MyWindow,
-    },
+    render::opengl::renderer2d::OpenGLRenderer2D,
 };
-
-use std::{cell::RefCell, rc::Rc};
 
 pub struct GameState {
     scenes: Vec<Box<dyn Scene>>,
-    renderer: Rc<RefCell<dyn Renderer2D>>,
     context: GameContext,
     engine: EngineContext,
     ui_context: UIContext,
@@ -38,20 +26,22 @@ pub struct GameState {
     input: Input,
     music_player: AudioPlayer,
     default_font: Font,
-    window: Rc<RefCell<MyWindow>>,
+    window: ReadOnlyRc<GlWindow>,
 }
 
 impl GameState {
-    pub fn new<S, R>(state: S, renderer: R, window: Rc<RefCell<MyWindow>>) -> BreakoutResult<Self>
+    pub fn new<S>(
+        state: S,
+        window: ReadOnlyRc<GlWindow>,
+        renderer: ReadOnlyRc<OpenGLRenderer2D>,
+    ) -> BreakoutResult<Self>
     where
         S: Scene + 'static,
-        R: Renderer2D + 'static,
     {
-        let renderer = Rc::new(RefCell::new(renderer));
-        let ui_context = UIContext::new(Rc::clone(&window))?;
-        let mut engine = EngineContext::new(Rc::clone(&window));
-        let mut context = GameContext::new(Rc::clone(&window));
-        let mut asset_manager = AssetManager::new(Rc::clone(&renderer));
+        let ui_context = UIContext::new(window.clone())?;
+        let mut engine = EngineContext::new(window.clone());
+        let mut context = GameContext::new(window.clone(), renderer.clone());
+        let mut asset_manager = AssetManager::new(renderer);
 
         let mut state = state;
         state
@@ -65,7 +55,6 @@ impl GameState {
 
         Ok(Self {
             scenes: vec![Box::new(state)],
-            renderer,
             context,
             engine,
             ui_context,
@@ -79,10 +68,6 @@ impl GameState {
 
     pub fn take_settings(&mut self) -> Vec<WindowSettings> {
         self.engine.take_window_settings()
-    }
-
-    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
-        self.renderer.as_ref().borrow_mut().resize(new_size);
     }
 
     pub fn input(&mut self, event: &winit::event::WindowEvent) -> BreakoutResult<bool> {
@@ -156,30 +141,33 @@ impl GameState {
             let audio = self.asset_manager.get_audio(&audio_queue);
             self.music_player.play(audio);
         }
-
-        system_font_update(
-            &self.context,
-            &mut self.asset_manager,
-            Rc::clone(&self.renderer),
-            &mut self.default_font,
-        )?;
         system_update_animated_sprite(&self.context, delta);
 
         result
     }
 
-    pub fn render(&mut self, view_time: EngineTimerView) -> BreakoutResult {
+    pub fn render(
+        &mut self,
+        renderer: ReadWriteRc<OpenGLRenderer2D>,
+        view_time: EngineTimerView,
+    ) -> BreakoutResult {
+        let mut renderer_borrowed_mut = renderer.borrow_mut();
+        system_render_font_texture(
+            &self.context,
+            &mut self.asset_manager,
+            &renderer_borrowed_mut,
+            &mut self.default_font,
+        )?;
         system_render_sprite(
             &self.context,
             &self.asset_manager,
-            Rc::clone(&self.renderer),
-            Rc::clone(&self.window),
+            &mut renderer_borrowed_mut,
+            self.window.borrow(),
             &self.default_font,
         )?;
 
-        self.ui_context.render(&self.renderer, &view_time);
-
-        self.window.borrow().swap_buffers();
+        self.ui_context
+            .render(&mut renderer_borrowed_mut, &view_time);
         Ok(())
     }
 }

@@ -1,26 +1,32 @@
 #![allow(dead_code, unused)]
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{
+    cell::{RefCell, RefMut},
+    collections::HashMap,
+    rc::Rc,
+};
 
+use super::{
+    engine::EngineTimerView,
+    game_window::{GameWindow, GlWindow, ReadOnlyRc},
+};
 use crate::{
     error::BreakoutResult,
     font::Font,
     gui::group::Group,
     render::{
-        renderer::{RenderQuad, RenderText, Renderer2D},
-        window::MyWindow,
+        opengl::renderer2d::OpenGLRenderer2D,
+        renderer::{RenderQuad, RenderText},
     },
 };
 
-use super::engine::EngineTimerView;
-
 pub struct UIContext {
     build: HashMap<String, Group>,
-    window: Rc<RefCell<MyWindow>>,
+    window: ReadOnlyRc<GlWindow>,
     default_font: Font,
 }
 
 impl UIContext {
-    pub(crate) fn new(window: Rc<RefCell<MyWindow>>) -> BreakoutResult<UIContext> {
+    pub(crate) fn new(window: ReadOnlyRc<GlWindow>) -> BreakoutResult<UIContext> {
         let build = HashMap::new();
         let default_font_byte = include_bytes!("../../assets/Roboto-Regular.ttf");
         let default_font = Font::new_from_memory(default_font_byte)?;
@@ -38,25 +44,21 @@ impl UIContext {
 
     pub(crate) fn render(
         &mut self,
-        renderer: &RefCell<dyn Renderer2D>,
+        renderer: &mut RefMut<OpenGLRenderer2D>,
         view_time: &EngineTimerView,
     ) {
-        {
-            let mut r = renderer.borrow_mut();
-            self.default_font
-                .build_with_size(25, |image| Ok(r.generate_texture(image)?))
-                .unwrap();
-            r.begin_draw(None);
-        }
+        self.default_font
+            .build_with_size(25, |image| Ok(renderer.generate_texture(image)?))
+            .unwrap();
+
+        // TODO: Set UI Camera later
+        renderer.begin_draw(None);
 
         for (_, build) in &self.build {
             build.render(renderer, view_time, &self.default_font);
         }
 
-        {
-            let mut r = renderer.borrow_mut();
-            r.end_draw();
-        }
+        renderer.end_draw();
 
         self.build.clear();
     }

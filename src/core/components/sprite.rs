@@ -4,6 +4,7 @@ use crate::{
     render::vertex::{CENTER_QUAD, TOP_LEFT_QUAD},
 };
 
+#[derive(Debug)]
 pub struct Sprite {
     pub texture_id: Option<TextureId>,
     pub sub_texture: Option<SubTexture>,

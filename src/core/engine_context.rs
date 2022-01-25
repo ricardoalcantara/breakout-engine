@@ -1,16 +1,18 @@
-use std::{cell::RefCell, rc::Rc};
 
-use super::engine::{RenderSettings, WindowSettings};
-use crate::render::window::MyWindow;
+
+use super::{
+    engine::{RenderSettings, WindowSettings},
+    game_window::{GlWindow, ReadOnlyRc},
+};
 
 pub struct EngineContext {
     engine_settings: Vec<WindowSettings>,
     render_settings: Vec<RenderSettings>,
-    window: Rc<RefCell<MyWindow>>,
+    window: ReadOnlyRc<GlWindow>,
 }
 
 impl EngineContext {
-    pub fn new(window: Rc<RefCell<MyWindow>>) -> EngineContext {
+    pub fn new(window: ReadOnlyRc<GlWindow>) -> EngineContext {
         EngineContext {
             engine_settings: Vec::new(),
             render_settings: Vec::new(),

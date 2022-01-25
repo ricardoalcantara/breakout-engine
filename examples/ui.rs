@@ -1,7 +1,6 @@
 use breakout_engine::{
     core::{
         asset_manager::AssetManager,
-        components::{Sprite, Transform2D},
         engine::{EngineBuilder, WindowSettings},
         engine_context::EngineContext,
         game_context::GameContext,
