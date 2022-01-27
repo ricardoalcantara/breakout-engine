@@ -60,12 +60,12 @@ impl Vertex {
 //     Vertex { position: glam::const_vec3!([ 0.5,-0.5, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([1.0, 1.0]) }, // BOTTOM RIGHT
 // ];
 
-// pub const TOP_LEFT_QUAD: &[Vertex] = &[
-//     Vertex { position: glam::const_vec3!([ 1.0, 0.0, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([1.0, 0.0]) }, // TOP RIGHT
-//     Vertex { position: glam::const_vec3!([ 0.0, 0.0, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([0.0, 0.0]) }, // TOP LEFT
-//     Vertex { position: glam::const_vec3!([ 0.0, 1.0, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([0.0, 1.0]) }, // BOTTOM LEFT
-//     Vertex { position: glam::const_vec3!([ 1.0, 1.0, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([1.0, 1.0]) }, // BOTTOM RIGHT
-// ];
+pub const TOP_LEFT_QUAD: &[Vertex] = &[
+    Vertex { position: glam::const_vec3!([ 1.0, 0.0, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([1.0, 0.0]) }, // TOP RIGHT
+    Vertex { position: glam::const_vec3!([ 0.0, 0.0, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([0.0, 0.0]) }, // TOP LEFT
+    Vertex { position: glam::const_vec3!([ 0.0, 1.0, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([0.0, 1.0]) }, // BOTTOM LEFT
+    Vertex { position: glam::const_vec3!([ 1.0, 1.0, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([1.0, 1.0]) }, // BOTTOM RIGHT
+];
 
 pub const CENTER_QUAD: &[Vertex] = &[
     Vertex { position: glam::const_vec3!([ 0.5,-0.5, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([1.0, 0.0]) }, // TOP RIGHT
@@ -74,7 +74,7 @@ pub const CENTER_QUAD: &[Vertex] = &[
     Vertex { position: glam::const_vec3!([ 0.5, 0.5, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([1.0, 1.0]) }, // BOTTOM RIGHT
 ];
 
-pub const VERTEX: &[Vertex] = CENTER_QUAD;
+pub const VERTEX: &[Vertex] = TOP_LEFT_QUAD;
 
 #[rustfmt::skip] 
 pub const INDICES: &[u16] = &[
