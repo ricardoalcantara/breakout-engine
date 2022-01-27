@@ -22,10 +22,10 @@ impl Render2DPineline {
         config: &wgpu::SurfaceConfiguration,
         queue: &wgpu::Queue,
     ) -> Render2DPineline {
-        // let vs_src = include_str!("shader.vert");
-        // let fs_src = include_str!("shader.frag");
-        let vs_src = std::fs::read_to_string("wgpu_tests/src/shader.vert").unwrap();
-        let fs_src = std::fs::read_to_string("wgpu_tests/src/shader.frag").unwrap();
+        let vs_src = include_str!("shader.vert");
+        let fs_src = include_str!("shader.frag");
+        // let vs_src = std::fs::read_to_string("wgpu_tests/src/shader.vert").unwrap();
+        // let fs_src = std::fs::read_to_string("wgpu_tests/src/shader.frag").unwrap();
         let mut compiler = shaderc::Compiler::new().unwrap();
         let vs_spirv = compiler
             .compile_into_spirv(
@@ -63,6 +63,18 @@ impl Render2DPineline {
                     wgpu::BindGroupLayoutEntry {
                         binding: 0,
                         visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(
+                            // SamplerBindingType::Comparison is only for TextureSampleType::Depth
+                            // SamplerBindingType::Filtering if the sample_type of the texture is:
+                            //     TextureSampleType::Float { filterable: true }
+                            // Otherwise you'll get an error.
+                            wgpu::SamplerBindingType::Filtering,
+                        ),
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 1,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
                         ty: wgpu::BindingType::Texture {
                             multisampled: false,
                             view_dimension: wgpu::TextureViewDimension::D2,
@@ -71,15 +83,13 @@ impl Render2DPineline {
                         count: None,
                     },
                     wgpu::BindGroupLayoutEntry {
-                        binding: 1,
+                        binding: 2,
                         visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(
-                            // SamplerBindingType::Comparison is only for TextureSampleType::Depth
-                            // SamplerBindingType::Filtering if the sample_type of the texture is:
-                            //     TextureSampleType::Float { filterable: true }
-                            // Otherwise you'll get an error.
-                            wgpu::SamplerBindingType::Filtering,
-                        ),
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
                         count: None,
                     },
                 ],
