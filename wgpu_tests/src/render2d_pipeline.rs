@@ -1,10 +1,9 @@
-use cgmath::SquareMatrix;
 use wgpu::util::DeviceExt;
 
 use crate::{
     texture::Texture,
-    uniform::{Uniforms, OPENGL_TO_WGPU_MATRIX},
-    vertex::{Vertex, INDICES, VERTICES},
+    uniform::Uniforms,
+    vertex::{Vertex, INDICES, VERTEX},
 };
 
 pub struct Render2DPineline {
@@ -14,7 +13,7 @@ pub struct Render2DPineline {
     num_indices: u32,
 
     texture: Texture,
-    default_camera: cgmath::Matrix4<f32>,
+    default_camera: glam::Mat4,
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
 }
@@ -155,7 +154,7 @@ impl Render2DPineline {
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(VERTICES),
+            contents: bytemuck::cast_slice(VERTEX),
             usage: wgpu::BufferUsages::VERTEX,
         });
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
@@ -168,7 +167,8 @@ impl Render2DPineline {
         let texture = Texture::new(&device, &queue, &texture_bind_group_layout);
 
         // let default_camera = cgmath::ortho(0.0, 800.0, 600.0, 0.0, -1.0, 1.0);
-        let default_camera = OPENGL_TO_WGPU_MATRIX * cgmath::ortho(0.0, 4.0, -4.0, 0.0, -1.0, 1.0);
+        // let default_camera = glam::Mat4::orthographic_lh(0.0, 4.0, -4.0, 0.0, -1.0, 1.0);
+        let default_camera = glam::Mat4::orthographic_lh(0.0, 4.0, 4.0, 0.0, -1.0, 1.0);
 
         let camera_uniform = Uniforms::new(&default_camera);
 

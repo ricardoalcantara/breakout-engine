@@ -5,17 +5,9 @@ pub struct Uniforms {
 }
 
 impl Uniforms {
-    pub fn new(projection: &cgmath::Matrix4<f32>) -> Self {
+    pub fn new(projection: &glam::Mat4) -> Self {
         Self {
-            projection: projection.clone().into(),
+            projection: projection.to_cols_array_2d(),
         }
     }
 }
-
-#[rustfmt::skip]
-pub const OPENGL_TO_WGPU_MATRIX: cgmath::Matrix4<f32> = cgmath::Matrix4::new(
-    1.0, 0.0, 0.0, 0.0,
-    0.0, 1.0, 0.0, 0.0,
-    0.0, 0.0, 0.5, 0.0,
-    0.0, 0.0, 0.5, 1.0,
-);

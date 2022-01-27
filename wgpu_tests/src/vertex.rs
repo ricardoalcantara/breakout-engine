@@ -2,9 +2,9 @@
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 pub struct Vertex {
-    pub position: cgmath::Vector3<f32>,
-    pub color: cgmath::Vector3<f32>,
-    pub texture_coords: cgmath::Vector2<f32>
+    pub position: glam::Vec3,
+    pub color: glam::Vec3,
+    pub texture_coords: glam::Vec2
 }
 
 unsafe impl bytemuck::Pod for Vertex {}
@@ -40,25 +40,41 @@ impl Vertex {
 #[rustfmt::skip] 
 // pub const VERTICES: &[Vertex] = &[
 //     Vertex {
-//         position: cgmath::vec3(0.0, 0.5, 0.0),
-//         color: cgmath::vec3(1.0, 0.0, 0.0),
+//         position: glam::vec3(0.0, 0.5, 0.0),
+//         color: glam::vec3(1.0, 0.0, 0.0),
 //     },
 //     Vertex {
-//         position: cgmath::vec3(-0.5, -0.5, 0.0),
-//         color: cgmath::vec3(0.0, 1.0, 0.0),
+//         position: glam::vec3(-0.5, -0.5, 0.0),
+//         color: glam::vec3(0.0, 1.0, 0.0),
 //     },
 //     Vertex {
-//         position: cgmath::vec3(0.5, -0.5, 0.0),
-//         color: cgmath::vec3(0.0, 0.0, 1.0),
+//         position: glam::vec3(0.5, -0.5, 0.0),
+//         color: glam::vec3(0.0, 0.0, 1.0),
 //     },
 // ];
-// main.rs
-pub const VERTICES: &[Vertex] = &[
-    Vertex { position: cgmath::vec3( 0.5, 0.5, 0.0), color: cgmath::vec3(1.0, 1.0, 1.0), texture_coords: cgmath::vec2(1.0, 0.0) }, // TOP RIGHT
-    Vertex { position: cgmath::vec3(-0.5, 0.5, 0.0), color: cgmath::vec3(1.0, 1.0, 1.0), texture_coords: cgmath::vec2(0.0, 0.0) }, // TOP LEFT
-    Vertex { position: cgmath::vec3(-0.5,-0.5, 0.0), color: cgmath::vec3(1.0, 1.0, 1.0), texture_coords: cgmath::vec2(0.0, 1.0) }, // BOTTOM LEFT
-    Vertex { position: cgmath::vec3( 0.5,-0.5, 0.0), color: cgmath::vec3(1.0, 1.0, 1.0), texture_coords: cgmath::vec2(1.0, 1.0) }, // BOTTOM RIGHT
+
+// pub const VERTICES: &[Vertex] = &[
+//     Vertex { position: glam::const_vec3!([ 0.5, 0.5, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([1.0, 0.0]) }, // TOP RIGHT
+//     Vertex { position: glam::const_vec3!([-0.5, 0.5, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([0.0, 0.0]) }, // TOP LEFT
+//     Vertex { position: glam::const_vec3!([-0.5,-0.5, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([0.0, 1.0]) }, // BOTTOM LEFT
+//     Vertex { position: glam::const_vec3!([ 0.5,-0.5, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([1.0, 1.0]) }, // BOTTOM RIGHT
+// ];
+
+// pub const TOP_LEFT_QUAD: &[Vertex] = &[
+//     Vertex { position: glam::const_vec3!([ 1.0, 0.0, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([1.0, 0.0]) }, // TOP RIGHT
+//     Vertex { position: glam::const_vec3!([ 0.0, 0.0, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([0.0, 0.0]) }, // TOP LEFT
+//     Vertex { position: glam::const_vec3!([ 0.0, 1.0, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([0.0, 1.0]) }, // BOTTOM LEFT
+//     Vertex { position: glam::const_vec3!([ 1.0, 1.0, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([1.0, 1.0]) }, // BOTTOM RIGHT
+// ];
+
+pub const CENTER_QUAD: &[Vertex] = &[
+    Vertex { position: glam::const_vec3!([ 0.5,-0.5, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([1.0, 0.0]) }, // TOP RIGHT
+    Vertex { position: glam::const_vec3!([-0.5,-0.5, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([0.0, 0.0]) }, // TOP LEFT
+    Vertex { position: glam::const_vec3!([-0.5, 0.5, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([0.0, 1.0]) }, // BOTTOM LEFT
+    Vertex { position: glam::const_vec3!([ 0.5, 0.5, 0.0]), color: glam::const_vec3!([1.0, 1.0, 1.0]), texture_coords: glam::const_vec2!([1.0, 1.0]) }, // BOTTOM RIGHT
 ];
+
+pub const VERTEX: &[Vertex] = CENTER_QUAD;
 
 #[rustfmt::skip] 
 pub const INDICES: &[u16] = &[
