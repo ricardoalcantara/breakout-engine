@@ -61,7 +61,7 @@ impl Renderer {
         };
         surface.configure(&device, &config);
 
-        let render2d_pipeline = Render2DPineline::new(&device, &config);
+        let render2d_pipeline = Render2DPineline::new(&device, &config, &queue);
 
         Self {
             surface,

@@ -5,6 +5,8 @@ use winit::{event::*, event_loop::ControlFlow};
 mod game_window;
 mod render2d_pipeline;
 mod renderer;
+mod texture;
+mod uniform;
 mod vertex;
 
 fn main() {
