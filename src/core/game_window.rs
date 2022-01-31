@@ -1,15 +1,13 @@
-use std::{
-    cell::{Ref, RefCell, RefMut},
-    rc::Rc,
-};
-
 use crate::render::opengl::renderer2d::OpenGLRenderer2D;
-
 use glutin::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
     Api, ContextWrapper, GlRequest, PossiblyCurrent,
+};
+use std::{
+    cell::{Ref, RefCell, RefMut},
+    rc::Rc,
 };
 
 pub struct ReadOnlyRc<T>(Rc<RefCell<T>>);
@@ -55,11 +53,6 @@ pub struct GameWindow {
 }
 
 impl GameWindow {
-    pub fn new() -> GameWindow {
-        let window_builder = WindowBuilder::new().with_title("A fantastic window!");
-        GameWindow::build(window_builder)
-    }
-
     pub fn build(window_builder: WindowBuilder) -> GameWindow {
         let event_loop = glutin::event_loop::EventLoop::new();
         let window = glutin::ContextBuilder::new()

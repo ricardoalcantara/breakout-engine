@@ -1,5 +1,6 @@
 use game_window::{GameLoopState, GameWindow};
 
+use log::error;
 use winit::{event::*, event_loop::ControlFlow};
 
 mod game_window;
@@ -35,7 +36,7 @@ fn main() {
                 // The system is out of memory, we should probably quit
                 Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
                 // All other errors (Outdated, Timeout) should be resolved by the next frame
-                Err(e) => eprintln!("{:?}", e),
+                Err(e) => error!("{:?}", e),
             }
         }
     })

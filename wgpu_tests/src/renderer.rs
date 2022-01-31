@@ -1,5 +1,6 @@
 use std::iter;
 
+use log::info;
 use winit::{event::*, window::Window};
 
 use crate::render2d_pipeline::Render2DPineline;
@@ -37,20 +38,21 @@ impl Renderer {
             .unwrap();
 
         let adapter_info = adapter.get_info();
-        println!("Using {} ({:?})", adapter_info.name, adapter_info.backend);
+        info!("Using {} ({:?})", adapter_info.name, adapter_info.backend);
 
         let (device, queue) = adapter
             .request_device(
                 &wgpu::DeviceDescriptor {
                     label: None,
                     features: wgpu::Features::empty(),
-                    limits: wgpu::Limits::default(),
+                    limits: adapter.limits(),
                 },
                 // Some(&std::path::Path::new("trace")), // Trace path
                 None,
             )
             .await
             .unwrap();
+        info!("Limits {:#?}", device.limits());
 
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
