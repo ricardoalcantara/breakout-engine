@@ -1,7 +1,7 @@
 use super::label::Label;
 use crate::{
     font::Font,
-    render::{opengl::renderer2d::OpenGLRenderer2D, renderer::RenderQuad},
+    render::{renderer::Renderer, RenderQuad},
     shapes::rectangle::Rect,
 };
 use std::cell::RefMut;
@@ -27,7 +27,7 @@ impl Button {
         }
     }
 
-    pub(crate) fn draw(&self, renderer: &mut RefMut<OpenGLRenderer2D>, rect: Rect, font: &Font) {
+    pub(crate) fn draw(&self, renderer: &mut RefMut<Renderer>, rect: Rect, font: &Font) {
         renderer.draw_quad(RenderQuad {
             size: rect.size().into(),
             position: rect.position().into(),

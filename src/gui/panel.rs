@@ -1,6 +1,6 @@
 use std::cell::RefMut;
 
-use crate::render::{opengl::renderer2d::OpenGLRenderer2D, renderer::RenderQuad};
+use crate::render::{renderer::Renderer, RenderQuad};
 
 use super::Constraints;
 
@@ -58,7 +58,7 @@ impl Panel {
 
     pub(crate) fn draw(
         &self,
-        renderer: &mut RefMut<OpenGLRenderer2D>,
+        renderer: &mut RefMut<Renderer>,
         spacing: i32,
         elements_count: i32,
         // font: &Font,

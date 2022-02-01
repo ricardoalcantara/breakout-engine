@@ -1,10 +1,28 @@
+use std::rc::Rc;
+
+use log::warn;
 use wgpu::util::DeviceExt;
 
-use crate::{
+use super::{
+    render2d_data::{Render2dData, MAX_INDEX_COUNT},
     texture::Texture,
-    uniform::Uniforms,
-    vertex::{Vertex, INDICES, VERTEX},
+    vertex::{QuadOrigin, Vertex},
+    RenderQuad, RenderTexture,
 };
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone, bytemuck::Pod, bytemuck::Zeroable)]
+pub struct Uniforms {
+    pub projection: [[f32; 4]; 4],
+}
+
+impl Uniforms {
+    pub fn new(projection: &glam::Mat4) -> Self {
+        Self {
+            projection: projection.to_cols_array_2d(),
+        }
+    }
+}
 
 pub struct Render2DPineline {
     render_pipeline: wgpu::RenderPipeline,
@@ -12,23 +30,29 @@ pub struct Render2DPineline {
     index_buffer: wgpu::Buffer,
     num_indices: u32,
 
-    texture1: Texture,
-    texture2: Texture,
-    camera_bind_group: wgpu::BindGroup,
+    render_data: Render2dData,
 
+    default_camera: glam::Mat4,
+    camera_buffer: wgpu::Buffer,
+
+    camera_bind_group: wgpu::BindGroup,
     textures_bind_group: wgpu::BindGroup,
 }
 
 impl Render2DPineline {
     pub fn new(
+        width: u32,
+        height: u32,
+        max_textures: i32,
         device: &wgpu::Device,
         config: &wgpu::SurfaceConfiguration,
         queue: &wgpu::Queue,
     ) -> Render2DPineline {
-        let vs_src = include_str!("shader.vert");
-        let fs_src = include_str!("shader.frag");
-        // let vs_src = std::fs::read_to_string("wgpu_tests/src/shader.vert").unwrap();
-        // let fs_src = std::fs::read_to_string("wgpu_tests/src/shader.frag").unwrap();
+        // let vs_src = include_str!("../../shaders/render2d_shader.vert");
+        // let fs_src = include_str!("../../shaders/render2d_shader.frag");
+        // TODO include_str
+        let vs_src = std::fs::read_to_string("shaders/render2d_shader.vert").unwrap();
+        let fs_src = std::fs::read_to_string("shaders/render2d_shader.frag").unwrap();
         let mut compiler = shaderc::Compiler::new().unwrap();
         let vs_spirv = compiler
             .compile_into_spirv(
@@ -148,19 +172,36 @@ impl Render2DPineline {
             multiview: None,
         });
 
+        let vertices: [Vertex; 0] = [];
+
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(VERTEX),
+            contents: bytemuck::cast_slice(&vertices),
             usage: wgpu::BufferUsages::VERTEX,
         });
+
+        let mut indices: [u16; MAX_INDEX_COUNT] = [0u16; MAX_INDEX_COUNT];
+        let mut offset = 0;
+        for i in (0..MAX_INDEX_COUNT).step_by(6) {
+            indices[i + 0] = 0 + offset;
+            indices[i + 1] = 1 + offset;
+            indices[i + 2] = 2 + offset;
+            indices[i + 3] = 0 + offset;
+            indices[i + 4] = 2 + offset;
+            indices[i + 5] = 3 + offset;
+
+            offset += 4;
+        }
+
         let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(INDICES),
+            contents: bytemuck::cast_slice(&indices),
             usage: wgpu::BufferUsages::INDEX,
         });
-        let num_indices = INDICES.len() as u32;
+        let num_indices = indices.len() as u32;
 
-        let default_camera = glam::Mat4::orthographic_lh(0.0, 4.0, 4.0, 0.0, -1.0, 1.0);
+        let default_camera =
+            glam::Mat4::orthographic_rh_gl(0.0, width as f32, height as f32, 0.0, -1.0, 1.0);
 
         let camera_uniform = Uniforms::new(&default_camera);
 
@@ -179,49 +220,190 @@ impl Render2DPineline {
             label: Some("camera_bind_group"),
         });
 
-        let texture1 = Texture::new("assets/awesomeface.png", &device, &queue);
-        let texture2 = Texture::new("assets/happy-tree.png", &device, &queue);
-
         let textures_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
             layout: &texture_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::Sampler(&texture1.sampler),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::TextureView(&texture1.view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: wgpu::BindingResource::TextureView(&texture2.view),
-                },
-            ],
+            entries: &[],
             label: Some("diffuse_bind_group"),
         });
+
+        let white_texture = Texture::from_color([255, 255, 255, 255], device, queue);
+
+        let render_data = Render2dData::new(max_textures as usize, white_texture);
 
         Render2DPineline {
             render_pipeline,
             vertex_buffer,
             index_buffer,
             num_indices,
-            texture1,
-            texture2,
+
+            render_data,
+
+            default_camera,
+            camera_buffer,
 
             camera_bind_group,
             textures_bind_group,
         }
     }
 
-    pub fn render<'a>(&'a mut self, render_pass: &mut wgpu::RenderPass<'a>) {
-        render_pass.set_pipeline(&self.render_pipeline); // 2.
+    pub fn resize(&mut self, width: u32, height: u32, queue: &wgpu::Queue) {
+        self.default_camera =
+            glam::Mat4::orthographic_rh_gl(0.0, width as f32, height as f32, 0.0, -1.0, 1.0);
+
+        self.default_camera(queue);
+    }
+
+    pub fn set_camera(&self, camera: glam::Mat4, queue: &wgpu::Queue) {
+        let camera_uniform = Uniforms::new(&camera);
+        queue.write_buffer(
+            &self.camera_buffer,
+            0,
+            bytemuck::cast_slice(&[camera_uniform]),
+        );
+    }
+
+    pub fn default_camera(&self, queue: &wgpu::Queue) {
+        let camera_uniform = Uniforms::new(&self.default_camera);
+        queue.write_buffer(
+            &self.camera_buffer,
+            0,
+            bytemuck::cast_slice(&[camera_uniform]),
+        );
+    }
+
+    pub fn begin_batch(&mut self) {
+        self.render_data.reset();
+    }
+
+    pub fn end_batch(&self, queue: &wgpu::Queue) {
+        let vertices = self.render_data.vertices();
+        queue.write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
+    }
+
+    pub fn flush<'a>(&'a mut self, render_pass: &mut wgpu::RenderPass<'a>) {
+        // TODO
+        self.render_data.bind_textures();
+
+        render_pass.set_pipeline(&self.render_pipeline);
 
         render_pass.set_bind_group(0, &self.textures_bind_group, &[]);
         render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
 
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
-        render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16); // 1.
-        render_pass.draw_indexed(0..self.num_indices, 0, 0..1); // 2.
+        render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+        // TOOD remove cast later
+        render_pass.draw_indexed(0..self.render_data.indices_count() as u32, 0, 0..1);
+
+        // TODO: RENDER
+        // self.render();
+
+        // gl::DrawElements(
+        //     gl::TRIANGLES,
+        //     self.render_data.indices_count(),
+        //     gl::UNSIGNED_INT,
+        //     ptr::null(),
+        // );
+        // gl::BindVertexArray(0);
+        self.render_data.reset()
     }
+
+    pub fn draw_vertices<'a>(
+        &'a mut self,
+        render_pass: &mut wgpu::RenderPass<'a>,
+        queue: &wgpu::Queue,
+        vertices: &[glam::Vec3; 4],
+        color: glam::Vec4,
+        texture_coords: &[glam::Vec2; 4],
+        texture: Option<&Rc<Texture>>,
+    ) {
+        let mut tex_index = 0;
+        if let Some(texture) = texture {
+            if !self.render_data.can_add_quad_with_texture(texture) {
+                self.end_batch(queue);
+                self.flush(render_pass);
+                self.begin_batch()
+            }
+            tex_index = self.render_data.append_texture(texture);
+        } else {
+            if !self.render_data.can_add_quad() {
+                self.end_batch(queue);
+                self.flush(render_pass);
+                self.begin_batch()
+            }
+        }
+
+        self.render_data
+            .add_vertices(vertices, color, texture_coords, tex_index)
+    }
+
+    pub fn draw_quad<'a>(
+        &'a mut self,
+        render_pass: &mut wgpu::RenderPass<'a>,
+        queue: &wgpu::Queue,
+        quad: RenderQuad,
+    ) {
+        if !self.render_data.can_add_quad() {
+            self.end_batch(queue);
+            self.flush(render_pass);
+            self.begin_batch()
+        }
+
+        self.render_data.add_quad(
+            quad.position,
+            quad.size,
+            None,
+            quad.scale,
+            quad.rotate,
+            quad.color,
+            if quad.center_origin {
+                QuadOrigin::Center
+            } else {
+                QuadOrigin::TopLeft
+            },
+            0,
+        );
+    }
+
+    pub fn draw_texture<'a>(
+        &'a mut self,
+        render_pass: &mut wgpu::RenderPass<'a>,
+        queue: &wgpu::Queue,
+        render_texture: RenderTexture,
+    ) {
+        let texture = render_texture.texture;
+
+        if !self.render_data.can_add_quad_with_texture(&texture) {
+            self.end_batch(queue);
+            self.flush(render_pass);
+            self.begin_batch()
+        }
+
+        let tex_index = self.render_data.append_texture(texture);
+
+        self.render_data.add_quad(
+            render_texture.position,
+            glam::vec2(texture.width as f32, texture.height as f32),
+            render_texture.rect,
+            render_texture.scale,
+            render_texture.rotate,
+            render_texture.color,
+            if render_texture.center_origin {
+                QuadOrigin::Center
+            } else {
+                QuadOrigin::TopLeft
+            },
+            tex_index,
+        );
+    }
+
+    // pub fn render<'a>(&'a mut self, render_pass: &mut wgpu::RenderPass<'a>) {
+    //     render_pass.set_pipeline(&self.render_pipeline); // 2.
+
+    //     render_pass.set_bind_group(0, &self.textures_bind_group, &[]);
+    //     render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
+
+    //     render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
+    //     render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16); // 1.
+    //     render_pass.draw_indexed(0..self.num_indices, 0, 0..1); // 2.
+    // }
 }

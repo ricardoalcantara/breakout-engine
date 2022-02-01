@@ -3,9 +3,8 @@ use log::warn;
 use std::{collections::HashMap, path::Path};
 
 use crate::{
-    core::components::SubTexture,
     error::{BreakoutError, BreakoutResult},
-    render::texture::Texture,
+    render::{subtexture::SubTexture, texture::Texture},
     shapes::rectangle::Rect,
 };
 extern crate freetype;

@@ -4,9 +4,9 @@ use crate::{
     audio::{Audio, AudioSettings},
     error::{BreakoutError, BreakoutResult},
     font::Font,
-    render::{opengl::renderer2d::OpenGLRenderer2D, texture::Texture},
+    render::{renderer::Renderer, texture::Texture},
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
 use super::game_window::ReadOnlyRc;
 
@@ -43,16 +43,16 @@ impl AutoIncrementId {
     }
 }
 
-pub struct AssetManager {
+pub struct AssetManager<'a> {
     auto_increment_id: AutoIncrementId,
-    textures: HashMap<TextureId, Texture>,
+    textures: HashMap<TextureId, Rc<Texture>>,
     audios: HashMap<AudioId, Audio>,
     fonts: HashMap<FontId, Font>,
-    renderer: ReadOnlyRc<OpenGLRenderer2D>,
+    renderer: ReadOnlyRc<Renderer<'a>>,
 }
 
-impl AssetManager {
-    pub(crate) fn new(renderer: ReadOnlyRc<OpenGLRenderer2D>) -> Self {
+impl<'a> AssetManager<'a> {
+    pub(crate) fn new(renderer: ReadOnlyRc<Renderer<'a>>) -> Self {
         Self {
             auto_increment_id: AutoIncrementId::new(),
             textures: HashMap::new(),
@@ -63,23 +63,24 @@ impl AssetManager {
     }
 }
 
-impl AssetManager {
+impl<'a> AssetManager<'a> {
     pub fn load_texture(&mut self, path: &str) -> BreakoutResult<TextureId> {
-        let image = image::open(path).map_err(BreakoutError::ImageError)?;
-        let texture = self.renderer.borrow().generate_texture(image)?;
+        // let image = image::open(path).map_err(BreakoutError::ImageError)?;
+        let renderer = self.renderer.borrow();
+        let texture = Texture::from_file(path, renderer.device(), renderer.queue());
 
         let id = TextureId(self.auto_increment_id.get_id::<TextureId>());
-        self.textures.insert(id.clone(), texture);
+        self.textures.insert(id.clone(), Rc::new(texture));
 
         Ok(id)
     }
 
-    pub fn get_texture(&self, id: &TextureId) -> &Texture {
+    pub fn get_texture(&self, id: &TextureId) -> &Rc<Texture> {
         &self.textures[id]
     }
 }
 
-impl AssetManager {
+impl<'a> AssetManager<'a> {
     pub fn load_audio(
         &mut self,
         path: &str,
@@ -99,7 +100,7 @@ impl AssetManager {
     }
 }
 
-impl AssetManager {
+impl<'a> AssetManager<'a> {
     pub fn load_font(&mut self, path: &str) -> BreakoutResult<FontId> {
         let font = Font::new(path)?;
 

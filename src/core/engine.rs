@@ -169,20 +169,16 @@ impl WindowSettings {
         for settings in engine_settings {
             match settings {
                 WindowSettings::Title(title) => {
-                    window.window().set_title(&title);
+                    window.set_title(&title);
                 }
                 WindowSettings::WindowSize((width, height)) => {
-                    window
-                        .window()
-                        .set_inner_size(PhysicalSize::new(width, height));
+                    window.set_inner_size(PhysicalSize::new(width, height));
                 }
                 WindowSettings::Fullscreen(set) => {
                     if set {
-                        window
-                            .window()
-                            .set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
+                        window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
                     } else {
-                        window.window().set_fullscreen(None);
+                        window.set_fullscreen(None);
                     }
                 }
             }
@@ -218,7 +214,7 @@ impl EngineBuilder {
         self
     }
 
-    pub fn build(self) -> BreakoutResult<Engine> {
+    pub fn build<'a>(self) -> BreakoutResult<Engine<'a>> {
         let mut window_builder = winit::window::WindowBuilder::new();
         window_builder = WindowSettings::apply_builder(window_builder, self.window_settings);
 
@@ -231,21 +227,17 @@ impl EngineBuilder {
     }
 }
 
-pub struct Engine {
-    game_window: GameWindow,
+pub struct Engine<'a> {
+    game_window: GameWindow<'a>,
 }
 
-impl Engine {
+impl<'a> Engine<'static> {
     pub fn run<S>(self, state: S) -> BreakoutResult<()>
     where
         S: Scene + 'static,
     {
         let mut engine_timer = EngineTimer::new();
-        let mut game_state = GameState::new(
-            state,
-            self.game_window.window(),
-            self.game_window.renderer(),
-        )?;
+        let mut game_state = GameState::new(state, self.game_window.renderer())?;
 
         self.game_window.run(move |game_loop_state, control_flow| {
             match game_loop_state {

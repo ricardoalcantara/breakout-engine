@@ -1,20 +1,19 @@
-#version 330 core
+#version 450
 
-layout (location = 0) in vec3 position;
-layout (location = 1) in vec4 color;
-layout (location = 2) in vec2 texture_coords;
-layout (location = 3) in float tex_index;
+layout(location=0) in vec3 a_position;
+layout(location=1) in vec3 a_color;
+layout(location=2) in vec2 a_texture_coord;
 
-out vec2 v_texture_coords;
-out vec4 v_color;
-out float v_tex_intex;
+layout(set=1, binding=0) 
+uniform Uniforms {
+    mat4 projection;
+};
 
-uniform mat4 projection;
+layout(location=0) out vec3 v_color;
+layout(location=1) out vec2 v_texture_coord;
 
-void main()
-{
-    v_texture_coords = texture_coords;
-    v_color = color;
-    v_tex_intex = tex_index;
-    gl_Position = projection * vec4(position, 1.0);
+void main() {
+    v_color = a_color;
+    v_texture_coord = a_texture_coord;
+    gl_Position = projection * vec4(a_position, 1.0);
 }

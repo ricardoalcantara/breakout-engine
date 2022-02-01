@@ -1,7 +1,9 @@
-pub use crate::render::texture::SubTexture;
 use crate::{
     core::asset_manager::TextureId,
-    render::vertex::{CENTER_QUAD, TOP_LEFT_QUAD},
+    render::{
+        subtexture::SubTexture,
+        vertex::{CENTER_QUAD, TOP_LEFT_QUAD},
+    },
 };
 
 #[derive(Debug)]

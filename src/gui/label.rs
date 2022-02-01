@@ -1,6 +1,6 @@
 use crate::{
     font::Font,
-    render::{opengl::renderer2d::OpenGLRenderer2D, renderer::RenderText},
+    render::{renderer::Renderer, RenderQuad, RenderText},
     shapes::rectangle::Rect,
 };
 use std::cell::RefMut;
@@ -26,7 +26,7 @@ impl Label {
         }
     }
 
-    pub(crate) fn draw(&self, renderer: &mut RefMut<OpenGLRenderer2D>, rect: Rect, font: &Font) {
+    pub(crate) fn draw(&self, renderer: &mut RefMut<Renderer>, rect: Rect, font: &Font) {
         let size = font.measure(&self.text, 25) / 2.0;
         let rect_size: glam::Vec2 = rect.size().into();
         let rect_size = rect_size / 2.0;

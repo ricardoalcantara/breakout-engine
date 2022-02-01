@@ -1,106 +1,110 @@
-use crate::shapes::rectangle::Rect;
-
-use super::opengl::texture::OpenGLTexture;
-
-pub enum TextureType {
-    OpenGL(OpenGLTexture),
-    WGPU,
-}
+use std::num::NonZeroU32;
 
 pub struct Texture {
+    pub texture: wgpu::Texture,
+    pub view: wgpu::TextureView,
+    pub sampler: wgpu::Sampler,
     pub width: u32,
     pub height: u32,
-    pub texture_type: TextureType,
 }
 
 impl Texture {
+    pub fn from_file(path: &str, device: &wgpu::Device, queue: &wgpu::Queue) -> Texture {
+        let bytes = std::fs::read(path).unwrap();
+        Texture::from_byte(&bytes, device, queue)
+    }
+
+    pub fn from_byte(bytes: &[u8], device: &wgpu::Device, queue: &wgpu::Queue) -> Texture {
+        let image = image::load_from_memory(bytes).unwrap();
+        let data = image.as_rgba8().unwrap();
+
+        use image::GenericImageView;
+        let (width, height) = image.dimensions();
+
+        let texture_size = wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        };
+
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            size: texture_size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            label: Some("texture"),
+        });
+
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
+        });
+
+        queue.write_texture(
+            texture.as_image_copy(),
+            data,
+            wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: std::num::NonZeroU32::new(4 * width),
+                rows_per_image: std::num::NonZeroU32::new(height),
+            },
+            texture_size,
+        );
+
+        Texture {
+            texture,
+            view,
+            sampler,
+            width,
+            height,
+        }
+    }
+
+    pub fn from_color(color: [u8; 4], device: &wgpu::Device, queue: &wgpu::Queue) -> Texture {
+        let texture_size = wgpu::Extent3d::default();
+
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
+            size: wgpu::Extent3d::default(),
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            label: Some("texture"),
+        });
+
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor::default());
+
+        queue.write_texture(
+            texture.as_image_copy(),
+            &color,
+            wgpu::ImageDataLayout {
+                offset: 0,
+                bytes_per_row: Some(NonZeroU32::new(4).unwrap()),
+                rows_per_image: None,
+            },
+            texture_size,
+        );
+
+        Texture {
+            texture,
+            view,
+            sampler,
+            width: texture_size.width,
+            height: texture_size.height,
+        }
+    }
+
     pub fn size(&self) -> glam::UVec2 {
         glam::uvec2(self.width, self.height)
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct SubTexture {
-    pub region: Rect,
-    pub texture_size: glam::Vec2,
-    pub flip_x: bool,
-    pub flip_y: bool,
-    pub(crate) texture_coords: Option<[glam::Vec2; 4]>,
-}
-
-impl SubTexture {
-    pub fn new(region: Rect) -> SubTexture {
-        SubTexture {
-            region,
-            texture_size: glam::Vec2::ZERO,
-            flip_x: false,
-            flip_y: false,
-            texture_coords: None,
-        }
-    }
-
-    pub fn new_with_texture_size(region: Rect, width: f32, height: f32) -> SubTexture {
-        let mut sub_texture = SubTexture::new(region);
-        sub_texture.texture_size.x = width;
-        sub_texture.texture_size.y = height;
-        sub_texture.update_texture_coords();
-        sub_texture
-    }
-
-    pub fn from_texture(region: Rect, texture: &Texture) -> SubTexture {
-        let mut sub_texture = SubTexture::new(region);
-        sub_texture.texture_size.x = texture.width as f32;
-        sub_texture.texture_size.y = texture.height as f32;
-        sub_texture.update_texture_coords();
-        sub_texture
-    }
-
-    pub fn update_texture_coords(&mut self) {
-        let width = self.texture_size.x;
-        let height = self.texture_size.y;
-        let mut texture_coords = [glam::Vec2::ZERO; 4];
-
-        texture_coords[0] = glam::vec2(
-            (self.region.x + self.region.width) / width,
-            (self.region.y + self.region.height) / height,
-        ); // Top Right
-        texture_coords[1] = glam::vec2(self.region.right() / width, self.region.y / height); // Bottom Right
-        texture_coords[2] = glam::vec2((self.region.x + 0.5) / width, self.region.y / height); // Bottom Left
-        texture_coords[3] =
-            glam::vec2((self.region.x + 0.5) / width, self.region.bottom() / height);
-        // Top Left
-
-        // 0 Top Right
-        // 1 Bottom Right
-        // 2 Bottom Left
-        // 3 Top Left
-        // flip x
-        // 0 - 3
-        // 1 - 2
-        // flip y
-        // 0 - 1
-        // 2 - 3
-
-        if self.flip_x {
-            let tmp = texture_coords[0];
-            texture_coords[0] = texture_coords[3];
-            texture_coords[3] = tmp;
-
-            let tmp = texture_coords[1];
-            texture_coords[1] = texture_coords[2];
-            texture_coords[2] = tmp
-        }
-
-        if self.flip_y {
-            let tmp = texture_coords[0];
-            texture_coords[0] = texture_coords[1];
-            texture_coords[1] = tmp;
-
-            let tmp = texture_coords[3];
-            texture_coords[3] = texture_coords[2];
-            texture_coords[2] = tmp
-        }
-
-        self.texture_coords = Some(texture_coords);
     }
 }

@@ -1,15 +1,13 @@
 pub struct Texture {
-    diffuse_bind_group: wgpu::BindGroup,
+    pub texture: wgpu::Texture,
+    pub view: wgpu::TextureView,
+    pub sampler: wgpu::Sampler,
 }
 
 impl Texture {
-    pub fn new(
-        device: &wgpu::Device,
-        queue: &wgpu::Queue,
-        texture_bind_group_layout: &wgpu::BindGroupLayout,
-    ) -> Texture {
-        let diffuse_bytes = include_bytes!("../../assets/awesomeface.png");
-        let diffuse_image = image::load_from_memory(diffuse_bytes).unwrap();
+    pub fn new(path: &str, device: &wgpu::Device, queue: &wgpu::Queue) -> Texture {
+        let diffuse_bytes = std::fs::read(path).unwrap();
+        let diffuse_image = image::load_from_memory(&diffuse_bytes).unwrap();
         let diffuse_rgba = diffuse_image.as_rgba8().unwrap();
 
         use image::GenericImageView;
@@ -20,7 +18,7 @@ impl Texture {
             height: dimensions.1,
             depth_or_array_layers: 1,
         };
-        let diffuse_texture = device.create_texture(&wgpu::TextureDescriptor {
+        let texture = device.create_texture(&wgpu::TextureDescriptor {
             size: texture_size,
             mip_level_count: 1,
             sample_count: 1,
@@ -32,7 +30,7 @@ impl Texture {
 
         // TODO reconsiderate
         queue.write_texture(
-            diffuse_texture.as_image_copy(),
+            texture.as_image_copy(),
             diffuse_rgba,
             wgpu::ImageDataLayout {
                 offset: 0,
@@ -42,9 +40,8 @@ impl Texture {
             texture_size,
         );
 
-        let diffuse_texture_view =
-            diffuse_texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let diffuse_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -54,29 +51,10 @@ impl Texture {
             ..Default::default()
         });
 
-        let diffuse_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &texture_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::Sampler(&diffuse_sampler),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::TextureView(&diffuse_texture_view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: wgpu::BindingResource::TextureView(&diffuse_texture_view),
-                },
-            ],
-            label: Some("diffuse_bind_group"),
-        });
-
-        Texture { diffuse_bind_group }
-    }
-
-    pub fn bind<'a>(&'a mut self, render_pass: &mut wgpu::RenderPass<'a>) {
-        render_pass.set_bind_group(0, &self.diffuse_bind_group, &[]);
+        Texture {
+            texture,
+            view,
+            sampler,
+        }
     }
 }

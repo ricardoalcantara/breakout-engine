@@ -1,29 +1,26 @@
-use std::cell::{Ref, RefMut};
-
 use crate::{
     core::{
         asset_manager::AssetManager,
         components::{Camera2D, Label, Sprite, Transform2D},
         game_context::GameContext,
-        game_window::GlWindow,
     },
     error::BreakoutResult,
     font::Font,
     render::{
-        opengl::renderer2d::OpenGLRenderer2D,
-        renderer::{RenderText, RenderVertices},
+        renderer::Renderer,
         vertex::{
             TEXTURE_COORDS, TEXTURE_COORDS_FLIPPED_X, TEXTURE_COORDS_FLIPPED_X_Y,
             TEXTURE_COORDS_FLIPPED_Y,
         },
+        RenderText, RenderVertices,
     },
 };
+use std::cell::RefMut;
 
 pub fn system_render_sprite(
     context: &GameContext,
     asset_manager: &AssetManager,
-    renderer: &mut RefMut<OpenGLRenderer2D>,
-    window: Ref<GlWindow>,
+    renderer: &mut RefMut<Renderer>,
     default_font: &Font,
 ) -> BreakoutResult {
     let world = &context.world;
@@ -33,16 +30,18 @@ pub fn system_render_sprite(
     let camera_projection = if let Some((_id, (camera, transform))) =
         world.query::<(&Camera2D, &Transform2D)>().iter().next()
     {
-        let window_size = {
-            let size = window.window().inner_size();
-            glam::uvec2(size.width, size.height)
-        };
+        todo!();
+        // TODO Render Size
+        // let window_size = renderer.size2(){
+        //     let size = ;
+        //     glam::uvec2(size.width, size.height)
+        // };
 
-        Some(camera.get_view_matrix(
-            renderer.render_size().as_ref().unwrap_or(&window_size),
-            &window_size,
-            &transform.position,
-        ))
+        // Some(camera.get_view_matrix(
+        //     renderer.render_size().as_ref().unwrap_or(&window_size),
+        //     &window_size,
+        //     &transform.position,
+        // ))
     } else {
         None
     };
@@ -59,7 +58,7 @@ pub fn system_render_sprite(
                     transform.position,
                     transform.rotate,
                     transform.scale,
-                    texture.size().as_vec2(),
+                    texture.as_ref().size().as_vec2(),
                 );
                 transform.dirt = false;
             }

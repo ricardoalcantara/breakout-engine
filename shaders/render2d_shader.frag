@@ -1,114 +1,80 @@
-#version 330 core
-#define MAX_TEXTURE_COUNT $MAX_TEXTURE_COUNT
-in vec2 v_texture_coords;
-in vec4 v_color;
-in float v_tex_intex;
+#version 450
 
-out vec4 o_color;
+layout(location=0) in vec3 v_color;
+layout(location=1) in vec2 v_texture_coord;
 
-uniform sampler2D u_textures[MAX_TEXTURE_COUNT];
+layout(location=0) out vec4 o_color;
 
-void main()
-{   
-    vec4 texColor = v_color;
-	switch(int(v_tex_intex))
-	{        
-		#if (MAX_TEXTURE_COUNT > 0)
-        case 0: texColor *= texture(u_textures[0], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 1)
-        case 1: texColor *= texture(u_textures[1], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 2)
-        case 2: texColor *= texture(u_textures[2], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 3)
-        case 3: texColor *= texture(u_textures[3], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 4)
-        case 4: texColor *= texture(u_textures[4], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 5)
-        case 5: texColor *= texture(u_textures[5], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 6)
-        case 6: texColor *= texture(u_textures[6], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 7)
-        case 7: texColor *= texture(u_textures[7], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 8)
-        case 8: texColor *= texture(u_textures[8], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 9)
-        case 9: texColor *= texture(u_textures[9], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 10)
-        case 10: texColor *= texture(u_textures[10], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 11)
-        case 11: texColor *= texture(u_textures[11], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 12)
-        case 12: texColor *= texture(u_textures[12], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 13)
-        case 13: texColor *= texture(u_textures[13], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 14)
-        case 14: texColor *= texture(u_textures[14], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 15)
-        case 15: texColor *= texture(u_textures[15], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 16)
-        case 16: texColor *= texture(u_textures[16], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 17)
-        case 17: texColor *= texture(u_textures[17], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 18)
-        case 18: texColor *= texture(u_textures[18], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 19)
-        case 19: texColor *= texture(u_textures[19], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 20)
-        case 20: texColor *= texture(u_textures[20], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 21)
-        case 21: texColor *= texture(u_textures[21], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 22)
-        case 22: texColor *= texture(u_textures[22], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 23)
-        case 23: texColor *= texture(u_textures[23], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 24)
-        case 24: texColor *= texture(u_textures[24], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 25)
-        case 25: texColor *= texture(u_textures[25], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 26)
-        case 26: texColor *= texture(u_textures[26], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 27)
-        case 27: texColor *= texture(u_textures[27], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 28)
-        case 28: texColor *= texture(u_textures[28], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 29)
-        case 29: texColor *= texture(u_textures[29], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 30)
-        case 30: texColor *= texture(u_textures[30], v_texture_coords); break;
-        #endif
-		#if (MAX_TEXTURE_COUNT > 31)
-        case 31: texColor *= texture(u_textures[31], v_texture_coords); break;
-        #endif
+layout(set = 0, binding = 0) uniform sampler s_diffuse;
+layout(set = 0, binding = 1) uniform texture2D t_diffuse_1;
+layout(set = 0, binding = 2) uniform texture2D t_diffuse_2;
+// layout(set = 0, binding = 3) uniform texture2D t_diffuse_3;
+// layout(set = 0, binding = 4) uniform texture2D t_diffuse_4;
+// layout(set = 0, binding = 5) uniform texture2D t_diffuse_5;
+// layout(set = 0, binding = 6) uniform texture2D t_diffuse_6;
+// layout(set = 0, binding = 7) uniform texture2D t_diffuse_7;
+// layout(set = 0, binding = 8) uniform texture2D t_diffuse_8;
+// layout(set = 0, binding = 9) uniform texture2D t_diffuse_9;
+// layout(set = 0, binding = 10) uniform texture2D t_diffuse_10;
+// layout(set = 0, binding = 11) uniform texture2D t_diffuse_11;
+// layout(set = 0, binding = 12) uniform texture2D t_diffuse_12;
+// layout(set = 0, binding = 13) uniform texture2D t_diffuse_13;
+// layout(set = 0, binding = 14) uniform texture2D t_diffuse_14;
+// layout(set = 0, binding = 15) uniform texture2D t_diffuse_15;
+// layout(set = 0, binding = 16) uniform texture2D t_diffuse_16;
+// layout(set = 0, binding = 17) uniform texture2D t_diffuse_17;
+// layout(set = 0, binding = 18) uniform texture2D t_diffuse_18;
+// layout(set = 0, binding = 19) uniform texture2D t_diffuse_19;
+// layout(set = 0, binding = 20) uniform texture2D t_diffuse_20;
+// layout(set = 0, binding = 21) uniform texture2D t_diffuse_21;
+// layout(set = 0, binding = 22) uniform texture2D t_diffuse_22;
+// layout(set = 0, binding = 23) uniform texture2D t_diffuse_23;
+// layout(set = 0, binding = 24) uniform texture2D t_diffuse_24;
+// layout(set = 0, binding = 25) uniform texture2D t_diffuse_25;
+// layout(set = 0, binding = 26) uniform texture2D t_diffuse_26;
+// layout(set = 0, binding = 27) uniform texture2D t_diffuse_27;
+// layout(set = 0, binding = 28) uniform texture2D t_diffuse_28;
+// layout(set = 0, binding = 29) uniform texture2D t_diffuse_29;
+// layout(set = 0, binding = 30) uniform texture2D t_diffuse_30;
+// layout(set = 0, binding = 31) uniform texture2D t_diffuse_31;
+// layout(set = 0, binding = 32) uniform texture2D t_diffuse_32;
+
+void main() {
+    vec4 texColor = vec4(v_color, 1.0);
+	switch(1)
+	{
+        case 0: texColor *= texture(sampler2D(t_diffuse_1, s_diffuse), v_texture_coord); break;
+        case 1: texColor *= texture(sampler2D(t_diffuse_2, s_diffuse), v_texture_coord); break;
+        // case 2: texColor *= texture(sampler2D(t_diffuse_3, s_diffuse), v_texture_coord); break;
+        // case 3: texColor *= texture(sampler2D(t_diffuse_4, s_diffuse), v_texture_coord); break;
+        // case 4: texColor *= texture(sampler2D(t_diffuse_5, s_diffuse), v_texture_coord); break;
+        // case 5: texColor *= texture(sampler2D(t_diffuse_6, s_diffuse), v_texture_coord); break;
+        // case 6: texColor *= texture(sampler2D(t_diffuse_7, s_diffuse), v_texture_coord); break;
+        // case 7: texColor *= texture(sampler2D(t_diffuse_8, s_diffuse), v_texture_coord); break;
+        // case 8: texColor *= texture(sampler2D(t_diffuse_9, s_diffuse), v_texture_coord); break;
+        // case 9: texColor *= texture(sampler2D(t_diffuse_10, s_diffuse), v_texture_coord); break;
+        // case 10: texColor *= texture(sampler2D(t_diffuse_11, s_diffuse), v_texture_coord); break;
+        // case 11: texColor *= texture(sampler2D(t_diffuse_12, s_diffuse), v_texture_coord); break;
+        // case 12: texColor *= texture(sampler2D(t_diffuse_13, s_diffuse), v_texture_coord); break;
+        // case 13: texColor *= texture(sampler2D(t_diffuse_14, s_diffuse), v_texture_coord); break;
+        // case 14: texColor *= texture(sampler2D(t_diffuse_15, s_diffuse), v_texture_coord); break;
+        // case 15: texColor *= texture(sampler2D(t_diffuse_16, s_diffuse), v_texture_coord); break;
+        // case 16: texColor *= texture(sampler2D(t_diffuse_17, s_diffuse), v_texture_coord); break;
+        // case 17: texColor *= texture(sampler2D(t_diffuse_18, s_diffuse), v_texture_coord); break;
+        // case 18: texColor *= texture(sampler2D(t_diffuse_19, s_diffuse), v_texture_coord); break;
+        // case 19: texColor *= texture(sampler2D(t_diffuse_20, s_diffuse), v_texture_coord); break;
+        // case 20: texColor *= texture(sampler2D(t_diffuse_21, s_diffuse), v_texture_coord); break;
+        // case 21: texColor *= texture(sampler2D(t_diffuse_22, s_diffuse), v_texture_coord); break;
+        // case 22: texColor *= texture(sampler2D(t_diffuse_23, s_diffuse), v_texture_coord); break;
+        // case 23: texColor *= texture(sampler2D(t_diffuse_24, s_diffuse), v_texture_coord); break;
+        // case 24: texColor *= texture(sampler2D(t_diffuse_25, s_diffuse), v_texture_coord); break;
+        // case 25: texColor *= texture(sampler2D(t_diffuse_26, s_diffuse), v_texture_coord); break;
+        // case 26: texColor *= texture(sampler2D(t_diffuse_27, s_diffuse), v_texture_coord); break;
+        // case 27: texColor *= texture(sampler2D(t_diffuse_28, s_diffuse), v_texture_coord); break;
+        // case 28: texColor *= texture(sampler2D(t_diffuse_29, s_diffuse), v_texture_coord); break;
+        // case 29: texColor *= texture(sampler2D(t_diffuse_30, s_diffuse), v_texture_coord); break;
+        // case 30: texColor *= texture(sampler2D(t_diffuse_31, s_diffuse), v_texture_coord); break;
+        // case 31: texColor *= texture(sampler2D(t_diffuse_32, s_diffuse), v_texture_coord); break;
 	}
     
     o_color = texColor;
