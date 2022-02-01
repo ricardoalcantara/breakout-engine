@@ -15,7 +15,8 @@ pub fn system_render_font_texture(
 ) -> BreakoutResult {
     let world = &context.world;
 
-    todo!();
+    // TODO not yet implemented
+    // todo!();
     // for (_id, label) in world.query::<&Label>().iter() {
     //     if let Some(font_id) = &label.font_id {
     //         asset_manager.get_font_with_size(&font_id, label.size, |image| {

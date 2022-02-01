@@ -217,7 +217,6 @@ impl EngineBuilder {
     pub fn build(self) -> BreakoutResult<Engine> {
         let mut window_builder = winit::window::WindowBuilder::new();
         window_builder = WindowSettings::apply_builder(window_builder, self.window_settings);
-
         let mut game_window = GameWindow::build(window_builder);
 
         RenderSettings::apply_window(&mut game_window, self.render_settings);

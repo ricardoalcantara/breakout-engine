@@ -5,7 +5,13 @@ use log::info;
 use std::iter;
 use winit::window::Window;
 
-pub struct Renderer<'a> {
+pub struct RenderContext {
+    pub output: wgpu::SurfaceTexture,
+    pub view: wgpu::TextureView,
+    pub encoder: wgpu::CommandEncoder,
+}
+
+pub struct Renderer {
     surface: wgpu::Surface,
     device: wgpu::Device,
     queue: wgpu::Queue,
@@ -14,13 +20,11 @@ pub struct Renderer<'a> {
     render2d_pipeline: Render2DPineline,
     clear_color: wgpu::Color,
 
-    output: Option<wgpu::SurfaceTexture>,
-    encoder: Option<wgpu::CommandEncoder>,
-    render_pass: Option<wgpu::RenderPass<'a>>,
+    render_context: Option<RenderContext>,
 }
 
-impl<'a> Renderer<'a> {
-    pub async fn new(window: &Window) -> Renderer<'a> {
+impl Renderer {
+    pub async fn new(window: &Window) -> Renderer {
         let size = window.inner_size();
 
         let backend = wgpu::util::backend_bits_from_env().unwrap_or_else(wgpu::Backends::all);
@@ -64,7 +68,8 @@ impl<'a> Renderer<'a> {
             format: surface.get_preferred_format(&adapter).unwrap(),
             width: size.width,
             height: size.height,
-            present_mode: wgpu::PresentMode::Fifo,
+            // TODO VSYNC
+            present_mode: wgpu::PresentMode::Immediate,
         };
         surface.configure(&device, &config);
 
@@ -87,9 +92,7 @@ impl<'a> Renderer<'a> {
             render2d_pipeline,
             clear_color,
 
-            output: None,
-            encoder: None,
-            render_pass: None,
+            render_context: None,
         }
     }
 
@@ -135,22 +138,11 @@ impl<'a> Renderer<'a> {
                 label: Some("Render Encoder"),
             });
 
-        let render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("Render Pass"),
-            color_attachments: &[wgpu::RenderPassColorAttachment {
-                view: &view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(self.clear_color),
-                    store: true,
-                },
-            }],
-            depth_stencil_attachment: None,
+        self.render_context = Some(RenderContext {
+            output,
+            view,
+            encoder,
         });
-
-        self.output = Some(output);
-        self.encoder = Some(encoder);
-        self.render_pass = Some(render_pass);
 
         if let Some(camera) = camera {
             self.render2d_pipeline.set_camera(camera, &self.queue);
@@ -161,34 +153,33 @@ impl<'a> Renderer<'a> {
     }
 
     pub fn end_draw(&mut self) {
+        // TODO no_unwrap
+        let mut render_context = self.render_context.take().unwrap();
+
         self.render2d_pipeline.end_batch(&self.queue);
-        self.render2d_pipeline
-            .flush(&mut self.render_pass.as_ref().unwrap());
+        self.render2d_pipeline.flush(&mut render_context);
 
-        let render_pass = self.render_pass.take().unwrap();
-        let encoder = self.encoder.take().unwrap();
-        let output = self.output.take().unwrap();
-
-        drop(render_pass);
-
-        self.queue.submit(iter::once(encoder.finish()));
-        output.present();
+        self.queue
+            .submit(iter::once(render_context.encoder.finish()));
+        render_context.output.present();
     }
 
     pub fn draw_quad(&mut self, quad: RenderQuad) {
-        self.render2d_pipeline.draw_quad(
-            &mut self.render_pass.as_ref().unwrap(),
-            &self.queue,
-            quad,
-        );
+        if let Some(render_context) = &mut self.render_context {
+            self.render2d_pipeline
+                .draw_quad(render_context, &self.queue, quad);
+        } else {
+            panic!()
+        }
     }
 
     pub fn draw_texture(&mut self, texture: RenderTexture) {
-        self.render2d_pipeline.draw_texture(
-            &mut self.render_pass.as_ref().unwrap(),
-            &self.queue,
-            texture,
-        );
+        if let Some(render_context) = &mut self.render_context {
+            self.render2d_pipeline
+                .draw_texture(render_context, &self.queue, texture);
+        } else {
+            panic!()
+        }
     }
 
     pub fn draw_text(&mut self, _text: RenderText) {
@@ -208,13 +199,17 @@ impl<'a> Renderer<'a> {
     }
 
     pub fn draw_vertices(&mut self, _vertices: RenderVertices) {
-        self.render2d_pipeline.draw_vertices(
-            &mut self.render_pass.as_ref().unwrap(),
-            &self.queue,
-            _vertices.vertices,
-            _vertices.color,
-            _vertices.texture_coords,
-            _vertices.texture,
-        )
+        if let Some(render_context) = &mut self.render_context {
+            self.render2d_pipeline.draw_vertices(
+                render_context,
+                &self.queue,
+                _vertices.vertices,
+                _vertices.color,
+                _vertices.texture_coords,
+                _vertices.texture,
+            )
+        } else {
+            panic!()
+        }
     }
 }

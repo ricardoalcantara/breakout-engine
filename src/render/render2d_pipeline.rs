@@ -5,6 +5,7 @@ use wgpu::util::DeviceExt;
 
 use super::{
     render2d_data::{Render2dData, MAX_INDEX_COUNT},
+    renderer::RenderContext,
     texture::Texture,
     vertex::{QuadOrigin, Vertex},
     RenderQuad, RenderTexture,
@@ -172,12 +173,33 @@ impl Render2DPineline {
             multiview: None,
         });
 
-        let vertices: [Vertex; 0] = [];
+        let white_texture = Texture::from_color([255, 255, 255, 255], device, queue);
+
+        let textures_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &texture_bind_group_layout,
+            entries: &[
+                wgpu::BindGroupEntry {
+                    binding: 0,
+                    resource: wgpu::BindingResource::Sampler(&white_texture.sampler),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 1,
+                    resource: wgpu::BindingResource::TextureView(&white_texture.view),
+                },
+                wgpu::BindGroupEntry {
+                    binding: 2,
+                    resource: wgpu::BindingResource::TextureView(&white_texture.view),
+                },
+            ],
+            label: Some("diffuse_bind_group"),
+        });
+
+        let render_data = Render2dData::new(max_textures as usize, white_texture);
 
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(&vertices),
-            usage: wgpu::BufferUsages::VERTEX,
+            contents: bytemuck::cast_slice(&render_data.vertices),
+            usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
         let mut indices: [u16; MAX_INDEX_COUNT] = [0u16; MAX_INDEX_COUNT];
@@ -219,16 +241,6 @@ impl Render2DPineline {
             }],
             label: Some("camera_bind_group"),
         });
-
-        let textures_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &texture_bind_group_layout,
-            entries: &[],
-            label: Some("diffuse_bind_group"),
-        });
-
-        let white_texture = Texture::from_color([255, 255, 255, 255], device, queue);
-
-        let render_data = Render2dData::new(max_textures as usize, white_texture);
 
         Render2DPineline {
             render_pipeline,
@@ -280,9 +292,30 @@ impl Render2DPineline {
         queue.write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
     }
 
-    pub fn flush<'a>(&'a mut self, render_pass: &mut wgpu::RenderPass<'a>) {
+    pub fn flush<'a>(&'a mut self, render_context: &mut RenderContext) {
         // TODO
         self.render_data.bind_textures();
+
+        let mut render_pass =
+            render_context
+                .encoder
+                .begin_render_pass(&wgpu::RenderPassDescriptor {
+                    label: Some("Render Pass"),
+                    color_attachments: &[wgpu::RenderPassColorAttachment {
+                        view: &render_context.view,
+                        resolve_target: None,
+                        ops: wgpu::Operations {
+                            load: wgpu::LoadOp::Clear(wgpu::Color {
+                                r: 0.1,
+                                g: 0.2,
+                                b: 0.3,
+                                a: 1.0,
+                            }),
+                            store: true,
+                        },
+                    }],
+                    depth_stencil_attachment: None,
+                });
 
         render_pass.set_pipeline(&self.render_pipeline);
 
@@ -293,6 +326,8 @@ impl Render2DPineline {
         render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
         // TOOD remove cast later
         render_pass.draw_indexed(0..self.render_data.indices_count() as u32, 0, 0..1);
+
+        drop(render_pass);
 
         // TODO: RENDER
         // self.render();
@@ -309,7 +344,7 @@ impl Render2DPineline {
 
     pub fn draw_vertices<'a>(
         &'a mut self,
-        render_pass: &mut wgpu::RenderPass<'a>,
+        render_context: &mut RenderContext,
         queue: &wgpu::Queue,
         vertices: &[glam::Vec3; 4],
         color: glam::Vec4,
@@ -320,14 +355,14 @@ impl Render2DPineline {
         if let Some(texture) = texture {
             if !self.render_data.can_add_quad_with_texture(texture) {
                 self.end_batch(queue);
-                self.flush(render_pass);
+                self.flush(render_context);
                 self.begin_batch()
             }
             tex_index = self.render_data.append_texture(texture);
         } else {
             if !self.render_data.can_add_quad() {
                 self.end_batch(queue);
-                self.flush(render_pass);
+                self.flush(render_context);
                 self.begin_batch()
             }
         }
@@ -338,13 +373,13 @@ impl Render2DPineline {
 
     pub fn draw_quad<'a>(
         &'a mut self,
-        render_pass: &mut wgpu::RenderPass<'a>,
+        render_context: &mut RenderContext,
         queue: &wgpu::Queue,
         quad: RenderQuad,
     ) {
         if !self.render_data.can_add_quad() {
             self.end_batch(queue);
-            self.flush(render_pass);
+            self.flush(render_context);
             self.begin_batch()
         }
 
@@ -366,7 +401,7 @@ impl Render2DPineline {
 
     pub fn draw_texture<'a>(
         &'a mut self,
-        render_pass: &mut wgpu::RenderPass<'a>,
+        render_context: &mut RenderContext,
         queue: &wgpu::Queue,
         render_texture: RenderTexture,
     ) {
@@ -374,7 +409,7 @@ impl Render2DPineline {
 
         if !self.render_data.can_add_quad_with_texture(&texture) {
             self.end_batch(queue);
-            self.flush(render_pass);
+            self.flush(render_context);
             self.begin_batch()
         }
 

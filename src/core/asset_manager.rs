@@ -43,16 +43,16 @@ impl AutoIncrementId {
     }
 }
 
-pub struct AssetManager<'a> {
+pub struct AssetManager {
     auto_increment_id: AutoIncrementId,
     textures: HashMap<TextureId, Rc<Texture>>,
     audios: HashMap<AudioId, Audio>,
     fonts: HashMap<FontId, Font>,
-    renderer: ReadOnlyRc<Renderer<'a>>,
+    renderer: ReadOnlyRc<Renderer>,
 }
 
-impl<'a> AssetManager<'a> {
-    pub(crate) fn new(renderer: ReadOnlyRc<Renderer<'a>>) -> Self {
+impl AssetManager {
+    pub(crate) fn new(renderer: ReadOnlyRc<Renderer>) -> Self {
         Self {
             auto_increment_id: AutoIncrementId::new(),
             textures: HashMap::new(),
@@ -63,7 +63,7 @@ impl<'a> AssetManager<'a> {
     }
 }
 
-impl<'a> AssetManager<'a> {
+impl AssetManager {
     pub fn load_texture(&mut self, path: &str) -> BreakoutResult<TextureId> {
         // let image = image::open(path).map_err(BreakoutError::ImageError)?;
         let renderer = self.renderer.borrow();
@@ -80,7 +80,7 @@ impl<'a> AssetManager<'a> {
     }
 }
 
-impl<'a> AssetManager<'a> {
+impl AssetManager {
     pub fn load_audio(
         &mut self,
         path: &str,
@@ -100,7 +100,7 @@ impl<'a> AssetManager<'a> {
     }
 }
 
-impl<'a> AssetManager<'a> {
+impl AssetManager {
     pub fn load_font(&mut self, path: &str) -> BreakoutResult<FontId> {
         let font = Font::new(path)?;
 

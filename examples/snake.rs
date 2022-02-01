@@ -86,6 +86,7 @@ impl MainState {
     fn spawn_snake_part(&self, world: &mut World, position: math::Vec2) {
         world.spawn((
             Sprite {
+                color: Some(math::vec4(1.0, 1.0, 1.0, 1.0)),
                 ..Default::default()
             },
             Transform2D::from_position_rotation_scale(

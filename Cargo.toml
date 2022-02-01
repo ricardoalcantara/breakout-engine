@@ -3,17 +3,10 @@ name = "breakout_engine"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[workspace]
-members = [
-    "wgpu_tests",
-]
-
 [dependencies]
 freetype-rs = "0.29.0"
 anyhow = "1.0"
-glam = "0.20.1"
+glam = { version = "0.20.1", features = ['bytemuck'] }
 hecs = "0.7.1"
 image = "0.23"
 log = "0.4.14"

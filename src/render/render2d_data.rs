@@ -10,10 +10,11 @@ pub const MAX_TEXTURE_COUNT: usize = 32;
 
 pub struct Render2dData {
     quad_count: i32,
-    vertices: Box<[Vertex]>,
+    // TODO not public
+    pub vertices: Box<[Vertex]>,
 
     texture_slot_index: usize,
-    texture_slots: [Option<Rc<Texture>>; MAX_TEXTURE_COUNT],
+    texture_slots: Box<[Option<Rc<Texture>>]>,
     texture_max_texture_count: usize,
 }
 
@@ -26,7 +27,7 @@ impl Render2dData {
             MAX_TEXTURE_COUNT
         );
 
-        let mut texture_slots = [None; MAX_TEXTURE_COUNT];
+        let mut texture_slots = vec![None; MAX_VERTEX_COUNT].into_boxed_slice();
         texture_slots[0] = Some(Rc::new(white_texture));
 
         Render2dData {
@@ -199,7 +200,8 @@ impl Render2dData {
     }
 
     pub fn bind_textures(&self) {
-        todo!()
+        // TODO not yet implemented
+        // todo!()
         // unsafe {
         //     for (i, t) in self.texture_slots[0..self.texture_max_texture_count as usize]
         //         .iter()

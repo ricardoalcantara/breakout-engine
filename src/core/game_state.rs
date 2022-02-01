@@ -17,19 +17,19 @@ use crate::{
     render::renderer::Renderer,
 };
 
-pub struct GameState<'a> {
+pub struct GameState {
     scenes: Vec<Box<dyn Scene>>,
-    context: GameContext<'a>,
+    context: GameContext,
     engine: EngineContext,
     ui_context: UIContext,
-    asset_manager: AssetManager<'a>,
+    asset_manager: AssetManager,
     input: Input,
     music_player: AudioPlayer,
     default_font: Font,
 }
 
-impl<'a> GameState<'a> {
-    pub fn new<S>(state: S, renderer: ReadOnlyRc<Renderer<'a>>) -> BreakoutResult<Self>
+impl GameState {
+    pub fn new<S>(state: S, renderer: ReadOnlyRc<Renderer>) -> BreakoutResult<Self>
     where
         S: Scene + 'static,
     {
@@ -159,8 +159,9 @@ impl<'a> GameState<'a> {
             &self.default_font,
         )?;
 
-        self.ui_context
-            .render(&mut renderer_borrowed_mut, &view_time);
+        // TODO not yet implemented
+        // self.ui_context
+        //     .render(&mut renderer_borrowed_mut, &view_time);
         Ok(())
     }
 }

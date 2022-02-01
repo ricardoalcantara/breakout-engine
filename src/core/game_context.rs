@@ -6,15 +6,15 @@ use super::{
 use crate::{render::renderer::Renderer, shapes::rectangle::Rect};
 use hecs::World;
 
-pub struct GameContext<'a> {
+pub struct GameContext {
     pub(crate) clear_color: glam::Vec3,
     pub(crate) world: World,
     audio_queue: Vec<AudioId>,
-    renderer: ReadOnlyRc<Renderer<'a>>,
+    renderer: ReadOnlyRc<Renderer>,
 }
 
-impl<'a> GameContext<'a> {
-    pub(crate) fn new(renderer: ReadOnlyRc<Renderer<'a>>) -> Self {
+impl GameContext {
+    pub(crate) fn new(renderer: ReadOnlyRc<Renderer>) -> Self {
         Self {
             world: World::new(),
             clear_color: glam::Vec3::ZERO,

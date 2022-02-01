@@ -41,14 +41,14 @@ impl<T> ReadWriteRc<T> {
 pub enum GameLoopState<'a> {
     Input(&'a WindowEvent<'a>),
     Update,
-    Render(ReadWriteRc<Renderer<'a>>),
+    Render(ReadWriteRc<Renderer>),
     Wait,
 }
 
 pub struct GameWindow {
     event_loop: Option<EventLoop<()>>,
     window: Rc<RefCell<Window>>,
-    renderer: Rc<RefCell<Renderer<'static>>>,
+    renderer: Rc<RefCell<Renderer>>,
 }
 
 impl GameWindow {
@@ -81,11 +81,11 @@ impl GameWindow {
         ReadWriteRc(Rc::clone(&self.window))
     }
 
-    pub fn renderer(&self) -> ReadOnlyRc<Renderer<'static>> {
+    pub fn renderer(&self) -> ReadOnlyRc<Renderer> {
         ReadOnlyRc(Rc::clone(&self.renderer))
     }
 
-    pub fn renderer_mut(&self) -> ReadWriteRc<Renderer<'static>> {
+    pub fn renderer_mut(&self) -> ReadWriteRc<Renderer> {
         ReadWriteRc(Rc::clone(&self.renderer))
     }
 
