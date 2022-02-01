@@ -45,14 +45,14 @@ pub enum GameLoopState<'a> {
     Wait,
 }
 
-pub struct GameWindow<'a> {
+pub struct GameWindow {
     event_loop: Option<EventLoop<()>>,
     window: Rc<RefCell<Window>>,
-    renderer: Rc<RefCell<Renderer<'a>>>,
+    renderer: Rc<RefCell<Renderer<'static>>>,
 }
 
-impl<'a> GameWindow<'a> {
-    pub fn build(window_builder: WindowBuilder) -> GameWindow<'a> {
+impl GameWindow {
+    pub fn build(window_builder: WindowBuilder) -> GameWindow {
         let event_loop = EventLoop::new();
         let window = window_builder.build(&event_loop).unwrap();
 
@@ -81,11 +81,11 @@ impl<'a> GameWindow<'a> {
         ReadWriteRc(Rc::clone(&self.window))
     }
 
-    pub fn renderer(&self) -> ReadOnlyRc<Renderer<'a>> {
+    pub fn renderer(&self) -> ReadOnlyRc<Renderer<'static>> {
         ReadOnlyRc(Rc::clone(&self.renderer))
     }
 
-    pub fn renderer_mut(&self) -> ReadWriteRc<Renderer<'a>> {
+    pub fn renderer_mut(&self) -> ReadWriteRc<Renderer<'static>> {
         ReadWriteRc(Rc::clone(&self.renderer))
     }
 

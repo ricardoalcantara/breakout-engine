@@ -1,6 +1,3 @@
-use bytemuck::offset_of;
-
-// main.rs
 #[repr(C)]
 #[derive(Copy, Clone, Debug, Default)]
 pub struct Vertex {
@@ -20,22 +17,22 @@ impl Vertex {
             step_mode: wgpu::VertexStepMode::Vertex,
             attributes: &[
                 wgpu::VertexAttribute {
-                    offset: unsafe { offset_of!(Vertex, position) } as wgpu::BufferAddress,
+                    offset: 0,
                     shader_location: 0,
                     format: wgpu::VertexFormat::Float32x3,
                 },
                 wgpu::VertexAttribute {
-                    offset: unsafe { offset_of!(Vertex, color) } as wgpu::BufferAddress,
+                    offset: std::mem::size_of::<[f32; 3]>() as wgpu::BufferAddress,
                     shader_location: 1,
                     format: wgpu::VertexFormat::Float32x3,
                 },
                 wgpu::VertexAttribute {
-                    offset: unsafe { offset_of!(Vertex, texture_coords) } as wgpu::BufferAddress,
+                    offset: std::mem::size_of::<[f32; 6]>() as wgpu::BufferAddress,
                     shader_location: 2,
                     format: wgpu::VertexFormat::Float32x2,
                 },
                 wgpu::VertexAttribute {
-                    offset: unsafe { offset_of!(Vertex, tex_index) } as wgpu::BufferAddress,
+                    offset: std::mem::size_of::<[f32; 8]>() as wgpu::BufferAddress,
                     shader_location: 3,
                     format: wgpu::VertexFormat::Uint32,
                 },

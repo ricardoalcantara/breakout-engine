@@ -21,7 +21,7 @@ num-traits = "0.2.14"
 pretty_env_logger = "0.4.0"
 rand = "0.8.4"
 rodio = "0.14.0"
-wgpu = "0.12.0"
+wgpu = { version = "0.12.0", features = ['spirv', 'angle'] }
 winit = "0.26.0"
 memoffset = "0.6.5"
 shaderc = "0.7.4"

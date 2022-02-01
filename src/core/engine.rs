@@ -214,7 +214,7 @@ impl EngineBuilder {
         self
     }
 
-    pub fn build<'a>(self) -> BreakoutResult<Engine<'a>> {
+    pub fn build(self) -> BreakoutResult<Engine> {
         let mut window_builder = winit::window::WindowBuilder::new();
         window_builder = WindowSettings::apply_builder(window_builder, self.window_settings);
 
@@ -227,11 +227,11 @@ impl EngineBuilder {
     }
 }
 
-pub struct Engine<'a> {
-    game_window: GameWindow<'a>,
+pub struct Engine {
+    game_window: GameWindow,
 }
 
-impl<'a> Engine<'static> {
+impl Engine {
     pub fn run<S>(self, state: S) -> BreakoutResult<()>
     where
         S: Scene + 'static,
