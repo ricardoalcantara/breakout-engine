@@ -2,7 +2,7 @@ use super::{
     render2d_pipeline::Render2DPineline, RenderQuad, RenderText, RenderTexture, RenderVertices,
 };
 use log::info;
-use std::iter;
+use std::{iter, rc::Rc};
 use winit::window::Window;
 
 pub struct RenderContext {
@@ -13,8 +13,8 @@ pub struct RenderContext {
 
 pub struct Renderer {
     surface: wgpu::Surface,
-    device: wgpu::Device,
-    queue: wgpu::Queue,
+    device: Rc<wgpu::Device>,
+    queue: Rc<wgpu::Queue>,
     config: wgpu::SurfaceConfiguration,
     size: winit::dpi::PhysicalSize<u32>,
     render2d_pipeline: Render2DPineline,
@@ -73,8 +73,12 @@ impl Renderer {
         };
         surface.configure(&device, &config);
 
+        let device = Rc::new(device);
+        let queue = Rc::new(queue);
+
+        //TODO max_texture_xyz
         let render2d_pipeline =
-            Render2DPineline::new(size.width, size.height, 32, &device, &config, &queue);
+            Render2DPineline::new(size.width, size.height, 3, &device, &queue, &config);
 
         let clear_color = wgpu::Color {
             r: 0.1,
@@ -132,7 +136,7 @@ impl Renderer {
             .texture
             .create_view(&wgpu::TextureViewDescriptor::default());
 
-        let mut encoder = self
+        let encoder = self
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor {
                 label: Some("Render Encoder"),
@@ -145,9 +149,9 @@ impl Renderer {
         });
 
         if let Some(camera) = camera {
-            self.render2d_pipeline.set_camera(camera, &self.queue);
+            self.render2d_pipeline.set_camera(camera);
         } else {
-            self.render2d_pipeline.default_camera(&self.queue);
+            self.render2d_pipeline.default_camera();
         }
         self.render2d_pipeline.begin_batch();
     }
@@ -156,7 +160,7 @@ impl Renderer {
         // TODO no_unwrap
         let mut render_context = self.render_context.take().unwrap();
 
-        self.render2d_pipeline.end_batch(&self.queue);
+        self.render2d_pipeline.end_batch();
         self.render2d_pipeline.flush(&mut render_context);
 
         self.queue
@@ -166,8 +170,7 @@ impl Renderer {
 
     pub fn draw_quad(&mut self, quad: RenderQuad) {
         if let Some(render_context) = &mut self.render_context {
-            self.render2d_pipeline
-                .draw_quad(render_context, &self.queue, quad);
+            self.render2d_pipeline.draw_quad(render_context, quad);
         } else {
             panic!()
         }
@@ -175,8 +178,7 @@ impl Renderer {
 
     pub fn draw_texture(&mut self, texture: RenderTexture) {
         if let Some(render_context) = &mut self.render_context {
-            self.render2d_pipeline
-                .draw_texture(render_context, &self.queue, texture);
+            self.render2d_pipeline.draw_texture(render_context, texture);
         } else {
             panic!()
         }
@@ -202,7 +204,6 @@ impl Renderer {
         if let Some(render_context) = &mut self.render_context {
             self.render2d_pipeline.draw_vertices(
                 render_context,
-                &self.queue,
                 _vertices.vertices,
                 _vertices.color,
                 _vertices.texture_coords,

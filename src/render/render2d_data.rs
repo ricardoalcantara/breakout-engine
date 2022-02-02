@@ -27,7 +27,7 @@ impl Render2dData {
             MAX_TEXTURE_COUNT
         );
 
-        let mut texture_slots = vec![None; MAX_VERTEX_COUNT].into_boxed_slice();
+        let mut texture_slots = vec![None; texture_max_texture_count].into_boxed_slice();
         texture_slots[0] = Some(Rc::new(white_texture));
 
         Render2dData {
@@ -58,10 +58,11 @@ impl Render2dData {
 
     // TODO Caution
     pub fn append_texture(&mut self, append_texture: &Rc<Texture>) -> u32 {
-        assert!(
-            self.texture_slot_index < self.texture_max_texture_count,
-            "It's not possible to append more textures than the driver supports"
-        );
+        // TODO wrong validation, same texture shouldn't consume a slot
+        // assert!(
+        //     self.texture_slot_index < self.texture_max_texture_count,
+        //     "It's not possible to append more textures than the driver supports"
+        // );
         for (i, texture) in self.texture_slots.iter().enumerate() {
             if let Some(texture) = texture {
                 if Rc::ptr_eq(texture, append_texture) {
@@ -199,19 +200,30 @@ impl Render2dData {
         self.quad_count * 6
     }
 
-    pub fn bind_textures(&self) {
-        // TODO not yet implemented
-        // todo!()
-        // unsafe {
-        //     for (i, t) in self.texture_slots[0..self.texture_max_texture_count as usize]
-        //         .iter()
-        //         .enumerate()
-        //     {
-        //         // gl::BindTextureUnit(i as GLuint, *t);
-        //         gl::ActiveTexture(gl::TEXTURE0 + i as u32);
-        //         gl::BindTexture(gl::TEXTURE_2D, *t);
-        //     }
-        // }
-        // check_gl_ok().unwrap();
+    pub fn bind_textures(
+        &self,
+        texture_bind_group_layout: &wgpu::BindGroupLayout,
+        device: &wgpu::Device,
+    ) -> wgpu::BindGroup {
+        let mut textures_bind_group_entries = Vec::new();
+        textures_bind_group_entries.push(wgpu::BindGroupEntry {
+            binding: 0,
+            resource: wgpu::BindingResource::Sampler(
+                &self.texture_slots[0].as_ref().unwrap().sampler,
+            ),
+        });
+        for (i, t) in self.texture_slots.iter().enumerate() {
+            if let Some(texture) = t {
+                textures_bind_group_entries.push(wgpu::BindGroupEntry {
+                    binding: i as u32 + 1,
+                    resource: wgpu::BindingResource::TextureView(&texture.view),
+                })
+            }
+        }
+        device.create_bind_group(&wgpu::BindGroupDescriptor {
+            layout: &texture_bind_group_layout,
+            entries: &textures_bind_group_entries,
+            label: Some("diffuse_bind_group"),
+        })
     }
 }

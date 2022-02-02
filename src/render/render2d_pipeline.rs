@@ -26,10 +26,12 @@ impl Uniforms {
 }
 
 pub struct Render2DPineline {
+    device: Rc<wgpu::Device>,
+    queue: Rc<wgpu::Queue>,
+
     render_pipeline: wgpu::RenderPipeline,
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
-    num_indices: u32,
 
     render_data: Render2dData,
 
@@ -37,7 +39,7 @@ pub struct Render2DPineline {
     camera_buffer: wgpu::Buffer,
 
     camera_bind_group: wgpu::BindGroup,
-    textures_bind_group: wgpu::BindGroup,
+    texture_bind_group_layout: wgpu::BindGroupLayout,
 }
 
 impl Render2DPineline {
@@ -45,9 +47,9 @@ impl Render2DPineline {
         width: u32,
         height: u32,
         max_textures: i32,
-        device: &wgpu::Device,
+        device: &Rc<wgpu::Device>,
+        queue: &Rc<wgpu::Queue>,
         config: &wgpu::SurfaceConfiguration,
-        queue: &wgpu::Queue,
     ) -> Render2DPineline {
         // let vs_src = include_str!("../../shaders/render2d_shader.vert");
         // let fs_src = include_str!("../../shaders/render2d_shader.frag");
@@ -85,44 +87,33 @@ impl Render2DPineline {
             source: fs_data,
         });
 
+        let mut texture_bind_group_layout_entries = Vec::new();
+        texture_bind_group_layout_entries.push(wgpu::BindGroupLayoutEntry {
+            binding: 0,
+            visibility: wgpu::ShaderStages::FRAGMENT,
+            ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+            count: None,
+        });
+        for i in 0..max_textures {
+            texture_bind_group_layout_entries.push(wgpu::BindGroupLayoutEntry {
+                binding: i as u32 + 1,
+                visibility: wgpu::ShaderStages::FRAGMENT,
+                ty: wgpu::BindingType::Texture {
+                    multisampled: false,
+                    view_dimension: wgpu::TextureViewDimension::D2,
+                    sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                },
+                count: None,
+            })
+        }
+
         let texture_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 0,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Sampler(
-                            // SamplerBindingType::Comparison is only for TextureSampleType::Depth
-                            // SamplerBindingType::Filtering if the sample_type of the texture is:
-                            //     TextureSampleType::Float { filterable: true }
-                            // Otherwise you'll get an error.
-                            wgpu::SamplerBindingType::Filtering,
-                        ),
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 1,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        },
-                        count: None,
-                    },
-                    wgpu::BindGroupLayoutEntry {
-                        binding: 2,
-                        visibility: wgpu::ShaderStages::FRAGMENT,
-                        ty: wgpu::BindingType::Texture {
-                            multisampled: false,
-                            view_dimension: wgpu::TextureViewDimension::D2,
-                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
-                        },
-                        count: None,
-                    },
-                ],
+                entries: &texture_bind_group_layout_entries,
                 label: Some("texture_bind_group_layout"),
             });
+
+        let white_texture = Texture::from_color([255, 255, 255, 255], device, queue);
 
         let camera_bind_group_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -159,7 +150,7 @@ impl Render2DPineline {
                 entry_point: "main",
                 targets: &[wgpu::ColorTargetState {
                     format: config.format,
-                    blend: Some(wgpu::BlendState::REPLACE),
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                     write_mask: wgpu::ColorWrites::ALL,
                 }],
             }),
@@ -171,27 +162,6 @@ impl Render2DPineline {
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
             multiview: None,
-        });
-
-        let white_texture = Texture::from_color([255, 255, 255, 255], device, queue);
-
-        let textures_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &texture_bind_group_layout,
-            entries: &[
-                wgpu::BindGroupEntry {
-                    binding: 0,
-                    resource: wgpu::BindingResource::Sampler(&white_texture.sampler),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 1,
-                    resource: wgpu::BindingResource::TextureView(&white_texture.view),
-                },
-                wgpu::BindGroupEntry {
-                    binding: 2,
-                    resource: wgpu::BindingResource::TextureView(&white_texture.view),
-                },
-            ],
-            label: Some("diffuse_bind_group"),
         });
 
         let render_data = Render2dData::new(max_textures as usize, white_texture);
@@ -220,7 +190,6 @@ impl Render2DPineline {
             contents: bytemuck::cast_slice(&indices),
             usage: wgpu::BufferUsages::INDEX,
         });
-        let num_indices = indices.len() as u32;
 
         let default_camera =
             glam::Mat4::orthographic_rh_gl(0.0, width as f32, height as f32, 0.0, -1.0, 1.0);
@@ -243,10 +212,12 @@ impl Render2DPineline {
         });
 
         Render2DPineline {
+            device: device.clone(),
+            queue: queue.clone(),
+
             render_pipeline,
             vertex_buffer,
             index_buffer,
-            num_indices,
 
             render_data,
 
@@ -254,29 +225,29 @@ impl Render2DPineline {
             camera_buffer,
 
             camera_bind_group,
-            textures_bind_group,
+            texture_bind_group_layout,
         }
     }
 
-    pub fn resize(&mut self, width: u32, height: u32, queue: &wgpu::Queue) {
+    pub fn resize(&mut self, width: u32, height: u32) {
         self.default_camera =
             glam::Mat4::orthographic_rh_gl(0.0, width as f32, height as f32, 0.0, -1.0, 1.0);
 
-        self.default_camera(queue);
+        self.default_camera();
     }
 
-    pub fn set_camera(&self, camera: glam::Mat4, queue: &wgpu::Queue) {
+    pub fn set_camera(&self, camera: glam::Mat4) {
         let camera_uniform = Uniforms::new(&camera);
-        queue.write_buffer(
+        self.queue.write_buffer(
             &self.camera_buffer,
             0,
             bytemuck::cast_slice(&[camera_uniform]),
         );
     }
 
-    pub fn default_camera(&self, queue: &wgpu::Queue) {
+    pub fn default_camera(&self) {
         let camera_uniform = Uniforms::new(&self.default_camera);
-        queue.write_buffer(
+        self.queue.write_buffer(
             &self.camera_buffer,
             0,
             bytemuck::cast_slice(&[camera_uniform]),
@@ -287,14 +258,16 @@ impl Render2DPineline {
         self.render_data.reset();
     }
 
-    pub fn end_batch(&self, queue: &wgpu::Queue) {
+    pub fn end_batch(&self) {
         let vertices = self.render_data.vertices();
-        queue.write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
+        self.queue
+            .write_buffer(&self.vertex_buffer, 0, bytemuck::cast_slice(&vertices));
     }
 
     pub fn flush<'a>(&'a mut self, render_context: &mut RenderContext) {
-        // TODO
-        self.render_data.bind_textures();
+        let texture_bind_group = self
+            .render_data
+            .bind_textures(&self.texture_bind_group_layout, &self.device);
 
         let mut render_pass =
             render_context
@@ -319,7 +292,7 @@ impl Render2DPineline {
 
         render_pass.set_pipeline(&self.render_pipeline);
 
-        render_pass.set_bind_group(0, &self.textures_bind_group, &[]);
+        render_pass.set_bind_group(0, &texture_bind_group, &[]);
         render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
 
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
@@ -345,7 +318,6 @@ impl Render2DPineline {
     pub fn draw_vertices<'a>(
         &'a mut self,
         render_context: &mut RenderContext,
-        queue: &wgpu::Queue,
         vertices: &[glam::Vec3; 4],
         color: glam::Vec4,
         texture_coords: &[glam::Vec2; 4],
@@ -354,14 +326,14 @@ impl Render2DPineline {
         let mut tex_index = 0;
         if let Some(texture) = texture {
             if !self.render_data.can_add_quad_with_texture(texture) {
-                self.end_batch(queue);
+                self.end_batch();
                 self.flush(render_context);
                 self.begin_batch()
             }
             tex_index = self.render_data.append_texture(texture);
         } else {
             if !self.render_data.can_add_quad() {
-                self.end_batch(queue);
+                self.end_batch();
                 self.flush(render_context);
                 self.begin_batch()
             }
@@ -371,14 +343,9 @@ impl Render2DPineline {
             .add_vertices(vertices, color, texture_coords, tex_index)
     }
 
-    pub fn draw_quad<'a>(
-        &'a mut self,
-        render_context: &mut RenderContext,
-        queue: &wgpu::Queue,
-        quad: RenderQuad,
-    ) {
+    pub fn draw_quad<'a>(&'a mut self, render_context: &mut RenderContext, quad: RenderQuad) {
         if !self.render_data.can_add_quad() {
-            self.end_batch(queue);
+            self.end_batch();
             self.flush(render_context);
             self.begin_batch()
         }
@@ -402,13 +369,12 @@ impl Render2DPineline {
     pub fn draw_texture<'a>(
         &'a mut self,
         render_context: &mut RenderContext,
-        queue: &wgpu::Queue,
         render_texture: RenderTexture,
     ) {
         let texture = render_texture.texture;
 
         if !self.render_data.can_add_quad_with_texture(&texture) {
-            self.end_batch(queue);
+            self.end_batch();
             self.flush(render_context);
             self.begin_batch()
         }
