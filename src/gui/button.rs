@@ -4,7 +4,7 @@ use crate::{
     render::{renderer::Renderer, RenderQuad},
     shapes::rectangle::Rect,
 };
-use std::cell::RefMut;
+use std::{cell::RefMut, rc::Rc};
 
 pub(crate) enum ButtonType {
     Text(Label),
@@ -27,7 +27,7 @@ impl Button {
         }
     }
 
-    pub(crate) fn draw(&self, renderer: &mut RefMut<Renderer>, rect: Rect, font: &Font) {
+    pub(crate) fn draw(&self, renderer: &mut RefMut<Renderer>, rect: Rect, font: &Rc<Font>) {
         renderer.draw_quad(RenderQuad {
             size: rect.size().into(),
             position: rect.position().into(),

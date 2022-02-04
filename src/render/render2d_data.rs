@@ -1,4 +1,5 @@
 use super::vertex::{QuadOrigin, Vertex, CENTER_QUAD, TOP_LEFT_QUAD};
+use super::{RenderQuad, RenderTexture, RenderVertices};
 use crate::render::texture::Texture;
 use crate::shapes::rectangle::Rect;
 use std::rc::Rc;
@@ -8,222 +9,314 @@ pub const MAX_VERTEX_COUNT: usize = MAX_QUAD_COUNT * 4;
 pub const MAX_INDEX_COUNT: usize = MAX_QUAD_COUNT * 6;
 pub const MAX_TEXTURE_COUNT: usize = 32;
 
-pub struct Render2dData {
-    quad_count: i32,
-    // TODO not public
-    pub vertices: Box<[Vertex]>,
+pub enum RenderItem {
+    RenderQuad(RenderQuad),
+    RenderTexture(RenderTexture),
+    RenderVertices(RenderVertices),
+}
 
-    texture_slot_index: usize,
-    texture_slots: Box<[Option<Rc<Texture>>]>,
-    texture_max_texture_count: usize,
+pub struct RenderStep {
+    pub buffer_vertices: Vec<Vertex>,
+    pub texture_bind_group: wgpu::BindGroup,
+}
+
+pub struct Render2dData {
+    white_texture: Rc<Texture>,
+    render_items: Vec<RenderItem>,
+    texture_max: usize,
 }
 
 impl Render2dData {
-    pub fn new(texture_max_texture_count: usize, white_texture: Texture) -> Render2dData {
+    pub fn new(texture_max: usize, white_texture: Texture) -> Render2dData {
         assert!(
-            texture_max_texture_count <= MAX_TEXTURE_COUNT,
-            "texture_max_texture_count {} is higher than MAX_TEXTURE_COUNT {}",
-            texture_max_texture_count,
+            texture_max <= MAX_TEXTURE_COUNT,
+            "texture_max {} is higher than MAX_TEXTURE_COUNT {}",
+            texture_max,
             MAX_TEXTURE_COUNT
         );
 
-        let mut texture_slots = vec![None; texture_max_texture_count].into_boxed_slice();
-        texture_slots[0] = Some(Rc::new(white_texture));
+        let white_texture = Rc::new(white_texture);
 
         Render2dData {
-            quad_count: 0,
-            vertices: vec![Vertex::default(); MAX_VERTEX_COUNT].into_boxed_slice(),
-
-            texture_slot_index: 1,
-            texture_slots,
-            texture_max_texture_count,
+            white_texture,
+            texture_max,
+            render_items: Vec::new(),
         }
     }
 
-    pub fn can_add_quad(&self) -> bool {
-        self.quad_count < MAX_QUAD_COUNT as i32
+    pub fn add_render_item(&mut self, render_item: RenderItem) {
+        self.render_items.push(render_item);
     }
 
-    // TODO Caution
-    pub fn can_add_quad_with_texture(&self, append_texture: &Rc<Texture>) -> bool {
-        self.quad_count < MAX_QUAD_COUNT as i32
-            && (self.texture_slots.iter().any(|texture| {
-                if let Some(tex) = texture {
-                    Rc::ptr_eq(tex, append_texture)
-                } else {
-                    false
-                }
-            }) || self.texture_slot_index < self.texture_max_texture_count)
+    pub fn begin_batch(&mut self) {
+        self.render_items.clear();
     }
 
-    // TODO Caution
-    pub fn append_texture(&mut self, append_texture: &Rc<Texture>) -> u32 {
-        // TODO wrong validation, same texture shouldn't consume a slot
-        // assert!(
-        //     self.texture_slot_index < self.texture_max_texture_count,
-        //     "It's not possible to append more textures than the driver supports"
-        // );
-        for (i, texture) in self.texture_slots.iter().enumerate() {
-            if let Some(texture) = texture {
-                if Rc::ptr_eq(texture, append_texture) {
-                    return i as u32;
+    pub fn get_render_vertices_and_textures(
+        &mut self,
+        device: &wgpu::Device,
+        texture_bind_group_layout: &wgpu::BindGroupLayout,
+    ) -> Vec<RenderStep> {
+        let mut render_steps = Vec::new();
+
+        let mut textures = vec![self.white_texture.clone()];
+        let mut buffer_vertices = Vec::new();
+
+        for render_item in self.render_items.drain(..) {
+            match render_item {
+                RenderItem::RenderQuad(render_quad) => {
+                    todo!();
+                    buffer_vertices.extend_from_slice(&render_quad.raw_vertices())
                 }
+                RenderItem::RenderTexture(render_texture) => {
+                    todo!();
+                    // let mut tex_index = 0;
+                    // let mut found = false;
+                    // for (i, texture) in textures.iter().enumerate() {
+                    //     if Rc::ptr_eq(&texture, &render_texture.texture) {
+                    //         tex_index = i as u32;
+                    //         found = true;
+                    //         break;
+                    //     }
+                    // }
+                    // if !found {
+                    //     textures.push(render_texture.texture.clone());
+                    //     tex_index = textures.len() as u32 - 1;
+                    // }
+
+                    buffer_vertices.extend_from_slice(&render_texture.raw_vertices())
+                }
+                RenderItem::RenderVertices(render_vertices) => {
+                    let mut tex_index = 0;
+                    let mut found = false;
+                    for (i, texture) in textures.iter().enumerate() {
+                        if let Some(render_vertices_texture) = &render_vertices.texture {
+                            if Rc::ptr_eq(&texture, render_vertices_texture) {
+                                tex_index = i as u32;
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                    if !found {
+                        if let Some(texture) = &render_vertices.texture {
+                            textures.push(texture.clone());
+                            tex_index = textures.len() as u32 - 1;
+                        }
+                    }
+
+                    buffer_vertices.extend_from_slice(&render_vertices.raw_vertices(tex_index))
+                }
+            }
+
+            if textures.len() == self.texture_max {
+                let mut textures_bind_group_entries = Vec::new();
+
+                for (i, texture) in textures.iter().enumerate() {
+                    if i == 0 {
+                        textures_bind_group_entries.push(wgpu::BindGroupEntry {
+                            binding: 0,
+                            resource: wgpu::BindingResource::Sampler(&texture.sampler),
+                        });
+                    }
+
+                    textures_bind_group_entries.push(wgpu::BindGroupEntry {
+                        binding: i as u32 + 1,
+                        resource: wgpu::BindingResource::TextureView(&texture.view),
+                    })
+                }
+                let texture_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                    layout: &texture_bind_group_layout,
+                    entries: &textures_bind_group_entries,
+                    label: Some("diffuse_bind_group"),
+                });
+
+                render_steps.push(RenderStep {
+                    buffer_vertices,
+                    texture_bind_group,
+                });
+
+                buffer_vertices = Vec::new();
+                textures = vec![self.white_texture.clone()];
             }
         }
 
-        let texture_index = self.texture_slot_index;
-        self.texture_slots[texture_index] = Some(append_texture.clone());
+        if buffer_vertices.len() > 0 {
+            for _ in textures.len()..self.texture_max {
+                textures.push(self.white_texture.clone());
+            }
 
-        self.texture_slot_index += 1;
+            let mut textures_bind_group_entries = Vec::new();
 
-        texture_index as u32
-    }
+            for (i, texture) in textures.iter().enumerate() {
+                if i == 0 {
+                    textures_bind_group_entries.push(wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::Sampler(&texture.sampler),
+                    });
+                }
 
-    pub fn add_vertices(
-        &mut self,
-        vertices: &[glam::Vec3; 4],
-        color: glam::Vec4,
-        texture_coords: &[glam::Vec2; 4],
-        tex_index: u32,
-    ) {
-        let offset = self.quad_count as usize * 4;
-
-        self.vertices[offset].position = vertices[0];
-        self.vertices[offset + 1].position = vertices[1];
-        self.vertices[offset + 2].position = vertices[2];
-        self.vertices[offset + 3].position = vertices[3];
-
-        self.vertices[offset].color = color;
-        self.vertices[offset + 1].color = color;
-        self.vertices[offset + 2].color = color;
-        self.vertices[offset + 3].color = color;
-
-        self.vertices[offset].texture_coords = texture_coords[0];
-        self.vertices[offset + 1].texture_coords = texture_coords[1];
-        self.vertices[offset + 2].texture_coords = texture_coords[2];
-        self.vertices[offset + 3].texture_coords = texture_coords[3];
-
-        self.vertices[offset].tex_index = tex_index;
-        self.vertices[offset + 1].tex_index = tex_index;
-        self.vertices[offset + 2].tex_index = tex_index;
-        self.vertices[offset + 3].tex_index = tex_index;
-
-        self.quad_count += 1;
-    }
-
-    pub fn add_quad(
-        &mut self,
-        position: glam::Vec2,
-        texture_size: glam::Vec2,
-        sub_tex_rect: Option<Rect>,
-        scale: glam::Vec2,
-        rotate: f32,
-        color: glam::Vec4,
-        origin: QuadOrigin,
-        tex_index: u32,
-    ) {
-        let offset = self.quad_count as usize * 4;
-        let render_rect_size = if let Some(r) = sub_tex_rect {
-            r.size().into()
-        } else {
-            texture_size
-        };
-
-        let quad = match origin {
-            QuadOrigin::TopLeft => &TOP_LEFT_QUAD,
-            QuadOrigin::Center => &CENTER_QUAD,
-        };
-
-        let transform = if rotate == 0.0 {
-            glam::Mat4::from_translation(position.extend(0.0))
-                * glam::Mat4::from_scale(render_rect_size.extend(0.0) * scale.extend(0.0))
-        } else {
-            glam::Mat4::from_scale_rotation_translation(
-                render_rect_size.extend(0.0) * scale.extend(0.0),
-                glam::Quat::from_rotation_z(rotate),
-                position.extend(0.0),
-            )
-        };
-
-        self.vertices[offset].position = (transform * quad[0]).truncate();
-        self.vertices[offset + 1].position = (transform * quad[1]).truncate();
-        self.vertices[offset + 2].position = (transform * quad[2]).truncate();
-        self.vertices[offset + 3].position = (transform * quad[3]).truncate();
-
-        self.vertices[offset].color = color;
-        self.vertices[offset + 1].color = color;
-        self.vertices[offset + 2].color = color;
-        self.vertices[offset + 3].color = color;
-
-        if let Some(rect) = sub_tex_rect {
-            let width = texture_size.x;
-            let height = texture_size.y;
-            self.vertices[offset].texture_coords = glam::vec2(
-                (rect.x + rect.width) / width,
-                (rect.y + rect.height) / height,
-            ); // Top Right
-            self.vertices[offset + 1].texture_coords =
-                glam::vec2(rect.right() / width, rect.y / height); // Bottom Right
-            self.vertices[offset + 2].texture_coords =
-                glam::vec2((rect.x + 0.5) / width, rect.y / height); // Bottom Left
-            self.vertices[offset + 3].texture_coords =
-                glam::vec2((rect.x + 0.5) / width, rect.bottom() / height); // Top Left
-        } else {
-            self.vertices[offset].texture_coords = glam::vec2(1.0, 1.0);
-            self.vertices[offset + 1].texture_coords = glam::vec2(1.0, 0.0);
-            self.vertices[offset + 2].texture_coords = glam::vec2(0.0, 0.0);
-            self.vertices[offset + 3].texture_coords = glam::vec2(0.0, 1.0);
-        }
-
-        self.vertices[offset].tex_index = tex_index;
-        self.vertices[offset + 1].tex_index = tex_index;
-        self.vertices[offset + 2].tex_index = tex_index;
-        self.vertices[offset + 3].tex_index = tex_index;
-
-        self.quad_count += 1;
-    }
-
-    pub fn reset(&mut self) {
-        self.quad_count = 0;
-        self.texture_slot_index = 1;
-    }
-
-    pub fn vertices(&self) -> &[Vertex] {
-        &self.vertices[0..self.vertices_count() as usize]
-    }
-
-    pub fn vertices_count(&self) -> i32 {
-        self.quad_count * 4
-    }
-
-    pub fn indices_count(&self) -> i32 {
-        self.quad_count * 6
-    }
-
-    pub fn bind_textures(
-        &self,
-        texture_bind_group_layout: &wgpu::BindGroupLayout,
-        device: &wgpu::Device,
-    ) -> wgpu::BindGroup {
-        let mut textures_bind_group_entries = Vec::new();
-        textures_bind_group_entries.push(wgpu::BindGroupEntry {
-            binding: 0,
-            resource: wgpu::BindingResource::Sampler(
-                &self.texture_slots[0].as_ref().unwrap().sampler,
-            ),
-        });
-        for (i, t) in self.texture_slots.iter().enumerate() {
-            if let Some(texture) = t {
                 textures_bind_group_entries.push(wgpu::BindGroupEntry {
                     binding: i as u32 + 1,
                     resource: wgpu::BindingResource::TextureView(&texture.view),
                 })
             }
+            let texture_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &texture_bind_group_layout,
+                entries: &textures_bind_group_entries,
+                label: Some("diffuse_bind_group"),
+            });
+
+            render_steps.push(RenderStep {
+                buffer_vertices,
+                texture_bind_group,
+            });
         }
-        device.create_bind_group(&wgpu::BindGroupDescriptor {
-            layout: &texture_bind_group_layout,
-            entries: &textures_bind_group_entries,
-            label: Some("diffuse_bind_group"),
-        })
+
+        render_steps
     }
+
+    // pub fn add_vertices(
+    //     &mut self,
+    //     vertices: &[glam::Vec3; 4],
+    //     color: &glam::Vec4,
+    //     texture_coords: &[glam::Vec2; 4],
+    //     tex_index: u32,
+    // ) {
+    //     let offset = self.quad_count as usize * 4;
+
+    //     self.vertices[offset].position = vertices[0];
+    //     self.vertices[offset + 1].position = vertices[1];
+    //     self.vertices[offset + 2].position = vertices[2];
+    //     self.vertices[offset + 3].position = vertices[3];
+
+    //     self.vertices[offset].color = *color;
+    //     self.vertices[offset + 1].color = *color;
+    //     self.vertices[offset + 2].color = *color;
+    //     self.vertices[offset + 3].color = *color;
+
+    //     self.vertices[offset].texture_coords = texture_coords[0];
+    //     self.vertices[offset + 1].texture_coords = texture_coords[1];
+    //     self.vertices[offset + 2].texture_coords = texture_coords[2];
+    //     self.vertices[offset + 3].texture_coords = texture_coords[3];
+
+    //     self.vertices[offset].tex_index = tex_index;
+    //     self.vertices[offset + 1].tex_index = tex_index;
+    //     self.vertices[offset + 2].tex_index = tex_index;
+    //     self.vertices[offset + 3].tex_index = tex_index;
+
+    //     self.quad_count += 1;
+    // }
+
+    // pub fn add_quad(
+    //     &mut self,
+    //     position: glam::Vec2,
+    //     texture_size: glam::Vec2,
+    //     sub_tex_rect: Option<Rect>,
+    //     scale: glam::Vec2,
+    //     rotate: f32,
+    //     color: glam::Vec4,
+    //     origin: QuadOrigin,
+    //     tex_index: u32,
+    // ) {
+    //     let offset = self.quad_count as usize * 4;
+    //     let render_rect_size = if let Some(r) = sub_tex_rect {
+    //         r.size().into()
+    //     } else {
+    //         texture_size
+    //     };
+
+    //     let quad = match origin {
+    //         QuadOrigin::TopLeft => &TOP_LEFT_QUAD,
+    //         QuadOrigin::Center => &CENTER_QUAD,
+    //     };
+
+    //     let transform = if rotate == 0.0 {
+    //         glam::Mat4::from_translation(position.extend(0.0))
+    //             * glam::Mat4::from_scale(render_rect_size.extend(0.0) * scale.extend(0.0))
+    //     } else {
+    //         glam::Mat4::from_scale_rotation_translation(
+    //             render_rect_size.extend(0.0) * scale.extend(0.0),
+    //             glam::Quat::from_rotation_z(rotate),
+    //             position.extend(0.0),
+    //         )
+    //     };
+
+    //     self.vertices[offset].position = (transform * quad[0]).truncate();
+    //     self.vertices[offset + 1].position = (transform * quad[1]).truncate();
+    //     self.vertices[offset + 2].position = (transform * quad[2]).truncate();
+    //     self.vertices[offset + 3].position = (transform * quad[3]).truncate();
+
+    //     self.vertices[offset].color = color;
+    //     self.vertices[offset + 1].color = color;
+    //     self.vertices[offset + 2].color = color;
+    //     self.vertices[offset + 3].color = color;
+
+    //     if let Some(rect) = sub_tex_rect {
+    //         let width = texture_size.x;
+    //         let height = texture_size.y;
+    //         self.vertices[offset].texture_coords = glam::vec2(
+    //             (rect.x + rect.width) / width,
+    //             (rect.y + rect.height) / height,
+    //         ); // Top Right
+    //         self.vertices[offset + 1].texture_coords =
+    //             glam::vec2(rect.right() / width, rect.y / height); // Bottom Right
+    //         self.vertices[offset + 2].texture_coords =
+    //             glam::vec2((rect.x + 0.5) / width, rect.y / height); // Bottom Left
+    //         self.vertices[offset + 3].texture_coords =
+    //             glam::vec2((rect.x + 0.5) / width, rect.bottom() / height); // Top Left
+    //     } else {
+    //         self.vertices[offset].texture_coords = glam::vec2(1.0, 1.0);
+    //         self.vertices[offset + 1].texture_coords = glam::vec2(1.0, 0.0);
+    //         self.vertices[offset + 2].texture_coords = glam::vec2(0.0, 0.0);
+    //         self.vertices[offset + 3].texture_coords = glam::vec2(0.0, 1.0);
+    //     }
+
+    //     self.vertices[offset].tex_index = tex_index;
+    //     self.vertices[offset + 1].tex_index = tex_index;
+    //     self.vertices[offset + 2].tex_index = tex_index;
+    //     self.vertices[offset + 3].tex_index = tex_index;
+
+    //     self.quad_count += 1;
+    // }
+
+    // pub fn vertices(&self) -> &[Vertex] {
+    //     &self.vertices[0..self.vertices_count() as usize]
+    // }
+
+    // pub fn vertices_count(&self) -> i32 {
+    //     self.quad_count * 4
+    // }
+
+    // pub fn indices_count(&self) -> i32 {
+    //     self.quad_count * 6
+    // }
+
+    // pub fn bind_textures(
+    //     &self,
+    //     texture_bind_group_layout: &wgpu::BindGroupLayout,
+    //     device: &wgpu::Device,
+    // ) -> wgpu::BindGroup {
+    //     let mut textures_bind_group_entries = Vec::new();
+    //     textures_bind_group_entries.push(wgpu::BindGroupEntry {
+    //         binding: 0,
+    //         resource: wgpu::BindingResource::Sampler(
+    //             &self.texture_slots[0].as_ref().unwrap().sampler,
+    //         ),
+    //     });
+    //     for (i, t) in self.texture_slots.iter().enumerate() {
+    //         if let Some(texture) = t {
+    //             textures_bind_group_entries.push(wgpu::BindGroupEntry {
+    //                 binding: i as u32 + 1,
+    //                 resource: wgpu::BindingResource::TextureView(&texture.view),
+    //             })
+    //         }
+    //     }
+
+    //     device.create_bind_group(&wgpu::BindGroupDescriptor {
+    //         layout: &texture_bind_group_layout,
+    //         entries: &textures_bind_group_entries,
+    //         label: Some("diffuse_bind_group"),
+    //     })
+    // }
 }

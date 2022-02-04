@@ -1,4 +1,4 @@
-use std::cell::RefMut;
+use std::{cell::RefMut, rc::Rc};
 
 use crate::{
     core::engine::EngineTimerView,
@@ -76,7 +76,7 @@ impl Group {
         &self,
         renderer: &mut RefMut<Renderer>,
         view_time: &EngineTimerView,
-        font: &Font,
+        font: &Rc<Font>,
     ) {
         let spacing = 30;
         let padding = 10;

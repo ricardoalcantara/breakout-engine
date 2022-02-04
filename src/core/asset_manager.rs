@@ -67,9 +67,10 @@ impl AssetManager {
     pub fn load_texture(&mut self, path: &str) -> BreakoutResult<TextureId> {
         // let image = image::open(path).map_err(BreakoutError::ImageError)?;
         let renderer = self.renderer.borrow();
-        let texture = Texture::from_file(path, renderer.device(), renderer.queue());
+        let mut texture = Texture::from_file(path, renderer.device(), renderer.queue());
 
         let id = TextureId(self.auto_increment_id.get_id::<TextureId>());
+        texture.id = Some(id.0);
         self.textures.insert(id.clone(), Rc::new(texture));
 
         Ok(id)

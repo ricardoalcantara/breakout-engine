@@ -1,6 +1,7 @@
 use std::num::NonZeroU32;
 
 pub struct Texture {
+    pub id: Option<i32>,
     pub texture: wgpu::Texture,
     pub view: wgpu::TextureView,
     pub sampler: wgpu::Sampler,
@@ -60,6 +61,7 @@ impl Texture {
         );
 
         Texture {
+            id: None,
             texture,
             view,
             sampler,
@@ -96,6 +98,7 @@ impl Texture {
         );
 
         Texture {
+            id: None,
             texture,
             view,
             sampler,

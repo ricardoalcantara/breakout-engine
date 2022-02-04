@@ -1,6 +1,6 @@
 use image::{DynamicImage, Rgba};
 use log::warn;
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, path::Path, rc::Rc};
 
 use crate::{
     error::{BreakoutError, BreakoutResult},
@@ -25,7 +25,7 @@ pub struct Character {
 }
 
 pub struct FontAtlas {
-    texture: Texture,
+    texture: Rc<Texture>,
     characters: HashMap<char, Character>,
     line_spacing: u32,
 }
@@ -151,7 +151,7 @@ impl Font {
         }
 
         // image.save("debug_font_atlas.png").unwrap();
-        let texture = get_texture(DynamicImage::ImageRgba8(image))?;
+        let texture = Rc::new(get_texture(DynamicImage::ImageRgba8(image))?);
 
         let line_spacing = if let Some(metrics) = self.face.size_metrics() {
             metrics.height as u32
@@ -252,7 +252,7 @@ impl Font {
 
     pub fn draw_vertices<F>(&self, text: &str, position: glam::Vec2, size: u32, mut render: F)
     where
-        F: FnMut(&Texture, [glam::Vec3; 4], &[glam::Vec2; 4]),
+        F: FnMut(&Rc<Texture>, [glam::Vec3; 4], [glam::Vec2; 4]),
     {
         if !self.atlas.contains_key(&size) {
             warn!("Font should be build before");
@@ -298,10 +298,11 @@ impl Font {
             render(
                 &atlas.texture,
                 vertices,
-                &character
+                character
                     .sub_texture
                     .texture_coords
-                    .unwrap_or(crate::render::vertex::TEXTURE_COORDS),
+                    .unwrap_or(crate::render::vertex::TEXTURE_COORDS)
+                    .clone(),
             );
             x_pos += (character.advance >> 6) as f32 * scale;
         }

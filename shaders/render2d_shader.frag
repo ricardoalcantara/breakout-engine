@@ -9,7 +9,7 @@ layout(location=0) out vec4 o_color;
 layout(set = 0, binding = 0) uniform sampler texture_sampler;
 layout(set = 0, binding = 1) uniform texture2D texture_1;
 layout(set = 0, binding = 2) uniform texture2D texture_2;
-layout(set = 0, binding = 3) uniform texture2D texture_3;
+// layout(set = 0, binding = 3) uniform texture2D texture_3;
 
 void main() {
     vec2 duvdx = dFdx(v_texture_coord);
@@ -20,7 +20,7 @@ void main() {
 	{
         case 0: texColor *= textureGrad(sampler2D(texture_1, texture_sampler), v_texture_coord, duvdx, duvdy); break;
         case 1: texColor *= textureGrad(sampler2D(texture_2, texture_sampler), v_texture_coord, duvdx, duvdy); break;
-        case 2: texColor *= textureGrad(sampler2D(texture_3, texture_sampler), v_texture_coord, duvdx, duvdy); break;
+        // case 2: texColor *= textureGrad(sampler2D(texture_3, texture_sampler), v_texture_coord, duvdx, duvdy); break;
 	}
     
     o_color = texColor;

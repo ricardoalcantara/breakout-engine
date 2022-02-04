@@ -2,7 +2,7 @@ use super::{
     render2d_pipeline::Render2DPineline, RenderQuad, RenderText, RenderTexture, RenderVertices,
 };
 use log::info;
-use std::{iter, rc::Rc};
+use std::rc::Rc;
 use winit::window::Window;
 
 pub struct RenderContext {
@@ -19,8 +19,6 @@ pub struct Renderer {
     size: winit::dpi::PhysicalSize<u32>,
     render2d_pipeline: Render2DPineline,
     clear_color: wgpu::Color,
-
-    render_context: Option<RenderContext>,
 }
 
 impl Renderer {
@@ -78,7 +76,7 @@ impl Renderer {
 
         //TODO max_texture_xyz
         let render2d_pipeline =
-            Render2DPineline::new(size.width, size.height, 3, &device, &queue, &config);
+            Render2DPineline::new(size.width, size.height, 2, &device, &queue, &config);
 
         let clear_color = wgpu::Color {
             r: 0.1,
@@ -95,8 +93,6 @@ impl Renderer {
             size,
             render2d_pipeline,
             clear_color,
-
-            render_context: None,
         }
     }
 
@@ -131,6 +127,15 @@ impl Renderer {
     }
 
     pub fn begin_draw(&mut self, camera: Option<glam::Mat4>) {
+        if let Some(camera) = camera {
+            self.render2d_pipeline.set_camera(camera);
+        } else {
+            self.render2d_pipeline.default_camera();
+        }
+        self.render2d_pipeline.begin_batch();
+    }
+
+    pub fn end_draw(&mut self) {
         let output = self.surface.get_current_texture().unwrap();
         let view = output
             .texture
@@ -142,75 +147,43 @@ impl Renderer {
                 label: Some("Render Encoder"),
             });
 
-        self.render_context = Some(RenderContext {
+        let mut render_context = RenderContext {
             output,
             view,
             encoder,
-        });
-
-        if let Some(camera) = camera {
-            self.render2d_pipeline.set_camera(camera);
-        } else {
-            self.render2d_pipeline.default_camera();
-        }
-        self.render2d_pipeline.begin_batch();
-    }
-
-    pub fn end_draw(&mut self) {
-        // TODO no_unwrap
-        let mut render_context = self.render_context.take().unwrap();
-
-        self.render2d_pipeline.end_batch();
-        self.render2d_pipeline.flush(&mut render_context);
+        };
+        self.render2d_pipeline.draw(&mut render_context);
 
         self.queue
-            .submit(iter::once(render_context.encoder.finish()));
+            .submit(std::iter::once(render_context.encoder.finish()));
         render_context.output.present();
     }
 
     pub fn draw_quad(&mut self, quad: RenderQuad) {
-        if let Some(render_context) = &mut self.render_context {
-            self.render2d_pipeline.draw_quad(render_context, quad);
-        } else {
-            panic!()
-        }
+        self.render2d_pipeline.draw_quad(quad);
     }
 
     pub fn draw_texture(&mut self, texture: RenderTexture) {
-        if let Some(render_context) = &mut self.render_context {
-            self.render2d_pipeline.draw_texture(render_context, texture);
-        } else {
-            panic!()
-        }
+        self.render2d_pipeline.draw_texture(texture);
     }
 
     pub fn draw_text(&mut self, _text: RenderText) {
-        // _text.font.draw_vertices(
-        //     _text.text,
-        //     _text.position,
-        //     _text.size,
-        //     |texture, vertices, texture_coords| {
-        //         self.draw_vertices(RenderVertices {
-        //             texture: Some(texture),
-        //             vertices: &vertices,
-        //             texture_coords,
-        //             color: _text.color,
-        //         })
-        //     },
-        // )
+        _text.font.draw_vertices(
+            _text.text,
+            _text.position,
+            _text.size,
+            |texture, vertices, texture_coords| {
+                self.draw_vertices(RenderVertices {
+                    texture: Some(texture.clone()),
+                    vertices,
+                    texture_coords: texture_coords.clone(),
+                    color: _text.color,
+                })
+            },
+        )
     }
 
-    pub fn draw_vertices(&mut self, _vertices: RenderVertices) {
-        if let Some(render_context) = &mut self.render_context {
-            self.render2d_pipeline.draw_vertices(
-                render_context,
-                _vertices.vertices,
-                _vertices.color,
-                _vertices.texture_coords,
-                _vertices.texture,
-            )
-        } else {
-            panic!()
-        }
+    pub fn draw_vertices(&mut self, vertices: RenderVertices) {
+        self.render2d_pipeline.draw_vertices(vertices);
     }
 }

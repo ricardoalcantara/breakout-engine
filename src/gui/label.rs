@@ -3,7 +3,7 @@ use crate::{
     render::{renderer::Renderer, RenderQuad, RenderText},
     shapes::rectangle::Rect,
 };
-use std::cell::RefMut;
+use std::{cell::RefMut, rc::Rc};
 
 pub(crate) enum Orientation {
     Center,
@@ -26,7 +26,7 @@ impl Label {
         }
     }
 
-    pub(crate) fn draw(&self, renderer: &mut RefMut<Renderer>, rect: Rect, font: &Font) {
+    pub(crate) fn draw(&self, renderer: &mut RefMut<Renderer>, rect: Rect, font: &Rc<Font>) {
         let size = font.measure(&self.text, 25) / 2.0;
         let rect_size: glam::Vec2 = rect.size().into();
         let rect_size = rect_size / 2.0;
@@ -38,7 +38,7 @@ impl Label {
         };
         renderer.draw_text(RenderText {
             text: &self.text,
-            font,
+            font: font.clone(),
             size: 25,
             position,
             scale: glam::Vec2::ONE,

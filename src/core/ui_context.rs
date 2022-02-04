@@ -10,14 +10,14 @@ use crate::{error::BreakoutResult, font::Font, gui::group::Group, render::render
 
 pub struct UIContext {
     build: HashMap<String, Group>,
-    default_font: Font,
+    default_font: Rc<Font>,
 }
 
 impl UIContext {
     pub(crate) fn new() -> BreakoutResult<UIContext> {
         let build = HashMap::new();
         let default_font_byte = include_bytes!("../../assets/Roboto-Regular.ttf");
-        let default_font = Font::new_from_memory(default_font_byte)?;
+        let default_font = Rc::new(Font::new_from_memory(default_font_byte)?);
 
         Ok(UIContext {
             build,

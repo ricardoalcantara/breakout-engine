@@ -84,10 +84,10 @@ pub fn system_render_sprite(
             };
 
             renderer.draw_vertices(RenderVertices {
-                texture: Some(texture),
-                vertices: sprite.get_vertices(),
+                texture: Some(texture.clone()),
+                vertices: sprite.get_vertices().clone(),
                 color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
-                texture_coords: texture_coords,
+                texture_coords: texture_coords.clone(),
             });
         } else {
             if transform.dirt {
@@ -101,9 +101,9 @@ pub fn system_render_sprite(
             }
             renderer.draw_vertices(RenderVertices {
                 texture: None,
-                vertices: sprite.get_vertices(),
+                vertices: sprite.get_vertices().clone(),
                 color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
-                texture_coords: &TEXTURE_COORDS,
+                texture_coords: TEXTURE_COORDS.clone(),
             });
         };
     }
@@ -120,14 +120,15 @@ pub fn system_render_sprite(
             default_font
         };
 
-        renderer.draw_text(RenderText {
-            text: &label.text,
-            font,
-            size: label.size,
-            position: _transform.position,
-            scale: _transform.scale,
-            color: label.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
-        });
+        // TODO not yet implemented
+        // renderer.draw_text(RenderText {
+        //     text: &label.text,
+        //     font,
+        //     size: label.size,
+        //     position: _transform.position,
+        //     scale: _transform.scale,
+        //     color: label.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
+        // });
     }
     renderer.end_draw();
 
