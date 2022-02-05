@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use super::{
     engine::{EngineTimerView, WindowSettings},
     game_window::{ReadOnlyRc, ReadWriteRc},
@@ -25,7 +27,7 @@ pub struct GameState {
     asset_manager: AssetManager,
     input: Input,
     music_player: AudioPlayer,
-    default_font: Font,
+    default_font: Rc<Font>,
 }
 
 impl GameState {
@@ -46,7 +48,7 @@ impl GameState {
         let input = Input::new();
         let music_player = AudioPlayer::new();
         let default_font_byte = include_bytes!("../../assets/Roboto-Regular.ttf");
-        let default_font = Font::new_from_memory(default_font_byte)?;
+        let default_font = Rc::new(Font::new_from_memory(default_font_byte)?);
 
         Ok(Self {
             scenes: vec![Box::new(state)],

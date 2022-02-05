@@ -6,7 +6,7 @@ use crate::{
     font::Font,
     render::{renderer::Renderer, texture::Texture},
 };
-use std::{collections::HashMap, rc::Rc};
+use std::{borrow::BorrowMut, collections::HashMap, rc::Rc};
 
 use super::game_window::ReadOnlyRc;
 
@@ -47,7 +47,7 @@ pub struct AssetManager {
     auto_increment_id: AutoIncrementId,
     textures: HashMap<TextureId, Rc<Texture>>,
     audios: HashMap<AudioId, Audio>,
-    fonts: HashMap<FontId, Font>,
+    fonts: HashMap<FontId, Rc<Font>>,
     renderer: ReadOnlyRc<Renderer>,
 }
 
@@ -106,12 +106,12 @@ impl AssetManager {
         let font = Font::new(path)?;
 
         let id = FontId(self.auto_increment_id.get_id::<FontId>());
-        self.fonts.insert(id.clone(), font);
+        self.fonts.insert(id.clone(), Rc::new(font));
 
         Ok(id)
     }
 
-    pub fn get_font(&self, id: &FontId) -> &Font {
+    pub fn get_font(&self, id: &FontId) -> &Rc<Font> {
         &self.fonts[id]
     }
 
@@ -122,11 +122,12 @@ impl AssetManager {
         get_texture: F,
     ) -> BreakoutResult<&Font>
     where
-        F: FnOnce(DynamicImage) -> BreakoutResult<Texture>,
+        F: FnOnce(DynamicImage) -> Texture,
     {
         if !self.fonts[&id].has_size(size) {
+            // TODO unsafe
             let mut font = self.fonts.remove(id).unwrap();
-            font.build_with_size(size, get_texture)?;
+            (*Rc::get_mut(&mut font).unwrap()).build_with_size(size, get_texture)?;
             self.fonts.insert(id.clone(), font);
         }
 

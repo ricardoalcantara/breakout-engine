@@ -15,13 +15,13 @@ use crate::{
         RenderText, RenderVertices,
     },
 };
-use std::cell::RefMut;
+use std::{cell::RefMut, rc::Rc};
 
 pub fn system_render_sprite(
     context: &GameContext,
     asset_manager: &AssetManager,
     renderer: &mut RefMut<Renderer>,
-    default_font: &Font,
+    default_font: &Rc<Font>,
 ) -> BreakoutResult {
     let world = &context.world;
 
@@ -121,14 +121,14 @@ pub fn system_render_sprite(
         };
 
         // TODO not yet implemented
-        // renderer.draw_text(RenderText {
-        //     text: &label.text,
-        //     font,
-        //     size: label.size,
-        //     position: _transform.position,
-        //     scale: _transform.scale,
-        //     color: label.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
-        // });
+        renderer.draw_text(RenderText {
+            text: &label.text,
+            font: font.clone(),
+            size: label.size,
+            position: _transform.position,
+            scale: _transform.scale,
+            color: label.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
+        });
     }
     renderer.end_draw();
 

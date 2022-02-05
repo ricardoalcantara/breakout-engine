@@ -15,9 +15,15 @@ pub enum RenderItem {
     RenderVertices(RenderVertices),
 }
 
+pub struct TextureBind {
+    pub texture_bind_group: wgpu::BindGroup,
+    pub from: u64,
+    pub to: u64,
+}
+
 pub struct RenderStep {
     pub buffer_vertices: Vec<Vertex>,
-    pub texture_bind_group: wgpu::BindGroup,
+    pub texture_binds: Vec<TextureBind>,
 }
 
 pub struct Render2dData {
@@ -56,92 +62,88 @@ impl Render2dData {
         &mut self,
         device: &wgpu::Device,
         texture_bind_group_layout: &wgpu::BindGroupLayout,
-    ) -> Vec<RenderStep> {
-        let mut render_steps = Vec::new();
+    ) -> RenderStep {
+        let mut render_steps = RenderStep {
+            buffer_vertices: Vec::new(),
+            texture_binds: Vec::new(),
+        };
 
-        let mut textures = vec![self.white_texture.clone()];
-        let mut buffer_vertices = Vec::new();
+        let mut textures = Vec::new();
+        let mut from = 0;
 
         for render_item in self.render_items.drain(..) {
-            match render_item {
-                RenderItem::RenderQuad(render_quad) => {
+            let (mut vertices, texture) = match render_item {
+                RenderItem::RenderQuad(_render_quad) => {
                     todo!();
-                    buffer_vertices.extend_from_slice(&render_quad.raw_vertices())
                 }
-                RenderItem::RenderTexture(render_texture) => {
+                RenderItem::RenderTexture(_render_texture) => {
                     todo!();
-                    // let mut tex_index = 0;
-                    // let mut found = false;
-                    // for (i, texture) in textures.iter().enumerate() {
-                    //     if Rc::ptr_eq(&texture, &render_texture.texture) {
-                    //         tex_index = i as u32;
-                    //         found = true;
-                    //         break;
-                    //     }
-                    // }
-                    // if !found {
-                    //     textures.push(render_texture.texture.clone());
-                    //     tex_index = textures.len() as u32 - 1;
-                    // }
+                }
+                RenderItem::RenderVertices(render_vertices) => (
+                    render_vertices.raw_vertices(),
+                    render_vertices
+                        .texture
+                        .unwrap_or(self.white_texture.clone()),
+                ),
+            };
 
-                    buffer_vertices.extend_from_slice(&render_texture.raw_vertices())
+            let mut tex_index = None;
+            for (i, t) in textures.iter().enumerate() {
+                if Rc::ptr_eq(t, &texture) {
+                    tex_index = Some(i as u32);
+                    break;
                 }
-                RenderItem::RenderVertices(render_vertices) => {
-                    let mut tex_index = 0;
-                    let mut found = false;
+            }
+
+            if tex_index.is_none() {
+                if textures.len() < self.texture_max {
+                    textures.push(texture);
+                    tex_index = Some(textures.len() as u32 - 1);
+                } else {
+                    let mut textures_bind_group_entries = Vec::new();
+
                     for (i, texture) in textures.iter().enumerate() {
-                        if let Some(render_vertices_texture) = &render_vertices.texture {
-                            if Rc::ptr_eq(&texture, render_vertices_texture) {
-                                tex_index = i as u32;
-                                found = true;
-                                break;
-                            }
+                        if i == 0 {
+                            textures_bind_group_entries.push(wgpu::BindGroupEntry {
+                                binding: 0,
+                                resource: wgpu::BindingResource::Sampler(&texture.sampler),
+                            });
                         }
-                    }
-                    if !found {
-                        if let Some(texture) = &render_vertices.texture {
-                            textures.push(texture.clone());
-                            tex_index = textures.len() as u32 - 1;
-                        }
-                    }
 
-                    buffer_vertices.extend_from_slice(&render_vertices.raw_vertices(tex_index))
-                }
-            }
-
-            if textures.len() == self.texture_max {
-                let mut textures_bind_group_entries = Vec::new();
-
-                for (i, texture) in textures.iter().enumerate() {
-                    if i == 0 {
                         textures_bind_group_entries.push(wgpu::BindGroupEntry {
-                            binding: 0,
-                            resource: wgpu::BindingResource::Sampler(&texture.sampler),
-                        });
+                            binding: i as u32 + 1,
+                            resource: wgpu::BindingResource::TextureView(&texture.view),
+                        })
                     }
+                    let texture_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
+                        layout: &texture_bind_group_layout,
+                        entries: &textures_bind_group_entries,
+                        label: Some("texture_bind_group"),
+                    });
 
-                    textures_bind_group_entries.push(wgpu::BindGroupEntry {
-                        binding: i as u32 + 1,
-                        resource: wgpu::BindingResource::TextureView(&texture.view),
-                    })
+                    render_steps.texture_binds.push(TextureBind {
+                        texture_bind_group,
+                        from,
+                        to: render_steps.buffer_vertices.len() as u64,
+                    });
+
+                    from = render_steps.buffer_vertices.len() as u64;
+                    textures = Vec::new();
+                    textures.push(texture);
+                    tex_index = Some(textures.len() as u32 - 1);
                 }
-                let texture_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-                    layout: &texture_bind_group_layout,
-                    entries: &textures_bind_group_entries,
-                    label: Some("diffuse_bind_group"),
-                });
-
-                render_steps.push(RenderStep {
-                    buffer_vertices,
-                    texture_bind_group,
-                });
-
-                buffer_vertices = Vec::new();
-                textures = vec![self.white_texture.clone()];
             }
+
+            if let Some(tex_index) = tex_index {
+                for v in &mut vertices {
+                    v.tex_index = tex_index;
+                }
+            }
+
+            render_steps.buffer_vertices.extend_from_slice(&vertices);
         }
 
-        if buffer_vertices.len() > 0 {
+        if render_steps.buffer_vertices.len() as u64 > from {
             for _ in textures.len()..self.texture_max {
                 textures.push(self.white_texture.clone());
             }
@@ -164,12 +166,13 @@ impl Render2dData {
             let texture_bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
                 layout: &texture_bind_group_layout,
                 entries: &textures_bind_group_entries,
-                label: Some("diffuse_bind_group"),
+                label: Some("texture_bind_group"),
             });
 
-            render_steps.push(RenderStep {
-                buffer_vertices,
+            render_steps.texture_binds.push(TextureBind {
                 texture_bind_group,
+                from,
+                to: render_steps.buffer_vertices.len() as u64,
             });
         }
 

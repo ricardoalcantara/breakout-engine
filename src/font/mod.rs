@@ -66,7 +66,7 @@ impl Font {
 
     pub fn build_with_size<F>(&mut self, size: u32, get_texture: F) -> BreakoutResult
     where
-        F: FnOnce(DynamicImage) -> BreakoutResult<Texture>,
+        F: FnOnce(DynamicImage) -> Texture,
     {
         if self.has_size(size) {
             return Ok(());
@@ -151,7 +151,7 @@ impl Font {
         }
 
         // image.save("debug_font_atlas.png").unwrap();
-        let texture = Rc::new(get_texture(DynamicImage::ImageRgba8(image))?);
+        let texture = Rc::new(get_texture(DynamicImage::ImageRgba8(image)));
 
         let line_spacing = if let Some(metrics) = self.face.size_metrics() {
             metrics.height as u32

@@ -1,5 +1,7 @@
 use std::num::NonZeroU32;
 
+use image::DynamicImage;
+
 pub struct Texture {
     pub id: Option<i32>,
     pub texture: wgpu::Texture,
@@ -15,8 +17,11 @@ impl Texture {
         Texture::from_byte(&bytes, device, queue)
     }
 
-    pub fn from_byte(bytes: &[u8], device: &wgpu::Device, queue: &wgpu::Queue) -> Texture {
-        let image = image::load_from_memory(bytes).unwrap();
+    pub fn from_dynamic_image(
+        image: DynamicImage,
+        device: &wgpu::Device,
+        queue: &wgpu::Queue,
+    ) -> Texture {
         let data = image.as_rgba8().unwrap();
 
         use image::GenericImageView;
@@ -68,6 +73,11 @@ impl Texture {
             width,
             height,
         }
+    }
+
+    pub fn from_byte(bytes: &[u8], device: &wgpu::Device, queue: &wgpu::Queue) -> Texture {
+        let image = image::load_from_memory(bytes).unwrap();
+        Texture::from_dynamic_image(image, device, queue)
     }
 
     pub fn from_color(color: [u8; 4], device: &wgpu::Device, queue: &wgpu::Queue) -> Texture {

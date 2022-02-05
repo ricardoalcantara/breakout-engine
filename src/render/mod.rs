@@ -68,31 +68,31 @@ pub struct RenderVertices {
 }
 
 impl RenderVertices {
-    pub fn raw_vertices(&self, tex_index: u32) -> [Vertex; 4] {
+    pub fn raw_vertices(&self) -> [Vertex; 4] {
         [
             Vertex {
                 position: self.vertices[0],
                 color: self.color,
                 texture_coords: self.texture_coords[0],
-                tex_index,
+                tex_index: 0,
             },
             Vertex {
                 position: self.vertices[1],
                 color: self.color,
                 texture_coords: self.texture_coords[1],
-                tex_index,
+                tex_index: 0,
             },
             Vertex {
                 position: self.vertices[2],
                 color: self.color,
                 texture_coords: self.texture_coords[2],
-                tex_index,
+                tex_index: 0,
             },
             Vertex {
                 position: self.vertices[3],
                 color: self.color,
                 texture_coords: self.texture_coords[3],
-                tex_index,
+                tex_index: 0,
             },
         ]
     }

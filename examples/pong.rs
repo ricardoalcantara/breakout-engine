@@ -67,19 +67,6 @@ impl Scene for MainState {
 
         let world = &mut _context.get_world();
         let speed = 200.0;
-        world.spawn((
-            Sprite {
-                texture_id: Some(pong_texture),
-                color: Some(math::vec4(1.0, 0.0, 0.0, 1.0)),
-                ..Default::default()
-            },
-            Transform2D::from_position(math::vec2(400.0, 300.0)),
-            Ball {
-                direction: math::vec2(1.0, 1.0).normalize(),
-                speed,
-            },
-            Rect::new_with_size(32.0, 32.0),
-        ));
 
         world.spawn((
             Player,
@@ -105,6 +92,20 @@ impl Scene for MainState {
             },
             Transform2D::from_position(math::vec2(800.0 - 32.0, 100.0)),
             Rect::new_with_size(32.0, 128.0),
+        ));
+
+        world.spawn((
+            Sprite {
+                texture_id: Some(pong_texture),
+                color: Some(math::vec4(1.0, 0.0, 0.0, 1.0)),
+                ..Default::default()
+            },
+            Transform2D::from_position(math::vec2(400.0, 300.0)),
+            Ball {
+                direction: math::vec2(1.0, 1.0).normalize(),
+                speed,
+            },
+            Rect::new_with_size(32.0, 32.0),
         ));
 
         Ok(())

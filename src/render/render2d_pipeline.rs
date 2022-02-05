@@ -264,6 +264,14 @@ impl Render2DPineline {
             .render_data
             .get_render_vertices_and_textures(&self.device, &self.texture_bind_group_layout);
 
+        self.queue.write_buffer(
+            &self.vertex_buffer,
+            0,
+            bytemuck::cast_slice(&render_steps.buffer_vertices),
+        );
+
+        // TODO fill the indexes correctly
+
         {
             let mut render_pass =
                 render_context
@@ -286,25 +294,20 @@ impl Render2DPineline {
                         depth_stencil_attachment: None,
                     });
 
-            for render_step in &render_steps {
-                self.queue.write_buffer(
-                    &self.vertex_buffer,
-                    0,
-                    bytemuck::cast_slice(&render_step.buffer_vertices),
-                );
+            render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
 
-                let indices_count = (render_step.buffer_vertices.len() / 4) * 6;
+            for texture_bind in &render_steps.texture_binds {
+                let indices_from = (texture_bind.from / 4) * 6;
+                let indices_to = (texture_bind.to / 4) * 6;
 
-                render_pass.set_pipeline(&self.render_pipeline);
-
-                render_pass.set_bind_group(0, &render_step.texture_bind_group, &[]);
+                render_pass.set_bind_group(0, &texture_bind.texture_bind_group, &[]);
                 render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
 
-                render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
                 render_pass
                     .set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
                 // TOOD remove cast later
-                render_pass.draw_indexed(0..indices_count as u32, 0, 0..1);
+                render_pass.draw_indexed(indices_from as u32..indices_to as u32, 0, 0..1);
             }
         }
 

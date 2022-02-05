@@ -44,10 +44,18 @@ impl Scene for MainState {
 
         world.spawn((
             Sprite {
-                texture_id: Some(texture),
+                texture_id: Some(texture.clone()),
                 ..Default::default()
             },
             Transform2D::from_position(math::vec2(300.0, 10.0)),
+        ));
+
+        world.spawn((
+            Sprite {
+                texture_id: Some(texture),
+                ..Default::default()
+            },
+            Transform2D::from_position(math::vec2(300.0, 200.0)),
         ));
         Ok(())
     }

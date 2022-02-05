@@ -114,6 +114,8 @@ impl Renderer {
             self.config.width = new_size.width;
             self.config.height = new_size.height;
             self.surface.configure(&self.device, &self.config);
+            self.render2d_pipeline
+                .resize(new_size.width, new_size.height);
         }
     }
 
