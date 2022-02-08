@@ -122,7 +122,7 @@ impl RenderSettings {
         for settings in render_settings {
             match settings {
                 RenderSettings::DisplaySize((width, height)) => {
-                    game_window.set_render_size(glam::uvec2(width, height));
+                    game_window.set_display_size(glam::uvec2(width, height));
                 }
             }
         }

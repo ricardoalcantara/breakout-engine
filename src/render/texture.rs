@@ -22,10 +22,17 @@ impl Texture {
         device: &wgpu::Device,
         queue: &wgpu::Queue,
     ) -> Texture {
-        let data = image.as_rgba8().unwrap();
+        let (width, height) = image.dimensions();
+        let data = match image {
+            image::DynamicImage::ImageRgba8(i) => i.into_raw(),
+            image::DynamicImage::ImageRgb8(i) => {
+                let i = DynamicImage::ImageRgb8(i).into_rgba8();
+                i.into_raw()
+            }
+            _ => panic!("ColorType not supportes"),
+        };
 
         use image::GenericImageView;
-        let (width, height) = image.dimensions();
 
         let texture_size = wgpu::Extent3d {
             width,
@@ -56,7 +63,7 @@ impl Texture {
 
         queue.write_texture(
             texture.as_image_copy(),
-            data,
+            &data,
             wgpu::ImageDataLayout {
                 offset: 0,
                 bytes_per_row: std::num::NonZeroU32::new(4 * width),

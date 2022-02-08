@@ -16,14 +16,18 @@ pub struct Renderer {
     device: Rc<wgpu::Device>,
     queue: Rc<wgpu::Queue>,
     config: wgpu::SurfaceConfiguration,
-    size: winit::dpi::PhysicalSize<u32>,
+    size: glam::UVec2,
     render2d_pipeline: Render2DPineline,
     clear_color: wgpu::Color,
+    display_size: Option<glam::UVec2>,
 }
 
 impl Renderer {
     pub async fn new(window: &Window) -> Renderer {
-        let size = window.inner_size();
+        let size = {
+            let tmp = window.inner_size();
+            glam::uvec2(tmp.width, tmp.height)
+        };
 
         let backend = wgpu::util::backend_bits_from_env().unwrap_or_else(wgpu::Backends::all);
         let power_preference = wgpu::util::power_preference_from_env()
@@ -64,8 +68,8 @@ impl Renderer {
         let config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format: surface.get_preferred_format(&adapter).unwrap(),
-            width: size.width,
-            height: size.height,
+            width: size.x,
+            height: size.y,
             // TODO VSYNC
             present_mode: wgpu::PresentMode::Immediate,
         };
@@ -75,8 +79,7 @@ impl Renderer {
         let queue = Rc::new(queue);
 
         //TODO max_texture_xyz
-        let render2d_pipeline =
-            Render2DPineline::new(size.width, size.height, 2, &device, &queue, &config);
+        let render2d_pipeline = Render2DPineline::new(size.x, size.y, 2, &device, &queue, &config);
 
         let clear_color = wgpu::Color {
             r: 0.1,
@@ -93,6 +96,7 @@ impl Renderer {
             size,
             render2d_pipeline,
             clear_color,
+            display_size: None,
         }
     }
 
@@ -104,18 +108,35 @@ impl Renderer {
         &self.queue
     }
 
-    pub fn reconfigure(&mut self) {
-        self.resize(self.size);
+    pub fn window_size(&self) -> glam::UVec2 {
+        self.size
     }
 
-    pub fn resize(&mut self, new_size: winit::dpi::PhysicalSize<u32>) {
-        if new_size.width > 0 && new_size.height > 0 {
+    pub fn display_size(&self) -> glam::UVec2 {
+        self.display_size.unwrap_or(self.size)
+    }
+
+    pub fn set_display_size(&mut self, display_size: glam::UVec2) {
+        self.display_size = Some(display_size);
+    }
+
+    pub fn reconfigure(&mut self) {
+        if let Some(display_size) = self.display_size {
+            self.resize(display_size);
+        } else {
+            self.resize(self.size);
+        }
+    }
+
+    pub fn resize(&mut self, new_size: glam::UVec2) {
+        if new_size.x > 0 && new_size.y > 0 {
             self.size = new_size;
-            self.config.width = new_size.width;
-            self.config.height = new_size.height;
+            self.config.width = new_size.x;
+            self.config.height = new_size.y;
             self.surface.configure(&self.device, &self.config);
-            self.render2d_pipeline
-                .resize(new_size.width, new_size.height);
+            if self.display_size.is_none() {
+                self.render2d_pipeline.resize(new_size.x, new_size.y);
+            }
         }
     }
 

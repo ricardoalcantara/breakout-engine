@@ -51,11 +51,10 @@ impl Render2DPineline {
         queue: &Rc<wgpu::Queue>,
         config: &wgpu::SurfaceConfiguration,
     ) -> Render2DPineline {
-        // let vs_src = include_str!("../../shaders/render2d_shader.vert");
-        // let fs_src = include_str!("../../shaders/render2d_shader.frag");
-        // TODO include_str
-        let vs_src = std::fs::read_to_string("shaders/render2d_shader.vert").unwrap();
-        let fs_src = std::fs::read_to_string("shaders/render2d_shader.frag").unwrap();
+        let vs_src = include_str!("../../shaders/render2d_shader.vert");
+        let fs_src = include_str!("../../shaders/render2d_shader.frag");
+        // let vs_src = std::fs::read_to_string("shaders/render2d_shader.vert").unwrap();
+        // let fs_src = std::fs::read_to_string("shaders/render2d_shader.frag").unwrap();
         let mut compiler = shaderc::Compiler::new().unwrap();
         let vs_spirv = compiler
             .compile_into_spirv(

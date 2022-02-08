@@ -68,9 +68,8 @@ impl GameWindow {
         }
     }
 
-    pub fn set_render_size(&mut self, render_size: glam::UVec2) {
-        // TODO Removed
-        // self.renderer.borrow_mut().set_render_size(render_size)
+    pub fn set_display_size(&mut self, display_size: glam::UVec2) {
+        self.renderer.borrow_mut().set_display_size(display_size)
     }
 
     pub fn window(&self) -> ReadOnlyRc<Window> {
@@ -104,11 +103,18 @@ impl GameWindow {
                     match event {
                         WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                         WindowEvent::Resized(physical_size) => {
-                            renderer.borrow_mut().resize(*physical_size);
+                            let size = {
+                                let tmp = *physical_size;
+                                glam::uvec2(tmp.width, tmp.height)
+                            };
+                            renderer.borrow_mut().resize(size);
                         }
                         WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                            // new_inner_size is &&mut so w have to dereference it twice
-                            renderer.borrow_mut().resize(**new_inner_size);
+                            let size = {
+                                let tmp = **new_inner_size;
+                                glam::uvec2(tmp.width, tmp.height)
+                            };
+                            renderer.borrow_mut().resize(size);
                         }
                         _ => game_loop(GameLoopState::Input(event), control_flow),
                     }

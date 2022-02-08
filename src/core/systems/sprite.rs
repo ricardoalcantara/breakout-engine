@@ -27,27 +27,19 @@ pub fn system_render_sprite(
 
     renderer.clear_color(context.clear_color);
 
-    // // TODO not yet implemented
-    // let camera_projection = if let Some((_id, (camera, transform))) =
-    //     world.query::<(&Camera2D, &Transform2D)>().iter().next()
-    // {
-    //     // todo!();
-    //     // TODO Render Size
-    //     // let window_size = renderer.size2(){
-    //     //     let size = ;
-    //     //     glam::uvec2(size.width, size.height)
-    //     // };
+    let camera_projection = if let Some((_id, (camera, transform))) =
+        world.query::<(&Camera2D, &Transform2D)>().iter().next()
+    {
+        Some(camera.get_view_matrix(
+            &renderer.display_size(),
+            &renderer.window_size(),
+            &transform.position,
+        ))
+    } else {
+        None
+    };
 
-    //     // Some(camera.get_view_matrix(
-    //     //     renderer.render_size().as_ref().unwrap_or(&window_size),
-    //     //     &window_size,
-    //     //     &transform.position,
-    //     // ))
-    // } else {
-    //     None
-    // };
-
-    renderer.begin_draw(None);
+    renderer.begin_draw(camera_projection);
     for (_id, (sprite, transform)) in world.query::<(&mut Sprite, &mut Transform2D)>().iter() {
         if !sprite.visible {
             continue;
