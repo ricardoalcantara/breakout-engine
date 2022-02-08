@@ -269,8 +269,6 @@ impl Render2DPineline {
             bytemuck::cast_slice(&render_steps.buffer_vertices),
         );
 
-        // TODO fill the indexes correctly
-
         {
             let mut render_pass =
                 render_context

@@ -30,20 +30,20 @@ impl UIContext {
     }
 
     pub(crate) fn render(&mut self, renderer: &mut RefMut<Renderer>, view_time: &EngineTimerView) {
-        // TODO WGPU peding
+        // TODO WGPU pending
         // self.default_font
         //     .build_with_size(25, |image| Ok(renderer.generate_texture(image)?))
         //     .unwrap();
 
         // TODO: Set UI Camera later
-        // TODO WGPU peding
+        // TODO WGPU pending
         // renderer.begin_draw(None);
 
         for (_, build) in &self.build {
             build.render(renderer, view_time, &self.default_font);
         }
 
-        // TODO WGPU peding
+        // TODO WGPU pending
         // renderer.end_draw();
 
         self.build.clear();

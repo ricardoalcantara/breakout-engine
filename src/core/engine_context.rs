@@ -27,13 +27,13 @@ impl EngineContext {
 
     pub fn fullscreen(&self) -> bool {
         todo!()
-        // TODO Removed
+        // TODO not yet implemented
         // self.window.borrow().window().fullscreen().is_some()
     }
 
     pub fn window_size(&self) -> glam::UVec2 {
         todo!()
-        // TODO Removed
+        // TODO not yet implemented
         // let size = self.window.borrow().window().inner_size();
         // glam::uvec2(size.width, size.height)
     }

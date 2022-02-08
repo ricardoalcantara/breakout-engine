@@ -34,7 +34,7 @@ impl GameContext {
             .iter()
             .next()
         {
-            // TODO: It's wrong
+            // TODO: not yet implemented
             todo!();
             // let window_size = {
             //     let size = self.window.borrow().window().inner_size();

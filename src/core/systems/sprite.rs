@@ -112,7 +112,6 @@ pub fn system_render_sprite(
             default_font
         };
 
-        // TODO not yet implemented
         renderer.draw_text(RenderText {
             text: &label.text,
             font: font.clone(),
