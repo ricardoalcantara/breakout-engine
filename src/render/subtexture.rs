@@ -43,45 +43,43 @@ impl SubTexture {
         let height = self.texture_size.y;
         let mut texture_coords = [glam::Vec2::ZERO; 4];
 
-        texture_coords[0] = glam::vec2(
+        texture_coords[0] = glam::vec2(self.region.right() / width, self.region.y / height);
+        texture_coords[1] = glam::vec2(self.region.x / width, self.region.y / height);
+        texture_coords[2] = glam::vec2(self.region.x / width, self.region.bottom() / height);
+        texture_coords[3] = glam::vec2(
             (self.region.x + self.region.width) / width,
             (self.region.y + self.region.height) / height,
-        ); // Top Right
-        texture_coords[1] = glam::vec2(self.region.right() / width, self.region.y / height); // Bottom Right
-        texture_coords[2] = glam::vec2((self.region.x + 0.5) / width, self.region.y / height); // Bottom Left
-        texture_coords[3] =
-            glam::vec2((self.region.x + 0.5) / width, self.region.bottom() / height);
-        // Top Left
+        );
 
-        // 0 Top Right
-        // 1 Bottom Right
-        // 2 Bottom Left
-        // 3 Top Left
+        // 0 - TOP RIGHT
+        // 1 - TOP LEFT
+        // 2 - BOTTOM LEFT
+        // 3 - BOTTOM RIGHT
         // flip x
-        // 0 - 3
-        // 1 - 2
-        // flip y
         // 0 - 1
         // 2 - 3
+        // flip y
+        // 1 - 2
+        // 0 - 3
 
         if self.flip_x {
-            let tmp = texture_coords[0];
-            texture_coords[0] = texture_coords[3];
-            texture_coords[3] = tmp;
-
-            let tmp = texture_coords[1];
-            texture_coords[1] = texture_coords[2];
-            texture_coords[2] = tmp
-        }
-
-        if self.flip_y {
             let tmp = texture_coords[0];
             texture_coords[0] = texture_coords[1];
             texture_coords[1] = tmp;
 
-            let tmp = texture_coords[3];
-            texture_coords[3] = texture_coords[2];
-            texture_coords[2] = tmp
+            let tmp = texture_coords[2];
+            texture_coords[2] = texture_coords[3];
+            texture_coords[3] = tmp;
+        }
+
+        if self.flip_y {
+            let tmp = texture_coords[1];
+            texture_coords[1] = texture_coords[2];
+            texture_coords[2] = tmp;
+
+            let tmp = texture_coords[0];
+            texture_coords[0] = texture_coords[3];
+            texture_coords[3] = tmp;
         }
 
         self.texture_coords = Some(texture_coords);

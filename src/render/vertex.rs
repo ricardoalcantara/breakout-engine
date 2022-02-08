@@ -74,24 +74,24 @@ pub(crate) const TEXTURE_COORDS: [glam::Vec2; 4] = [
 
 // TODO
 pub(crate) const TEXTURE_COORDS_FLIPPED_X: [glam::Vec2; 4] = [
-    glam::const_vec2!([1.0, 0.0]),
     glam::const_vec2!([0.0, 0.0]),
-    glam::const_vec2!([0.0, 1.0]),
+    glam::const_vec2!([1.0, 0.0]),
     glam::const_vec2!([1.0, 1.0]),
+    glam::const_vec2!([0.0, 1.0]),
 ];
 
 // TODO
 pub(crate) const TEXTURE_COORDS_FLIPPED_Y: [glam::Vec2; 4] = [
-    glam::const_vec2!([1.0, 0.0]),
-    glam::const_vec2!([0.0, 0.0]),
-    glam::const_vec2!([0.0, 1.0]),
     glam::const_vec2!([1.0, 1.0]),
+    glam::const_vec2!([0.0, 1.0]),
+    glam::const_vec2!([0.0, 0.0]),
+    glam::const_vec2!([1.0, 0.0]),
 ];
 
 // TODO
 pub(crate) const TEXTURE_COORDS_FLIPPED_X_Y: [glam::Vec2; 4] = [
-    glam::const_vec2!([1.0, 0.0]),
-    glam::const_vec2!([0.0, 0.0]),
     glam::const_vec2!([0.0, 1.0]),
     glam::const_vec2!([1.0, 1.0]),
+    glam::const_vec2!([1.0, 0.0]),
+    glam::const_vec2!([0.0, 0.0]),
 ];
