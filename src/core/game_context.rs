@@ -1,29 +1,24 @@
 use super::{
     asset_manager::AudioId,
     components::{Camera2D, Transform2D},
-    game_window::{GlWindow, ReadOnlyRc},
+    game_window::ReadOnlyRc,
 };
-use crate::{render::opengl::renderer2d::OpenGLRenderer2D, shapes::rectangle::Rect};
+use crate::{render::renderer::Renderer, shapes::rectangle::Rect};
 use hecs::World;
 
 pub struct GameContext {
     pub(crate) clear_color: glam::Vec3,
     pub(crate) world: World,
     audio_queue: Vec<AudioId>,
-    window: ReadOnlyRc<GlWindow>,
-    renderer: ReadOnlyRc<OpenGLRenderer2D>,
+    renderer: ReadOnlyRc<Renderer>,
 }
 
 impl GameContext {
-    pub(crate) fn new(
-        window: ReadOnlyRc<GlWindow>,
-        renderer: ReadOnlyRc<OpenGLRenderer2D>,
-    ) -> Self {
+    pub(crate) fn new(renderer: ReadOnlyRc<Renderer>) -> Self {
         Self {
             world: World::new(),
             clear_color: glam::Vec3::ZERO,
             audio_queue: Vec::new(),
-            window,
             renderer,
         }
     }
@@ -39,24 +34,24 @@ impl GameContext {
             .iter()
             .next()
         {
-            // TODO: It's wrong
+            // TODO: not yet implemented
+            todo!();
+            // let window_size = {
+            //     let size = self.window.borrow().window().inner_size();
+            //     glam::uvec2(size.width, size.height)
+            // };
 
-            let window_size = {
-                let size = self.window.borrow().window().inner_size();
-                glam::uvec2(size.width, size.height)
-            };
-
-            Some(
-                camera.get_view_rect(
-                    self.renderer
-                        .borrow()
-                        .render_size()
-                        .as_ref()
-                        .unwrap_or(&window_size),
-                    &window_size,
-                    &transform.position,
-                ),
-            )
+            // Some(
+            //     camera.get_view_rect(
+            //         self.renderer
+            //             .borrow()
+            //             .render_size()
+            //             .as_ref()
+            //             .unwrap_or(&window_size),
+            //         &window_size,
+            //         &transform.position,
+            //     ),
+            // )
         } else {
             None
         }

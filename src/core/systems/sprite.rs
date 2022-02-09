@@ -1,30 +1,27 @@
-use std::cell::{Ref, RefMut};
-
 use crate::{
     core::{
         asset_manager::AssetManager,
         components::{Camera2D, Label, Sprite, Transform2D},
         game_context::GameContext,
-        game_window::GlWindow,
     },
     error::BreakoutResult,
     font::Font,
     render::{
-        opengl::renderer2d::OpenGLRenderer2D,
-        renderer::{RenderText, RenderVertices},
+        renderer::Renderer,
         vertex::{
             TEXTURE_COORDS, TEXTURE_COORDS_FLIPPED_X, TEXTURE_COORDS_FLIPPED_X_Y,
             TEXTURE_COORDS_FLIPPED_Y,
         },
+        RenderText, RenderVertices,
     },
 };
+use std::{cell::RefMut, rc::Rc};
 
 pub fn system_render_sprite(
     context: &GameContext,
     asset_manager: &AssetManager,
-    renderer: &mut RefMut<OpenGLRenderer2D>,
-    window: Ref<GlWindow>,
-    default_font: &Font,
+    renderer: &mut RefMut<Renderer>,
+    default_font: &Rc<Font>,
 ) -> BreakoutResult {
     let world = &context.world;
 
@@ -33,14 +30,9 @@ pub fn system_render_sprite(
     let camera_projection = if let Some((_id, (camera, transform))) =
         world.query::<(&Camera2D, &Transform2D)>().iter().next()
     {
-        let window_size = {
-            let size = window.window().inner_size();
-            glam::uvec2(size.width, size.height)
-        };
-
         Some(camera.get_view_matrix(
-            renderer.render_size().as_ref().unwrap_or(&window_size),
-            &window_size,
+            &renderer.display_size(),
+            &renderer.window_size(),
             &transform.position,
         ))
     } else {
@@ -59,7 +51,7 @@ pub fn system_render_sprite(
                     transform.position,
                     transform.rotate,
                     transform.scale,
-                    texture.size().as_vec2(),
+                    texture.as_ref().size().as_vec2(),
                 );
                 transform.dirt = false;
             }
@@ -84,10 +76,10 @@ pub fn system_render_sprite(
             };
 
             renderer.draw_vertices(RenderVertices {
-                texture: Some(texture),
-                vertices: sprite.get_vertices(),
+                texture: Some(texture.clone()),
+                vertices: sprite.get_vertices().clone(),
                 color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
-                texture_coords: texture_coords,
+                texture_coords: texture_coords.clone(),
             });
         } else {
             if transform.dirt {
@@ -101,9 +93,9 @@ pub fn system_render_sprite(
             }
             renderer.draw_vertices(RenderVertices {
                 texture: None,
-                vertices: sprite.get_vertices(),
+                vertices: sprite.get_vertices().clone(),
                 color: sprite.color.unwrap_or(glam::vec4(1.0, 1.0, 1.0, 1.0)),
-                texture_coords: &TEXTURE_COORDS,
+                texture_coords: TEXTURE_COORDS.clone(),
             });
         };
     }
@@ -122,7 +114,7 @@ pub fn system_render_sprite(
 
         renderer.draw_text(RenderText {
             text: &label.text,
-            font,
+            font: font.clone(),
             size: label.size,
             position: _transform.position,
             scale: _transform.scale,

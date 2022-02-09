@@ -1,8 +1,5 @@
+use crate::{core::asset_manager::TextureId, render::subtexture::SubTexture};
 use std::collections::HashMap;
-
-use crate::{core::asset_manager::TextureId};
-
-use super::SubTexture;
 
 pub struct AnimatedSprite {
     pub total_animation_time: f32,

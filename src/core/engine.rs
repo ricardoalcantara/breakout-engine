@@ -122,7 +122,7 @@ impl RenderSettings {
         for settings in render_settings {
             match settings {
                 RenderSettings::DisplaySize((width, height)) => {
-                    game_window.set_render_size(glam::uvec2(width, height));
+                    game_window.set_display_size(glam::uvec2(width, height));
                 }
             }
         }
@@ -169,20 +169,16 @@ impl WindowSettings {
         for settings in engine_settings {
             match settings {
                 WindowSettings::Title(title) => {
-                    window.window().set_title(&title);
+                    window.set_title(&title);
                 }
                 WindowSettings::WindowSize((width, height)) => {
-                    window
-                        .window()
-                        .set_inner_size(PhysicalSize::new(width, height));
+                    window.set_inner_size(PhysicalSize::new(width, height));
                 }
                 WindowSettings::Fullscreen(set) => {
                     if set {
-                        window
-                            .window()
-                            .set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
+                        window.set_fullscreen(Some(winit::window::Fullscreen::Borderless(None)));
                     } else {
-                        window.window().set_fullscreen(None);
+                        window.set_fullscreen(None);
                     }
                 }
             }
@@ -221,7 +217,6 @@ impl EngineBuilder {
     pub fn build(self) -> BreakoutResult<Engine> {
         let mut window_builder = winit::window::WindowBuilder::new();
         window_builder = WindowSettings::apply_builder(window_builder, self.window_settings);
-
         let mut game_window = GameWindow::build(window_builder);
 
         RenderSettings::apply_window(&mut game_window, self.render_settings);
@@ -241,11 +236,7 @@ impl Engine {
         S: Scene + 'static,
     {
         let mut engine_timer = EngineTimer::new();
-        let mut game_state = GameState::new(
-            state,
-            self.game_window.window(),
-            self.game_window.renderer(),
-        )?;
+        let mut game_state = GameState::new(state, self.game_window.renderer())?;
 
         self.game_window.run(move |game_loop_state, control_flow| {
             match game_loop_state {

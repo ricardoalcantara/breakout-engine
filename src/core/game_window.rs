@@ -2,15 +2,14 @@ use std::{
     cell::{Ref, RefCell, RefMut},
     rc::Rc,
 };
-
-use crate::render::opengl::renderer2d::OpenGLRenderer2D;
-
-use glutin::{
-    event::{Event, WindowEvent},
+use winit::{
+    event::Event,
+    event::WindowEvent,
     event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
-    Api, ContextWrapper, GlRequest, PossiblyCurrent,
+    window::{Window, WindowBuilder},
 };
+
+use crate::render::renderer::Renderer;
 
 pub struct ReadOnlyRc<T>(Rc<RefCell<T>>);
 pub struct ReadWriteRc<T>(Rc<RefCell<T>>);
@@ -42,35 +41,25 @@ impl<T> ReadWriteRc<T> {
 pub enum GameLoopState<'a> {
     Input(&'a WindowEvent<'a>),
     Update,
-    Render(ReadWriteRc<OpenGLRenderer2D>),
+    Render(ReadWriteRc<Renderer>),
     Wait,
 }
 
-pub type GlWindow = ContextWrapper<PossiblyCurrent, glutin::window::Window>;
-
 pub struct GameWindow {
     event_loop: Option<EventLoop<()>>,
-    window: Rc<RefCell<GlWindow>>,
-    renderer: Rc<RefCell<OpenGLRenderer2D>>,
+    window: Rc<RefCell<Window>>,
+    renderer: Rc<RefCell<Renderer>>,
 }
 
 impl GameWindow {
-    pub fn new() -> GameWindow {
-        let window_builder = WindowBuilder::new().with_title("A fantastic window!");
-        GameWindow::build(window_builder)
-    }
-
     pub fn build(window_builder: WindowBuilder) -> GameWindow {
-        let event_loop = glutin::event_loop::EventLoop::new();
-        let window = glutin::ContextBuilder::new()
-            .with_gl(GlRequest::Specific(Api::OpenGl, (3, 3)))
-            .build_windowed(window_builder, &event_loop)
-            .unwrap();
+        let event_loop = EventLoop::new();
+        let window = window_builder.build(&event_loop).unwrap();
 
-        let window = Rc::new(RefCell::new(unsafe { window.make_current() }.unwrap()));
-        let renderer = Rc::new(RefCell::new(
-            OpenGLRenderer2D::new(&window.borrow()).unwrap(),
-        ));
+        let window = Rc::new(RefCell::new(window));
+        // TODO async
+        let renderer = pollster::block_on(Renderer::new(&window.borrow()));
+        let renderer = Rc::new(RefCell::new(renderer));
 
         GameWindow {
             window,
@@ -79,23 +68,23 @@ impl GameWindow {
         }
     }
 
-    pub fn set_render_size(&mut self, render_size: glam::UVec2) {
-        self.renderer.borrow_mut().set_render_size(render_size)
+    pub fn set_display_size(&mut self, display_size: glam::UVec2) {
+        self.renderer.borrow_mut().set_display_size(display_size)
     }
 
-    pub fn window(&self) -> ReadOnlyRc<GlWindow> {
+    pub fn window(&self) -> ReadOnlyRc<Window> {
         ReadOnlyRc(Rc::clone(&self.window))
     }
 
-    pub fn window_mut(&self) -> ReadWriteRc<GlWindow> {
+    pub fn window_mut(&self) -> ReadWriteRc<Window> {
         ReadWriteRc(Rc::clone(&self.window))
     }
 
-    pub fn renderer(&self) -> ReadOnlyRc<OpenGLRenderer2D> {
+    pub fn renderer(&self) -> ReadOnlyRc<Renderer> {
         ReadOnlyRc(Rc::clone(&self.renderer))
     }
 
-    pub fn renderer_mut(&self) -> ReadWriteRc<OpenGLRenderer2D> {
+    pub fn renderer_mut(&self) -> ReadWriteRc<Renderer> {
         ReadWriteRc(Rc::clone(&self.renderer))
     }
 
@@ -114,11 +103,18 @@ impl GameWindow {
                     match event {
                         WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
                         WindowEvent::Resized(physical_size) => {
-                            renderer.borrow_mut().resize(*physical_size);
+                            let size = {
+                                let tmp = *physical_size;
+                                glam::uvec2(tmp.width, tmp.height)
+                            };
+                            renderer.borrow_mut().resize(size);
                         }
                         WindowEvent::ScaleFactorChanged { new_inner_size, .. } => {
-                            // new_inner_size is &&mut so w have to dereference it twice
-                            renderer.borrow_mut().resize(**new_inner_size);
+                            let size = {
+                                let tmp = **new_inner_size;
+                                glam::uvec2(tmp.width, tmp.height)
+                            };
+                            renderer.borrow_mut().resize(size);
                         }
                         _ => game_loop(GameLoopState::Input(event), control_flow),
                     }
@@ -126,11 +122,20 @@ impl GameWindow {
                 Event::MainEventsCleared => {
                     game_loop(GameLoopState::Update, control_flow);
                     game_loop(GameLoopState::Render(self.renderer_mut()), control_flow);
-                    window.borrow_mut().swap_buffers().unwrap()
+                    // TODO put it back
+                    // match renderer.borrow_mut().render() {
+                    //     Ok(_) => {}
+                    //     // Reconfigure the surface if lost
+                    //     Err(wgpu::SurfaceError::Lost) => renderer.borrow_mut().reconfigure(),
+                    //     // The system is out of memory, we should probably quit
+                    //     Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
+                    //     // All other errors (Outdated, Timeout) should be resolved by the next frame
+                    //     Err(e) => error!("{:?}", e),
+                    // }
                 }
                 Event::RedrawRequested(_) => {
                     // windows_id is not required for the engine
-                    window.borrow_mut().window().request_redraw();
+                    window.borrow().request_redraw();
                 }
                 Event::RedrawEventsCleared => {
                     game_loop(GameLoopState::Wait, control_flow);

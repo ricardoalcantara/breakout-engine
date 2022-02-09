@@ -4,9 +4,9 @@ use crate::{
     audio::{Audio, AudioSettings},
     error::{BreakoutError, BreakoutResult},
     font::Font,
-    render::{opengl::renderer2d::OpenGLRenderer2D, texture::Texture},
+    render::{renderer::Renderer, texture::Texture},
 };
-use std::collections::HashMap;
+use std::{borrow::BorrowMut, collections::HashMap, rc::Rc};
 
 use super::game_window::ReadOnlyRc;
 
@@ -45,14 +45,14 @@ impl AutoIncrementId {
 
 pub struct AssetManager {
     auto_increment_id: AutoIncrementId,
-    textures: HashMap<TextureId, Texture>,
+    textures: HashMap<TextureId, Rc<Texture>>,
     audios: HashMap<AudioId, Audio>,
-    fonts: HashMap<FontId, Font>,
-    renderer: ReadOnlyRc<OpenGLRenderer2D>,
+    fonts: HashMap<FontId, Rc<Font>>,
+    renderer: ReadOnlyRc<Renderer>,
 }
 
 impl AssetManager {
-    pub(crate) fn new(renderer: ReadOnlyRc<OpenGLRenderer2D>) -> Self {
+    pub(crate) fn new(renderer: ReadOnlyRc<Renderer>) -> Self {
         Self {
             auto_increment_id: AutoIncrementId::new(),
             textures: HashMap::new(),
@@ -65,16 +65,18 @@ impl AssetManager {
 
 impl AssetManager {
     pub fn load_texture(&mut self, path: &str) -> BreakoutResult<TextureId> {
-        let image = image::open(path).map_err(BreakoutError::ImageError)?;
-        let texture = self.renderer.borrow().generate_texture(image)?;
+        // let image = image::open(path).map_err(BreakoutError::ImageError)?;
+        let renderer = self.renderer.borrow();
+        let mut texture = Texture::from_file(path, renderer.device(), renderer.queue());
 
         let id = TextureId(self.auto_increment_id.get_id::<TextureId>());
-        self.textures.insert(id.clone(), texture);
+        texture.id = Some(id.0);
+        self.textures.insert(id.clone(), Rc::new(texture));
 
         Ok(id)
     }
 
-    pub fn get_texture(&self, id: &TextureId) -> &Texture {
+    pub fn get_texture(&self, id: &TextureId) -> &Rc<Texture> {
         &self.textures[id]
     }
 }
@@ -104,12 +106,12 @@ impl AssetManager {
         let font = Font::new(path)?;
 
         let id = FontId(self.auto_increment_id.get_id::<FontId>());
-        self.fonts.insert(id.clone(), font);
+        self.fonts.insert(id.clone(), Rc::new(font));
 
         Ok(id)
     }
 
-    pub fn get_font(&self, id: &FontId) -> &Font {
+    pub fn get_font(&self, id: &FontId) -> &Rc<Font> {
         &self.fonts[id]
     }
 
@@ -120,11 +122,12 @@ impl AssetManager {
         get_texture: F,
     ) -> BreakoutResult<&Font>
     where
-        F: FnOnce(DynamicImage) -> BreakoutResult<Texture>,
+        F: FnOnce(DynamicImage) -> Texture,
     {
         if !self.fonts[&id].has_size(size) {
+            // TODO unsafe
             let mut font = self.fonts.remove(id).unwrap();
-            font.build_with_size(size, get_texture)?;
+            (*Rc::get_mut(&mut font).unwrap()).build_with_size(size, get_texture)?;
             self.fonts.insert(id.clone(), font);
         }
 

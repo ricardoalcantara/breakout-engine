@@ -4,6 +4,7 @@ pub mod label;
 pub mod sprite;
 pub mod transform2d;
 
+pub use crate::render::subtexture::SubTexture;
 pub use animated_sprite::*;
 pub use camera2d::*;
 pub use label::*;

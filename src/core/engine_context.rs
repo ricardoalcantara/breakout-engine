@@ -1,22 +1,15 @@
-
-
-use super::{
-    engine::{RenderSettings, WindowSettings},
-    game_window::{GlWindow, ReadOnlyRc},
-};
+use super::engine::{RenderSettings, WindowSettings};
 
 pub struct EngineContext {
     engine_settings: Vec<WindowSettings>,
     render_settings: Vec<RenderSettings>,
-    window: ReadOnlyRc<GlWindow>,
 }
 
 impl EngineContext {
-    pub fn new(window: ReadOnlyRc<GlWindow>) -> EngineContext {
+    pub fn new() -> EngineContext {
         EngineContext {
             engine_settings: Vec::new(),
             render_settings: Vec::new(),
-            window,
         }
     }
 
@@ -33,11 +26,15 @@ impl EngineContext {
     }
 
     pub fn fullscreen(&self) -> bool {
-        self.window.borrow().window().fullscreen().is_some()
+        todo!()
+        // TODO not yet implemented
+        // self.window.borrow().window().fullscreen().is_some()
     }
 
     pub fn window_size(&self) -> glam::UVec2 {
-        let size = self.window.borrow().window().inner_size();
-        glam::uvec2(size.width, size.height)
+        todo!()
+        // TODO not yet implemented
+        // let size = self.window.borrow().window().inner_size();
+        // glam::uvec2(size.width, size.height)
     }
 }

@@ -5,36 +5,23 @@ use std::{
     rc::Rc,
 };
 
-use super::{
-    engine::EngineTimerView,
-    game_window::{GameWindow, GlWindow, ReadOnlyRc},
-};
-use crate::{
-    error::BreakoutResult,
-    font::Font,
-    gui::group::Group,
-    render::{
-        opengl::renderer2d::OpenGLRenderer2D,
-        renderer::{RenderQuad, RenderText},
-    },
-};
+use super::engine::EngineTimerView;
+use crate::{error::BreakoutResult, font::Font, gui::group::Group, render::renderer::Renderer};
 
 pub struct UIContext {
     build: HashMap<String, Group>,
-    window: ReadOnlyRc<GlWindow>,
-    default_font: Font,
+    default_font: Rc<Font>,
 }
 
 impl UIContext {
-    pub(crate) fn new(window: ReadOnlyRc<GlWindow>) -> BreakoutResult<UIContext> {
+    pub(crate) fn new() -> BreakoutResult<UIContext> {
         let build = HashMap::new();
         let default_font_byte = include_bytes!("../../assets/Roboto-Regular.ttf");
-        let default_font = Font::new_from_memory(default_font_byte)?;
+        let default_font = Rc::new(Font::new_from_memory(default_font_byte)?);
 
         Ok(UIContext {
             build,
             default_font,
-            window,
         })
     }
 
@@ -42,23 +29,22 @@ impl UIContext {
         false
     }
 
-    pub(crate) fn render(
-        &mut self,
-        renderer: &mut RefMut<OpenGLRenderer2D>,
-        view_time: &EngineTimerView,
-    ) {
-        self.default_font
-            .build_with_size(25, |image| Ok(renderer.generate_texture(image)?))
-            .unwrap();
+    pub(crate) fn render(&mut self, renderer: &mut RefMut<Renderer>, view_time: &EngineTimerView) {
+        // TODO WGPU pending
+        // self.default_font
+        //     .build_with_size(25, |image| Ok(renderer.generate_texture(image)?))
+        //     .unwrap();
 
         // TODO: Set UI Camera later
-        renderer.begin_draw(None);
+        // TODO WGPU pending
+        // renderer.begin_draw(None);
 
         for (_, build) in &self.build {
             build.render(renderer, view_time, &self.default_font);
         }
 
-        renderer.end_draw();
+        // TODO WGPU pending
+        // renderer.end_draw();
 
         self.build.clear();
     }

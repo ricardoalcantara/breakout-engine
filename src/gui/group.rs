@@ -1,11 +1,9 @@
-use std::cell::{RefMut};
+use std::{cell::RefMut, rc::Rc};
 
 use crate::{
     core::engine::EngineTimerView,
     font::Font,
-    render::{
-        opengl::renderer2d::OpenGLRenderer2D,
-    },
+    render::{renderer::Renderer, RenderQuad},
     shapes::rectangle::Rect,
 };
 
@@ -76,9 +74,9 @@ impl Group {
 
     pub(crate) fn render(
         &self,
-        renderer: &mut RefMut<OpenGLRenderer2D>,
+        renderer: &mut RefMut<Renderer>,
         view_time: &EngineTimerView,
-        font: &Font,
+        font: &Rc<Font>,
     ) {
         let spacing = 30;
         let padding = 10;

@@ -35,11 +35,39 @@ impl Scene for MainState {
         let world = &mut _context.get_world();
         world.spawn((
             Sprite {
-                texture_id: Some(texture),
+                texture_id: Some(texture.clone()),
                 sub_texture: Some(SubTexture::new(Rect::new(0.0, 0.0, 256.0, 256.0))),
                 ..Default::default()
             },
             Transform2D::from_position(math::vec2(10.0, 10.0)),
+        ));
+
+        world.spawn((
+            Sprite {
+                texture_id: Some(texture.clone()),
+                flip_x: true,
+                flip_y: true,
+                ..Default::default()
+            },
+            Transform2D::from_position(math::vec2(10.0, 200.0)),
+        ));
+
+        world.spawn((
+            Sprite {
+                texture_id: Some(texture.clone()),
+                flip_x: true,
+                ..Default::default()
+            },
+            Transform2D::from_position(math::vec2(300.0, 10.0)),
+        ));
+
+        world.spawn((
+            Sprite {
+                texture_id: Some(texture),
+                flip_y: true,
+                ..Default::default()
+            },
+            Transform2D::from_position(math::vec2(300.0, 200.0)),
         ));
         Ok(())
     }
