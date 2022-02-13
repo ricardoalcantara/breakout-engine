@@ -3,12 +3,15 @@ use super::{
     components::{Camera2D, Transform2D},
     game_window::ReadOnlyRc,
 };
-use crate::{render::renderer::Renderer, shapes::rectangle::Rect};
+use crate::{
+    physics2d::physics_world::PhysicsWorld, render::renderer::Renderer, shapes::rectangle::Rect,
+};
 use hecs::World;
 
 pub struct GameContext {
     pub(crate) clear_color: glam::Vec3,
     pub(crate) world: World,
+    pub(crate) physics_world: PhysicsWorld,
     audio_queue: Vec<AudioId>,
     renderer: ReadOnlyRc<Renderer>,
 }
@@ -17,6 +20,7 @@ impl GameContext {
     pub(crate) fn new(renderer: ReadOnlyRc<Renderer>) -> Self {
         Self {
             world: World::new(),
+            physics_world: PhysicsWorld::new(),
             clear_color: glam::Vec3::ZERO,
             audio_queue: Vec::new(),
             renderer,

@@ -26,6 +26,8 @@ name = "empty"
 [[example]]
 name = "menu"
 [[example]]
+name = "physics2d"
+[[example]]
 name = "pong"
 [[example]]
 name = "snake"

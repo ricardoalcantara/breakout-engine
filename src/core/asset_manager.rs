@@ -6,7 +6,7 @@ use crate::{
     font::Font,
     render::{renderer::Renderer, texture::Texture},
 };
-use std::{borrow::BorrowMut, collections::HashMap, rc::Rc};
+use std::{collections::HashMap, rc::Rc};
 
 use super::game_window::ReadOnlyRc;
 

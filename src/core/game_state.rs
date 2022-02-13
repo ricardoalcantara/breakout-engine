@@ -16,6 +16,7 @@ use crate::{
     core::{asset_manager::AssetManager, engine_context::EngineContext, game_context::GameContext},
     error::BreakoutResult,
     font::Font,
+    physics2d::systems::physics::system_update_physics,
     render::renderer::Renderer,
 };
 
@@ -132,6 +133,7 @@ impl GameState {
         };
         self.input.end_frame();
 
+        system_update_physics(&self.context, delta);
         // TODO system_update_audio
         for audio_queue in self.context.take_audio_queue() {
             let audio = self.asset_manager.get_audio(&audio_queue);
