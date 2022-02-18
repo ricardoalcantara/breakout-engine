@@ -13,7 +13,7 @@ pub fn system_render_font_texture(
     renderer: &RefMut<Renderer>,
     default_font: &mut Rc<Font>,
 ) -> BreakoutResult {
-    let world = &context.world;
+    let world = context.world.borrow();
 
     for (_id, label) in world.query::<&Label>().iter() {
         if let Some(font_id) = &label.font_id {

@@ -23,7 +23,7 @@ pub fn system_render_sprite(
     renderer: &mut RefMut<Renderer>,
     default_font: &Rc<Font>,
 ) -> BreakoutResult {
-    let world = &context.world;
+    let world = context.world.borrow();
 
     renderer.clear_color(context.clear_color);
 

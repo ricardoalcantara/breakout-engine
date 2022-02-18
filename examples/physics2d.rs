@@ -11,24 +11,54 @@ use breakout_engine::{
     error::BreakoutResult,
     math,
     physics2d::components::physics::{
-        Collision, KinematicBody2D, PhysicsBody2D, PhysicsBody2DType, StaticBody2D,
+        Collision, KinematicBody2D, PhysicsBody2D, PhysicsBody2DId, PhysicsBody2DType, Shapes,
+        StaticBody2D,
     },
+    shapes::rectangle::Rect,
 };
 use hecs::With;
+use log::warn;
+use winit::event::VirtualKeyCode;
 
 extern crate log;
 extern crate pretty_env_logger;
 
-struct Player;
+struct Player {
+    speed: f32,
+    velocity: math::Vec2,
+}
 
 struct MainState {
     gravity: math::Vec2,
 }
 
+fn get_input_direction(_input: &mut Input) -> math::Vec2 {
+    let mut direction = math::Vec2::ZERO;
+
+    if _input.is_key_pressed(VirtualKeyCode::Up) || _input.is_key_pressed(VirtualKeyCode::W) {
+        direction.y = -1.0;
+    }
+    if _input.is_key_pressed(VirtualKeyCode::Down) || _input.is_key_pressed(VirtualKeyCode::S) {
+        direction.y = 1.0;
+    }
+    if _input.is_key_pressed(VirtualKeyCode::Left) || _input.is_key_pressed(VirtualKeyCode::A) {
+        direction.x = -1.0;
+    }
+    if _input.is_key_pressed(VirtualKeyCode::Right) || _input.is_key_pressed(VirtualKeyCode::D) {
+        direction.x = 1.0;
+    }
+
+    if direction.length_squared() > 0.0 {
+        direction = direction.normalize()
+    }
+
+    direction
+}
+
 impl MainState {
     fn new() -> Self {
         Self {
-            gravity: math::vec2(0.0, 900.0),
+            gravity: math::vec2(0.0, -900.0),
         }
     }
 }
@@ -40,7 +70,8 @@ impl Scene for MainState {
         _asset_manager: &mut AssetManager,
         _engine: &mut EngineContext,
     ) -> BreakoutResult {
-        let world = _context.get_world();
+        let mut world = _context.get_world_mut();
+        let mut physics_world = _context.get_physics_world_mut();
 
         world.spawn((
             Sprite {
@@ -48,17 +79,22 @@ impl Scene for MainState {
                 ..Default::default()
             },
             Transform2D::from_position_rotation_scale(
-                math::vec2(10.0, 10.0),
+                math::vec2(200.0, 10.0),
                 0.0,
                 math::vec2(16.0, 16.0),
             ),
-            PhysicsBody2D {
-                physics_body_type: PhysicsBody2DType::KinematicBody2D(KinematicBody2D {
-                    move_by: None,
-                }),
-                collisions: vec![Collision::Rect],
+            physics_world.spawn(PhysicsBody2D {
+                physics_body_type: PhysicsBody2DType::kinematic_body_2d(),
+                collision: Collision::from_rect(Rect::from_position_size(
+                    math::vec2(0.0, 0.0).into(),
+                    math::vec2(16.0, 16.0).into(),
+                )),
+                position: math::vec2(200.0, 10.0),
+            }),
+            Player {
+                speed: 150.0,
+                velocity: math::Vec2::ZERO,
             },
-            Player,
         ));
 
         world.spawn((
@@ -71,10 +107,14 @@ impl Scene for MainState {
                 0.0,
                 math::vec2(250.0, 16.0),
             ),
-            PhysicsBody2D {
-                physics_body_type: PhysicsBody2DType::StaticBody2D(StaticBody2D {}),
-                collisions: vec![Collision::Rect],
-            },
+            physics_world.spawn(PhysicsBody2D {
+                physics_body_type: PhysicsBody2DType::static_body_2d(),
+                collision: Collision::from_rect(Rect::from_position_size(
+                    math::vec2(0.0, 0.0).into(),
+                    math::vec2(250.0, 16.0).into(),
+                )),
+                position: math::vec2(10.0, 450.0),
+            }),
         ));
 
         world.spawn((
@@ -87,6 +127,14 @@ impl Scene for MainState {
                 0.0,
                 math::vec2(250.0, 16.0),
             ),
+            physics_world.spawn(PhysicsBody2D {
+                physics_body_type: PhysicsBody2DType::static_body_2d(),
+                collision: Collision::from_rect(Rect::from_position_size(
+                    math::vec2(0.0, 0.0).into(),
+                    math::vec2(250.0, 16.0).into(),
+                )),
+                position: math::vec2(350.0, 450.0),
+            }),
         ));
 
         world.spawn((
@@ -99,6 +147,14 @@ impl Scene for MainState {
                 0.0,
                 math::vec2(200.0, 16.0),
             ),
+            physics_world.spawn(PhysicsBody2D {
+                physics_body_type: PhysicsBody2DType::static_body_2d(),
+                collision: Collision::from_rect(Rect::from_position_size(
+                    math::vec2(0.0, 0.0).into(),
+                    math::vec2(200.0, 16.0).into(),
+                )),
+                position: math::vec2(200.0, 375.0),
+            }),
         ));
 
         Ok(())
@@ -121,13 +177,34 @@ impl Scene for MainState {
         _engine: &mut EngineContext,
     ) -> BreakoutResult<Transition> {
         let world = _context.get_world();
+        let mut physics_world = _context.get_physics_world_mut();
 
-        for (_id, physics_body_2d) in &mut world.query::<With<Player, &mut PhysicsBody2D>>() {
-            match &mut physics_body_2d.physics_body_type {
-                PhysicsBody2DType::KinematicBody2D(kinematic_body_2d) => {
-                    kinematic_body_2d.move_by = Some((math::vec2(0.0, 0.0) + self.gravity) * _dt)
+        let direction = get_input_direction(_input);
+
+        for (_id, (physics_body_2d_id, player)) in
+            &mut world.query::<(&mut PhysicsBody2DId, &mut Player)>()
+        {
+            if let Some(mut body) = physics_world.get_mut(physics_body_2d_id) {
+                if let PhysicsBody2DType::KinematicBody2D(kinematic_body_2d) =
+                    &mut body.physics_body_type
+                {
+                    if _input.is_key_pressed(VirtualKeyCode::Space) {
+                        player.velocity += math::vec2(0.0, 900.0);
+                    }
+
+                    player.velocity += direction * player.speed;
+
+                    if player.velocity.length() < 0.01 {
+                        player.velocity = math::Vec2::ZERO;
+                    }
+
+                    let dt_velocity = player.velocity * _dt;
+
+                    player.velocity -= dt_velocity;
+                    kinematic_body_2d.move_by = Some(dt_velocity + (self.gravity * _dt));
                 }
-                _ => panic!(),
+            } else {
+                warn!("Missing body somehow!");
             }
         }
 

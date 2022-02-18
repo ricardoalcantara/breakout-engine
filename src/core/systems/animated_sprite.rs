@@ -4,7 +4,7 @@ use crate::core::{
 };
 
 pub fn system_update_animated_sprite(context: &GameContext, delta: f32) {
-    let world = &context.world;
+    let world = context.world.borrow();
 
     for (_entity, (sprite, animated_sprite)) in
         &mut world.query::<(&mut Sprite, &mut AnimatedSprite)>()
