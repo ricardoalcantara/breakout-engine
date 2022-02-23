@@ -65,7 +65,7 @@ impl Scene for MainState {
         let pong_texture = _asset_manager.load_texture("assets/pong-ball.png")?;
         let paddles_texture = _asset_manager.load_texture("assets/paddles.png")?;
 
-        let world = &mut _context.get_world();
+        let mut world = _context.get_world_mut();
         let speed = 200.0;
 
         world.spawn((
@@ -128,7 +128,7 @@ impl Scene for MainState {
         _engine: &mut EngineContext,
     ) -> BreakoutResult<Transition> {
         let mut rng = rand::thread_rng();
-        let world = &mut _context.get_world();
+        let mut world = _context.get_world_mut();
 
         self.level_time -= _dt;
 

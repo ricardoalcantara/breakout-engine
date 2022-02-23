@@ -172,15 +172,24 @@ impl Render2DPineline {
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         });
 
-        let mut indices: [u16; MAX_INDEX_COUNT] = [0u16; MAX_INDEX_COUNT];
+        // let mut indices: [u16; MAX_INDEX_COUNT] = [0u16; MAX_INDEX_COUNT];
+        let mut indices: Vec<u32> = Vec::with_capacity(MAX_QUAD_COUNT);
         let mut offset = 0;
-        for i in (0..MAX_INDEX_COUNT).step_by(6) {
-            indices[i + 0] = 0 + offset;
-            indices[i + 1] = 1 + offset;
-            indices[i + 2] = 2 + offset;
-            indices[i + 3] = 0 + offset;
-            indices[i + 4] = 2 + offset;
-            indices[i + 5] = 3 + offset;
+        // for _ in (0..MAX_INDEX_COUNT).step_by(6) {
+        // indices[i + 0] = 0 + offset;
+        // indices[i + 1] = 1 + offset;
+        // indices[i + 2] = 2 + offset;
+        // indices[i + 3] = 0 + offset;
+        // indices[i + 4] = 2 + offset;
+        // indices[i + 5] = 3 + offset;
+
+        for _ in 0..MAX_QUAD_COUNT {
+            indices.push(0 + offset);
+            indices.push(1 + offset);
+            indices.push(2 + offset);
+            indices.push(0 + offset);
+            indices.push(2 + offset);
+            indices.push(3 + offset);
 
             offset += 4;
         }
@@ -302,7 +311,7 @@ impl Render2DPineline {
                 render_pass.set_bind_group(1, &self.camera_bind_group, &[]);
 
                 render_pass
-                    .set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+                    .set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint32);
                 // TOOD remove cast later
                 render_pass.draw_indexed(indices_from as u32..indices_to as u32, 0, 0..1);
             }

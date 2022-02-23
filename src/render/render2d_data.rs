@@ -4,7 +4,7 @@ use crate::render::texture::Texture;
 use crate::shapes::rectangle::Rect;
 use std::rc::Rc;
 
-pub const MAX_QUAD_COUNT: usize = 10000;
+pub const MAX_QUAD_COUNT: usize = 100000;
 pub const MAX_VERTEX_COUNT: usize = MAX_QUAD_COUNT * 4;
 pub const MAX_INDEX_COUNT: usize = MAX_QUAD_COUNT * 6;
 pub const MAX_TEXTURE_COUNT: usize = 32;
