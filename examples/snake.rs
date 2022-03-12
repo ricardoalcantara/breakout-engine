@@ -149,7 +149,7 @@ impl Scene for MainState {
 
         _context.play_audio(music_audio_id);
 
-        let world = &mut _context.get_world();
+        let world = &mut _context.get_world_mut();
 
         world.spawn((
             Sprite {
@@ -289,7 +289,7 @@ impl Scene for MainState {
             _ => (),
         }
 
-        let world = &mut _context.get_world();
+        let world = &mut _context.get_world_mut();
         let mut despawn = Vec::new();
 
         let mut snake_copy = self.snake.clone();

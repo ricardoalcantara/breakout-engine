@@ -28,9 +28,9 @@ impl Label {
 
     pub(crate) fn draw(&self, renderer: &mut RefMut<Renderer>, rect: Rect, font: &Rc<Font>) {
         let size = font.measure(&self.text, 25) / 2.0;
-        let rect_size: glam::Vec2 = rect.size().into();
+        let rect_size: glam::Vec2 = rect.size();
         let rect_size = rect_size / 2.0;
-        let position: glam::Vec2 = rect.position().into();
+        let position: glam::Vec2 = rect.position();
         let position = match self.orientation {
             Orientation::Center => position + rect_size - size,
             Orientation::Left => position,

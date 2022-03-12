@@ -196,7 +196,7 @@ impl Scene for MainState {
         for (_id, (transform, collider)) in
             world.query_mut::<With<Paddles, (&Transform2D, &Rect)>>()
         {
-            paddles_collider.push(collider.moved_to(transform.position().into()));
+            paddles_collider.push(collider.moved_to(transform.position()));
         }
 
         'ball: for (_id, (ball, transform, collider)) in
@@ -208,7 +208,7 @@ impl Scene for MainState {
                 ball.direction.y *= -1.0;
             }
 
-            let ball_collider = collider.moved_to(position.into());
+            let ball_collider = collider.moved_to(position);
 
             for paddles in &paddles_collider {
                 if paddles.intersects(&ball_collider) {

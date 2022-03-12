@@ -48,7 +48,7 @@ impl Sprite {
         };
 
         let render_rect_size = if let Some(sub_texture) = &self.sub_texture {
-            sub_texture.region.size().into()
+            sub_texture.region.size()
         } else {
             texture_size
         };

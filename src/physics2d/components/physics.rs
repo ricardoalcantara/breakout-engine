@@ -48,13 +48,13 @@ impl PhysicsBody2D {
 
         for shape_a in &self.collision.shapes {
             let Shapes::Rect(rect_a) = shape_a;
-            let rect_a = rect_a.translated(self.position.into());
-            let rect_a_x = rect_a.translated(glam::vec2(move_by.x, 0.0).into());
-            let rect_a_y = rect_a.translated(glam::vec2(0.0, move_by.y).into());
+            let rect_a = rect_a.translated(self.position);
+            let rect_a_x = rect_a.translated(glam::vec2(move_by.x, 0.0));
+            let rect_a_y = rect_a.translated(glam::vec2(0.0, move_by.y));
 
             for shape_b in &other.collision.shapes {
                 let Shapes::Rect(rect_b) = shape_b;
-                let rect_b = rect_b.translated(other.position.into());
+                let rect_b = rect_b.translated(other.position);
 
                 is_colliding_x = is_colliding_x || rect_a_x.intersects(&rect_b);
                 is_colliding_y = is_colliding_y || rect_a_y.intersects(&rect_b);

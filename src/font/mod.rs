@@ -126,8 +126,8 @@ impl Font {
             let y_offset = y * (max_height + spacing);
 
             let rect = Rect::from_position_size(
-                glam::ivec2(x_offset, y_offset).as_vec2().into(),
-                glyph_image.size.as_vec2().into(),
+                glam::ivec2(x_offset, y_offset).as_vec2(),
+                glyph_image.size.as_vec2(),
             );
             let sub_texture =
                 SubTexture::new_with_texture_size(rect, image_width as f32, image_height as f32);

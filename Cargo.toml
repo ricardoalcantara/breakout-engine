@@ -3,11 +3,6 @@ name = "breakout_engine"
 version = "0.1.0"
 edition = "2021"
 
-[workspace]
-members = [
-    "tiled",
-]
-
 [dependencies]
 freetype-rs = "0.29.0"
 anyhow = "1.0"

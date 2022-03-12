@@ -105,8 +105,8 @@ impl Group {
                     .draw(
                         renderer,
                         Rect::from_position_size(
-                            element_position.into(),
-                            glam::vec2(size.x - padding as f32 * 2.0, spacing as f32).into(),
+                            element_position,
+                            glam::vec2(size.x - padding as f32 * 2.0, spacing as f32),
                         ),
                         font,
                     );
@@ -119,8 +119,8 @@ impl Group {
                     .draw(
                         renderer,
                         Rect::from_position_size(
-                            element_position.into(),
-                            glam::vec2(size.x - padding as f32 * 2.0, spacing as f32).into(),
+                            element_position,
+                            glam::vec2(size.x - padding as f32 * 2.0, spacing as f32),
                         ),
                         font,
                     );
@@ -130,8 +130,8 @@ impl Group {
                     label.draw(
                         renderer,
                         Rect::from_position_size(
-                            element_position.into(),
-                            glam::vec2(size.x - padding as f32 * 2.0, spacing as f32).into(),
+                            element_position,
+                            glam::vec2(size.x - padding as f32 * 2.0, spacing as f32),
                         ),
                         font,
                     );
@@ -141,8 +141,8 @@ impl Group {
                     button.draw(
                         renderer,
                         Rect::from_position_size(
-                            element_position.into(),
-                            glam::vec2(size.x - padding as f32 * 2.0, spacing as f32 + 10.0).into(),
+                            element_position,
+                            glam::vec2(size.x - padding as f32 * 2.0, spacing as f32 + 10.0),
                         ),
                         font,
                     );

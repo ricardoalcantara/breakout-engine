@@ -86,8 +86,8 @@ impl Scene for MainState {
             physics_world.spawn(PhysicsBody2D {
                 physics_body_type: PhysicsBody2DType::kinematic_body_2d(),
                 collision: Collision::from_rect(Rect::from_position_size(
-                    math::vec2(0.0, 0.0).into(),
-                    math::vec2(16.0, 16.0).into(),
+                    math::vec2(0.0, 0.0),
+                    math::vec2(16.0, 16.0),
                 )),
                 position: math::vec2(200.0, 10.0),
             }),
@@ -110,8 +110,8 @@ impl Scene for MainState {
             physics_world.spawn(PhysicsBody2D {
                 physics_body_type: PhysicsBody2DType::static_body_2d(),
                 collision: Collision::from_rect(Rect::from_position_size(
-                    math::vec2(0.0, 0.0).into(),
-                    math::vec2(250.0, 16.0).into(),
+                    math::vec2(0.0, 0.0),
+                    math::vec2(250.0, 16.0),
                 )),
                 position: math::vec2(10.0, 450.0),
             }),
@@ -130,8 +130,8 @@ impl Scene for MainState {
             physics_world.spawn(PhysicsBody2D {
                 physics_body_type: PhysicsBody2DType::static_body_2d(),
                 collision: Collision::from_rect(Rect::from_position_size(
-                    math::vec2(0.0, 0.0).into(),
-                    math::vec2(250.0, 16.0).into(),
+                    math::vec2(0.0, 0.0),
+                    math::vec2(250.0, 16.0),
                 )),
                 position: math::vec2(350.0, 450.0),
             }),
@@ -150,8 +150,8 @@ impl Scene for MainState {
             physics_world.spawn(PhysicsBody2D {
                 physics_body_type: PhysicsBody2DType::static_body_2d(),
                 collision: Collision::from_rect(Rect::from_position_size(
-                    math::vec2(0.0, 0.0).into(),
-                    math::vec2(200.0, 16.0).into(),
+                    math::vec2(0.0, 0.0),
+                    math::vec2(200.0, 16.0),
                 )),
                 position: math::vec2(200.0, 375.0),
             }),

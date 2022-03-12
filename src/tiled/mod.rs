@@ -41,7 +41,7 @@ impl Tiled {
     }
 
     pub fn spawn(&self, context: &mut GameContext) -> BreakoutResult {
-        let world = &mut context.get_world();
+        let world = &mut context.get_world_mut();
         let texture = self.textures.values().next().unwrap().clone();
         let mut x = 0.0;
         let mut y = 0.0;
@@ -96,10 +96,8 @@ impl Tiled {
             for (_id, (sprite, tile, transform)) in
                 &mut world.query::<(&mut Sprite, &Tile, &Transform2D)>()
             {
-                sprite.visible = camera.intersects(&Rect::from_position_size(
-                    transform.position().into(),
-                    tile.size.into(),
-                ));
+                sprite.visible =
+                    camera.intersects(&Rect::from_position_size(transform.position(), tile.size));
             }
         }
     }

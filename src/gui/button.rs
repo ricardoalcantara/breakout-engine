@@ -29,8 +29,8 @@ impl Button {
 
     pub(crate) fn draw(&self, renderer: &mut RefMut<Renderer>, rect: Rect, font: &Rc<Font>) {
         renderer.draw_quad(RenderQuad {
-            size: rect.size().into(),
-            position: rect.position().into(),
+            size: rect.size(),
+            position: rect.position(),
             scale: glam::Vec2::ONE,
             rotate: 0.0,
             center_origin: false,
