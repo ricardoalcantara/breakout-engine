@@ -26,7 +26,7 @@ pub struct Input {
 }
 
 impl Input {
-    pub(crate) fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             keys_pressed: Vec::with_capacity(10),
             keys_released: Vec::with_capacity(10),
@@ -35,7 +35,7 @@ impl Input {
         }
     }
 
-    pub(crate) fn on_event(&mut self, event: &winit::event::WindowEvent) -> Option<Event> {
+    pub fn on_event(&mut self, event: &winit::event::WindowEvent) -> Option<Event> {
         let on_event = match event {
             WindowEvent::KeyboardInput { input, .. } => {
                 if let Some(key_code) = input.virtual_keycode {

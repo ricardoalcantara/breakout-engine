@@ -17,7 +17,7 @@ pub struct EngineTimerView {
     pub frame_time_spike_per_seconds: f32,
 }
 
-struct EngineTimer {
+pub struct EngineTimer {
     delta: f32,
     fps: u32,
     fps_count: u32,
@@ -31,7 +31,7 @@ struct EngineTimer {
 }
 
 impl EngineTimer {
-    fn new() -> EngineTimer {
+    pub fn new() -> EngineTimer {
         let frame_target = std::env::var("FPS_LOCK")
             .unwrap_or(String::from("0.0"))
             .parse::<f32>()
@@ -58,7 +58,7 @@ impl EngineTimer {
         }
     }
 
-    fn view_time(&self) -> EngineTimerView {
+    pub fn view_time(&self) -> EngineTimerView {
         EngineTimerView {
             delta: self.delta,
             fps: self.fps,
@@ -67,7 +67,7 @@ impl EngineTimer {
         }
     }
 
-    fn update(&mut self) -> f32 {
+    pub fn update(&mut self) -> f32 {
         self.delta = self.time.elapsed().as_secs_f32();
         self.time = std::time::Instant::now();
 
@@ -95,7 +95,7 @@ Frame_time_avg:  {:}",
         self.delta
     }
 
-    fn wait(&mut self) {
+    pub fn wait(&mut self) {
         let frame_time = self.time.elapsed().as_secs_f32();
         self.frame_time_count += frame_time;
 

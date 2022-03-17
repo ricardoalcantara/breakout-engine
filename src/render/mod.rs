@@ -7,7 +7,10 @@ pub mod vertex;
 
 use std::rc::Rc;
 
-use self::{texture::Texture, vertex::Vertex};
+use self::{
+    texture::Texture,
+    vertex::{Vertex, CENTER_QUAD, TEXTURE_COORDS, TOP_LEFT_QUAD},
+};
 use crate::{font::Font, shapes::rectangle::Rect};
 
 pub struct RenderQuad {
@@ -21,11 +24,50 @@ pub struct RenderQuad {
 
 impl RenderQuad {
     pub fn raw_vertices(&self) -> [Vertex; 4] {
+        let quad = if self.center_origin {
+            &CENTER_QUAD
+        } else {
+            &TOP_LEFT_QUAD
+        };
+
+        let render_rect_size = self.size;
+
+        let transform = if self.rotate == 0.0 {
+            glam::Mat4::from_translation(self.position.extend(0.0))
+                * glam::Mat4::from_scale(render_rect_size.extend(0.0) * self.scale.extend(0.0))
+        } else {
+            glam::Mat4::from_scale_rotation_translation(
+                render_rect_size.extend(0.0) * self.scale.extend(0.0),
+                glam::Quat::from_rotation_z(self.rotate),
+                self.position.extend(0.0),
+            )
+        };
+
         [
-            Vertex::default(),
-            Vertex::default(),
-            Vertex::default(),
-            Vertex::default(),
+            Vertex {
+                position: (transform * quad[0]).truncate(),
+                color: self.color,
+                texture_coords: TEXTURE_COORDS[0],
+                tex_index: 0,
+            },
+            Vertex {
+                position: (transform * quad[1]).truncate(),
+                color: self.color,
+                texture_coords: TEXTURE_COORDS[1],
+                tex_index: 0,
+            },
+            Vertex {
+                position: (transform * quad[2]).truncate(),
+                color: self.color,
+                texture_coords: TEXTURE_COORDS[2],
+                tex_index: 0,
+            },
+            Vertex {
+                position: (transform * quad[3]).truncate(),
+                color: self.color,
+                texture_coords: TEXTURE_COORDS[3],
+                tex_index: 0,
+            },
         ]
     }
 }

@@ -8,5 +8,5 @@ pub mod input;
 pub mod scene;
 pub mod ui_context;
 
-mod game_window;
+pub mod game_window;
 mod systems;

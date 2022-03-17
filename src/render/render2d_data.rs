@@ -73,8 +73,8 @@ impl Render2dData {
 
         for render_item in self.render_items.drain(..) {
             let (mut vertices, texture) = match render_item {
-                RenderItem::RenderQuad(_render_quad) => {
-                    todo!();
+                RenderItem::RenderQuad(render_quad) => {
+                    (render_quad.raw_vertices(), self.white_texture.clone())
                 }
                 RenderItem::RenderTexture(_render_texture) => {
                     todo!();

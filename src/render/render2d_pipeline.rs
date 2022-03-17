@@ -165,7 +165,7 @@ impl Render2DPineline {
 
         let render_data = Render2dData::new(max_textures as usize, white_texture);
 
-        let vertices: [Vertex; MAX_QUAD_COUNT] = [Vertex::default(); MAX_QUAD_COUNT];
+        let vertices = vec![Vertex::default(); MAX_QUAD_COUNT];
         let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: Some("Vertex Buffer"),
             contents: bytemuck::cast_slice(&vertices),

@@ -10,4 +10,4 @@ pub mod shapes;
 pub mod tiled;
 
 mod font;
-mod render;
+pub mod render;

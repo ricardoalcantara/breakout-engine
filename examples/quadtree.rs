@@ -2,17 +2,20 @@ use breakout_engine::{
     core::{
         asset_manager::AssetManager,
         components::{Sprite, Transform2D},
-        engine::{EngineBuilder, WindowSettings},
+        engine::{EngineBuilder, EngineTimer, WindowSettings},
         engine_context::EngineContext,
         game_context::GameContext,
+        game_window::{GameLoopState, GameWindow},
         input::{Event, Input},
         scene::{InputHandled, Scene, Transition},
     },
     error::BreakoutResult,
     math,
+    render::{renderer::Renderer, RenderQuad},
     shapes::rectangle::Rect,
 };
 use rand::Rng;
+use winit::event_loop::{ControlFlow, EventLoop};
 
 extern crate log;
 extern crate pretty_env_logger;
@@ -157,79 +160,112 @@ impl<T> StaticQuadTree<T> {
     }
 }
 
-struct GameObject {}
-
-struct MainState {
-    quad: StaticQuadTree<GameObject>,
+struct GameObject {
+    rect: Rect,
+    color: math::Vec4,
 }
 
-impl MainState {
-    fn new() -> Self {
-        Self {
-            quad: StaticQuadTree::new(Rect::new(0.0, 0.0, 1000.0, 1000.0)),
-        }
-    }
-}
-impl Scene for MainState {
-    fn init(
-        &mut self,
-        _context: &mut GameContext,
-        _asset_manager: &mut AssetManager,
-        _engine: &mut EngineContext,
-    ) -> BreakoutResult {
-        let mut rng = rand::thread_rng();
-        let mut world = _context.get_world_mut();
-
-        for _ in 0..1_000 {
-            let go = GameObject {};
-            let rect = Rect::new(
-                rng.gen_range(0.0..1000.0),
-                rng.gen_range(0.0..1000.0),
-                rng.gen_range(0.0..100.0),
-                rng.gen_range(0.0..100.0),
-            );
-
-            world.spawn((
-                rect.clone(),
-                Sprite {
-                    color: Some(math::vec4(rng.gen(), rng.gen(), rng.gen(), 1.0)),
-                    ..Default::default()
-                },
-                Transform2D::from_position_rotation_scale(rect.position(), 0.0, rect.size()),
-            ));
-
-            self.quad.insert(go, rect)
-        }
-
-        Ok(())
-    }
-
-    fn input(
-        &mut self,
-        _event: Event,
-        _context: &mut GameContext,
-        _engine: &mut EngineContext,
-    ) -> BreakoutResult<InputHandled> {
-        Ok(InputHandled::None)
-    }
-
-    fn update(
-        &mut self,
-        _dt: f32,
-        _input: &mut Input,
-        _context: &mut GameContext,
-        _engine: &mut EngineContext,
-    ) -> BreakoutResult<Transition> {
-        Ok(Transition::None)
-    }
-}
-
-fn main() -> BreakoutResult {
+fn main() {
     pretty_env_logger::init();
 
-    EngineBuilder::new()
-        .with_window_settings(WindowSettings::Title(String::from("QuadTree")))
-        .with_window_settings(WindowSettings::WindowSize((800, 600)))
-        .build()?
-        .run(MainState::new())
+    let mut default_camera = math::Mat4::orthographic_rh_gl(0.0, 800.0, 600.0, 0.0, -1.0, 1.0);
+
+    let mut quad_tree: StaticQuadTree<GameObject> =
+        StaticQuadTree::new(Rect::new(0.0, 0.0, 800.0, 600.0));
+
+    let mut rng = rand::thread_rng();
+
+    for _ in 0..20_000 {
+        let rect = Rect::new(
+            rng.gen_range(0.0..10000.0),
+            rng.gen_range(0.0..10000.0),
+            rng.gen_range(10.0..30.0),
+            rng.gen_range(10.0..30.0),
+        );
+
+        let color = math::vec4(rng.gen(), rng.gen(), rng.gen(), 1.0);
+
+        quad_tree.insert(GameObject { rect, color }, rect)
+    }
+
+    let window_builder = winit::window::WindowBuilder::new();
+    let game_window = GameWindow::build(window_builder);
+    let mut engine_timer = EngineTimer::new();
+    let mut input = Input::new();
+
+    game_window.run(move |game_loop_state, control_flow| match game_loop_state {
+        GameLoopState::Input(event) => {
+            input.on_event(event);
+
+            if let winit::event::WindowEvent::KeyboardInput {
+                input:
+                    winit::event::KeyboardInput {
+                        state: winit::event::ElementState::Pressed,
+                        virtual_keycode: Some(winit::event::VirtualKeyCode::Escape),
+                        ..
+                    },
+                ..
+            } = event
+            {
+                *control_flow = ControlFlow::Exit
+            }
+        }
+        GameLoopState::Update => {
+            let delta = engine_timer.update();
+
+            let mut direction = math::Vec3::ZERO;
+
+            if input.is_key_pressed(winit::event::VirtualKeyCode::Up)
+                || input.is_key_pressed(winit::event::VirtualKeyCode::W)
+            {
+                direction.y -= 1.0;
+            }
+            if input.is_key_pressed(winit::event::VirtualKeyCode::Down)
+                || input.is_key_pressed(winit::event::VirtualKeyCode::S)
+            {
+                direction.y += 1.0;
+            }
+            if input.is_key_pressed(winit::event::VirtualKeyCode::Left)
+                || input.is_key_pressed(winit::event::VirtualKeyCode::A)
+            {
+                direction.x -= 1.0;
+            }
+            if input.is_key_pressed(winit::event::VirtualKeyCode::Right)
+                || input.is_key_pressed(winit::event::VirtualKeyCode::D)
+            {
+                direction.x += 1.0;
+            }
+
+            if direction.length_squared() > 0.0 {
+                direction = -direction.normalize();
+            }
+
+            let speed = if input.is_key_pressed(winit::event::VirtualKeyCode::Space) {
+                500.0
+            } else {
+                250.0
+            };
+
+            default_camera =
+                default_camera * math::Mat4::from_translation(direction * speed * delta);
+        }
+        GameLoopState::Render(renderer) => {
+            let mut renderer = renderer.borrow_mut();
+            renderer.begin_draw(Some(default_camera));
+
+            for item in quad_tree.items() {
+                // for item in quad_tree.search(&Rect::new(0.0, 0.0, 800.0, 600.0)) {
+                renderer.draw_quad(RenderQuad {
+                    size: item.rect.size(),
+                    position: item.rect.position(),
+                    scale: glam::Vec2::ONE,
+                    rotate: 0.0,
+                    center_origin: false,
+                    color: item.color,
+                });
+            }
+            renderer.end_draw();
+        }
+        GameLoopState::Wait => engine_timer.wait(),
+    });
 }
