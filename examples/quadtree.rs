@@ -168,10 +168,13 @@ struct GameObject {
 fn main() {
     pretty_env_logger::init();
 
-    let mut default_camera = math::Mat4::orthographic_rh_gl(0.0, 800.0, 600.0, 0.0, -1.0, 1.0);
+    let camera_size = math::vec2(800.0, 600.0);
+    let mut default_camera =
+        math::Mat4::orthographic_rh_gl(0.0, camera_size.x, camera_size.y, 0.0, -1.0, 1.0);
+    let mut camera_position = math::Vec3::ZERO;
 
     let mut quad_tree: StaticQuadTree<GameObject> =
-        StaticQuadTree::new(Rect::new(0.0, 0.0, 800.0, 600.0));
+        StaticQuadTree::new(Rect::new(0.0, 0.0, 10000.0, 10000.0));
 
     let mut rng = rand::thread_rng();
 
@@ -246,15 +249,21 @@ fn main() {
                 250.0
             };
 
+            camera_position += direction * speed * delta;
+
             default_camera =
                 default_camera * math::Mat4::from_translation(direction * speed * delta);
         }
         GameLoopState::Render(renderer) => {
             let mut renderer = renderer.borrow_mut();
-            renderer.begin_draw(Some(default_camera));
+            let camera = default_camera * math::Mat4::from_translation(camera_position);
+            renderer.begin_draw(Some(camera));
 
-            for item in quad_tree.items() {
-                // for item in quad_tree.search(&Rect::new(0.0, 0.0, 800.0, 600.0)) {
+            // for item in quad_tree.items() {
+            for item in quad_tree.search(&Rect::from_position_size(
+                -camera_position.truncate(),
+                camera_size,
+            )) {
                 renderer.draw_quad(RenderQuad {
                     size: item.rect.size(),
                     position: item.rect.position(),
