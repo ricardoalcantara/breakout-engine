@@ -1,3 +1,5 @@
+use std::cell::{RefCell, RefMut};
+
 use breakout_engine::{
     core::{
         asset_manager::AssetManager,
@@ -47,52 +49,56 @@ impl World {
         self.entities_count += 1;
         entity_id
     }
-
     fn add_component_to_entity<ComponentType: 'static>(
         &mut self,
         entity: usize,
         component: ComponentType,
     ) {
         for component_vec in self.component_vecs.iter_mut() {
+            // The `downcast_mut` type here is changed to `RefCell<Vec<Option<ComponentType>>`
             if let Some(component_vec) = component_vec
                 .as_any_mut()
-                .downcast_mut::<Vec<Option<ComponentType>>>()
+                .downcast_mut::<RefCell<Vec<Option<ComponentType>>>>()
             {
-                component_vec[entity] = Some(component);
+                // add a `get_mut` here. Once again `get_mut` bypasses
+                // `RefCell`'s runtime checks if accessing through a `&mut` reference.
+                component_vec.get_mut()[entity] = Some(component);
                 return;
             }
         }
 
-        /* continued from above */
-
-        // No matching component storage exists yet, so we have to make one.
         let mut new_component_vec: Vec<Option<ComponentType>> =
             Vec::with_capacity(self.entities_count);
 
-        // All existing entities don't have this component, so we give them `None`
         for _ in 0..self.entities_count {
             new_component_vec.push(None);
         }
 
-        // Give this Entity the Component.
         new_component_vec[entity] = Some(component);
-        self.component_vecs.push(Box::new(new_component_vec));
+
+        // Here we create a `RefCell` before inserting into `component_vecs`
+        self.component_vecs
+            .push(Box::new(RefCell::new(new_component_vec)));
     }
 
-    fn borrow_component_vec<ComponentType: 'static>(&self) -> Option<&Vec<Option<ComponentType>>> {
+    fn borrow_component_vec<ComponentType: 'static>(
+        &self,
+    ) -> Option<RefMut<Vec<Option<ComponentType>>>> {
         for component_vec in self.component_vecs.iter() {
             if let Some(component_vec) = component_vec
                 .as_any()
-                .downcast_ref::<Vec<Option<ComponentType>>>()
+                .downcast_ref::<RefCell<Vec<Option<ComponentType>>>>()
             {
-                return Some(component_vec);
+                // Here we use `borrow_mut`.
+                // If this `RefCell` is already borrowed from this will panic.
+                return Some(component_vec.borrow_mut());
             }
         }
         None
     }
 }
 
-impl<T: 'static> ComponentVec for Vec<Option<T>> {
+impl<T: 'static> ComponentVec for RefCell<Vec<Option<T>>> {
     fn as_any(&self) -> &dyn std::any::Any {
         self as &dyn std::any::Any
     }
@@ -102,7 +108,7 @@ impl<T: 'static> ComponentVec for Vec<Option<T>> {
     }
 
     fn push_none(&mut self) {
-        self.push(None)
+        self.get_mut().push(None)
     }
 }
 
