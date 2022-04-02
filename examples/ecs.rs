@@ -96,7 +96,25 @@ impl World {
         }
         None
     }
+
+    //https://stackoverflow.com/a/56700760/8378479
+    fn spawn(&mut self, _b: impl ComponentBundle) -> usize {
+        0
+    }
+
+    fn query<T: QueryParameters>(&mut self) {
+        0
+    }
 }
+
+trait ComponentBundle {}
+
+impl<A> ComponentBundle for (A,) {}
+impl<A, B> ComponentBundle for (A, B) {}
+
+trait QueryParameters {}
+impl<A> QueryParameters for (A,) {}
+impl<A, B> QueryParameters for (A, B) {}
 
 impl<T: 'static> ComponentVec for RefCell<Vec<Option<T>>> {
     fn as_any(&self) -> &dyn std::any::Any {
@@ -136,8 +154,10 @@ fn main() {
 
         let color = math::vec4(rng.gen(), rng.gen(), rng.gen(), 1.0);
 
-        let entity = world.new_entity();
-        world.add_component_to_entity(entity, GameObject { rect, color });
+        // let entity = world.new_entity();
+        // world.add_component_to_entity(entity, GameObject { rect, color });
+        world.spawn((GameObject { rect, color },));
+        world.spawn((GameObject { rect, color }, true));
     }
 
     let window_builder = winit::window::WindowBuilder::new();
@@ -205,6 +225,7 @@ fn main() {
             let mut renderer = renderer.borrow_mut();
             renderer.begin_draw(Some(default_camera));
 
+            world.query::<(&GameObject,)>();
             let data = world.borrow_component_vec::<GameObject>().unwrap();
             for game_object in data.iter().filter_map(|f| f.as_ref()) {
                 // for item in quad_tree.search(&Rect::new(0.0, 0.0, 800.0, 600.0)) {
