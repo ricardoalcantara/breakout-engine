@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-freetype-rs = "0.29.0"
+freetype-rs = "0.29"
 anyhow = "1.0"
 glam = { version = "0.20.1", features = ['bytemuck'] }
 hecs = "0.7.1"
