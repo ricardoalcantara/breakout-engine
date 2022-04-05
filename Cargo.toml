@@ -7,7 +7,6 @@ edition = "2021"
 freetype-rs = "0.29"
 anyhow = "1.0"
 glam = { version = "0.20.1", features = ['bytemuck'] }
-hecs = "0.7.1"
 image = "0.23"
 log = "0.4.14"
 num-traits = "0.2.14"

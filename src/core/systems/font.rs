@@ -15,7 +15,7 @@ pub fn system_render_font_texture(
 ) -> BreakoutResult {
     let world = context.world.borrow();
 
-    for (_id, label) in world.query::<&Label>().iter() {
+    for (_id, (label,)) in world.query::<(&Label,)>() {
         if let Some(font_id) = &label.font_id {
             asset_manager.get_font_with_size(&font_id, label.size, |image| {
                 Texture::from_dynamic_image(image, renderer.device(), renderer.queue())

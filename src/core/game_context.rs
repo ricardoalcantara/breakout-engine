@@ -1,12 +1,8 @@
-use super::{
-    asset_manager::AudioId,
-    components::{Camera2D, Transform2D},
-    game_window::ReadOnlyRc,
-};
+use super::{asset_manager::AudioId, game_window::ReadOnlyRc};
 use crate::{
-    physics2d::physics_world::PhysicsWorld, render::renderer::Renderer, shapes::rectangle::Rect,
+    ecs::world::World, physics2d::physics_world::PhysicsWorld, render::renderer::Renderer,
+    shapes::rectangle::Rect,
 };
-use hecs::World;
 use std::{
     cell::{Ref, RefCell, RefMut},
     rc::Rc,

@@ -28,7 +28,7 @@ pub fn system_render_sprite(
     renderer.clear_color(context.clear_color);
 
     let camera_projection = if let Some((_id, (camera, transform))) =
-        world.query::<(&Camera2D, &Transform2D)>().iter().next()
+        world.query::<(&Camera2D, &Transform2D)>().next()
     {
         Some(camera.get_view_matrix(
             &renderer.display_size(),
@@ -40,7 +40,7 @@ pub fn system_render_sprite(
     };
 
     renderer.begin_draw(camera_projection);
-    for (_id, (sprite, transform)) in world.query::<(&mut Sprite, &mut Transform2D)>().iter() {
+    for (_id, (sprite, transform)) in world.query::<(&mut Sprite, &mut Transform2D)>() {
         if !sprite.visible {
             continue;
         }
@@ -101,7 +101,7 @@ pub fn system_render_sprite(
     }
 
     // TODO label should not be here
-    for (_id, (label, _transform)) in world.query::<(&mut Label, &Transform2D)>().iter() {
+    for (_id, (label, _transform)) in world.query::<(&mut Label, &Transform2D)>() {
         if !label.visible {
             continue;
         }
