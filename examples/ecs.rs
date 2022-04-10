@@ -11,6 +11,7 @@ use breakout_engine::{
         input::{Event, Input},
         scene::{InputHandled, Scene, Transition},
     },
+    ecs::world::World,
     error::BreakoutResult,
     math,
     render::{renderer::Renderer, RenderQuad},
@@ -49,7 +50,6 @@ fn main() {
         // let entity = world.new_entity();
         // world.add_component_to_entity(entity, GameObject { rect, color });
         world.spawn((GameObject { rect, color },));
-        world.spawn((GameObject { rect, color }, true));
     }
 
     let window_builder = winit::window::WindowBuilder::new();
@@ -117,10 +117,7 @@ fn main() {
             let mut renderer = renderer.borrow_mut();
             renderer.begin_draw(Some(default_camera));
 
-            world.query::<(&GameObject,)>();
-            let data = world.borrow_component_vec::<GameObject>().unwrap();
-            for game_object in data.iter().filter_map(|f| f.as_ref()) {
-                // for item in quad_tree.search(&Rect::new(0.0, 0.0, 800.0, 600.0)) {
+            for (_e, (game_object,)) in world.query::<(&GameObject,)>() {
                 renderer.draw_quad(RenderQuad {
                     size: game_object.rect.size(),
                     position: game_object.rect.position(),
@@ -130,6 +127,7 @@ fn main() {
                     color: game_object.color,
                 });
             }
+
             renderer.end_draw();
         }
         GameLoopState::Wait => engine_timer.wait(),

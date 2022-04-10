@@ -1,4 +1,6 @@
-use std::cell::RefCell;
+use std::{any::Any, cell::RefCell};
+
+use super::world::World;
 
 pub trait ComponentVec {
     fn as_any(&self) -> &dyn std::any::Any;
@@ -6,11 +8,28 @@ pub trait ComponentVec {
     fn push_none(&mut self);
 }
 
-pub trait ComponentBundle {}
+pub trait ComponentBundle {
+    fn spawn_in_world(self, world: &mut World, entity: usize);
+}
 
-impl<A> ComponentBundle for (A,) {}
-impl<A, B> ComponentBundle for (A, B) {}
-impl<A, B, C> ComponentBundle for (A, B, C) {}
+impl<A: 'static> ComponentBundle for (A,) {
+    fn spawn_in_world(self, world: &mut World, entity: usize) {
+        world.add_component_to_entity(entity, self.0)
+    }
+}
+impl<A: 'static, B: 'static> ComponentBundle for (A, B) {
+    fn spawn_in_world(self, world: &mut World, entity: usize) {
+        world.add_component_to_entity(entity, self.0);
+        world.add_component_to_entity(entity, self.1);
+    }
+}
+impl<A: 'static, B: 'static, C: 'static> ComponentBundle for (A, B, C) {
+    fn spawn_in_world(self, world: &mut World, entity: usize) {
+        world.add_component_to_entity(entity, self.0);
+        world.add_component_to_entity(entity, self.1);
+        world.add_component_to_entity(entity, self.2);
+    }
+}
 
 impl<T: 'static> ComponentVec for RefCell<Vec<Option<T>>> {
     fn as_any(&self) -> &dyn std::any::Any {

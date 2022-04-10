@@ -75,8 +75,11 @@ impl World {
     }
 
     //https://stackoverflow.com/a/56700760/8378479
-    pub fn spawn(&mut self, _b: impl ComponentBundle) -> usize {
-        0
+    pub fn spawn(&mut self, bundle: impl ComponentBundle) -> usize {
+        let entity = self.new_entity();
+        bundle.spawn_in_world(self, entity);
+
+        entity
     }
 
     pub fn query<T: QueryParameters>(&self) -> QueryIterator<T> {

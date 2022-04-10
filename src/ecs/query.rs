@@ -1,7 +1,32 @@
-pub trait QueryParameters {}
-impl<A> QueryParameters for (A,) {}
-impl<A, B> QueryParameters for (A, B) {}
-impl<A, B, C> QueryParameters for (A, B, C) {}
+pub trait QueryParameters {
+    type ItemFetch;
+    fn fetch(world: &mut World) -> Self::ItemFetch;
+}
+impl<A: 'static> QueryParameters for (A,) {
+    type ItemFetch = Vec<(usize, (&'a A,))>;
+    fn fetch(world: &mut World) -> Self::ItemFetch {
+        let data = world.borrow_component_vec::<A>().unwrap();
+        let result = data
+            .iter()
+            .enumerate()
+            .filter_map(|(i, f)| Some((i, (f.as_ref()?,))))
+            .collect();
+
+        result
+    }
+}
+impl<A: 'static, B: 'static> QueryParameters for (A, B) {
+    type ItemFetch = Vec<(usize, (A,))>;
+    fn fetch(world: &mut World) -> Self::ItemFetch {
+        todo!()
+    }
+}
+impl<A: 'static, B: 'static, C: 'static> QueryParameters for (A, B, C) {
+    type ItemFetch = Vec<(usize, (A,))>;
+    fn fetch(world: &mut World) -> Self::ItemFetch {
+        todo!()
+    }
+}
 
 pub struct QueryIterator<Q: QueryParameters> {
     x: Q,
@@ -14,6 +39,8 @@ pub struct QueryIterator<Q: QueryParameters> {
 //         unsafe { QueryIter::new(self.meta, self.archetypes.iter()) }
 //     }
 // }
+
+use super::world::World;
 
 impl<Q: QueryParameters> Iterator for QueryIterator<Q> {
     type Item = (u32, Q);
