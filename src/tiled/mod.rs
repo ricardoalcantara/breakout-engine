@@ -41,7 +41,7 @@ impl Tiled {
     }
 
     pub fn spawn(&self, context: &mut GameContext) -> BreakoutResult {
-        let world = &mut context.get_world();
+        let world = &mut context.get_world_mut();
         let texture = self.textures.values().next().unwrap().clone();
         let mut x = 0.0;
         let mut y = 0.0;

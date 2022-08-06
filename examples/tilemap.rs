@@ -50,7 +50,7 @@ impl Scene for MainState {
             (GRID_WIDTH, GRID_HEIGHT)
         };
 
-        let world = &mut _context.get_world();
+        let world = &mut _context.get_world_mut();
 
         for x in 0..width {
             for y in 0..height {

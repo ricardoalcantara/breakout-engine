@@ -32,7 +32,7 @@ impl Scene for MainState {
     ) -> BreakoutResult {
         let texture = _asset_manager.load_texture("assets/awesomeface.png")?;
 
-        let world = &mut _context.get_world();
+        let world = &mut _context.get_world_mut();
         world.spawn((
             Sprite {
                 texture_id: Some(texture.clone()),

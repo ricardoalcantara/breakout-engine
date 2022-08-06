@@ -157,6 +157,8 @@ dependencies = [
  "pretty_env_logger",
  "rand",
  "rodio",
+ "serde",
+ "serde_json",
  "shaderc",
  "wgpu",
  "winit",
@@ -1976,15 +1978,6 @@ dependencies = [
  "jpeg-decoder",
  "miniz_oxide 0.4.4",
  "weezl",
-]
-
-[[package]]
-name = "tiled"
-version = "0.1.0"
-dependencies = [
- "breakout_engine",
- "serde",
- "serde_json",
 ]
 
 [[package]]

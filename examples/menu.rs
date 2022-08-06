@@ -31,7 +31,7 @@ impl Scene for MainState {
     ) -> BreakoutResult {
         let font = _asset_manager.load_font("assets/Roboto-Regular.ttf")?;
 
-        let world = &mut _context.get_world();
+        let world = &mut _context.get_world_mut();
 
         world.spawn((
             Label::new_with_font(String::from("First Word"), font, 20),
